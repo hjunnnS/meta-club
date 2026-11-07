@@ -1,0 +1,52 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>EDM 아레나 · 빈 스테이지 검토</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#10191e;color:#e8eeee;font:15px/1.5 -apple-system,BlinkMacSystemFont,sans-serif}main{max-width:1440px;margin:auto;padding:22px clamp(12px,3vw,46px)}header,nav,.row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}h1{font-size:clamp(21px,3vw,34px);margin:0}small,output{color:#a9c4c6}canvas{width:100%;height:clamp(230px,62vh,760px);display:block;touch-action:none;cursor:grab;border:1px solid #405056;border-radius:8px;background:#18242a;margin:16px 0}button{padding:8px 13px;color:#ebf4f3;background:#223239;border:1px solid #53636a;border-radius:5px;font:inherit;cursor:pointer}button[aria-pressed=true]{background:#c2ece0;color:#132923}nav{justify-content:flex-start}input{flex:1;min-width:110px;accent-color:#a3d9d2}.row{margin:16px 0}p{color:#b9cacd;margin:8px 0}output{font-variant-numeric:tabular-nums}small{white-space:nowrap}
+</style><main><header><h1>EDM 아레나</h1><small>빈 스테이지 · 05a-1.v1</small></header>
+<canvas aria-label="EDM 빈 스테이지 3D 검토 화면"></canvas>
+<nav aria-label="검토 시점"><button data-mode="overview">전체 보기</button><button data-mode="entry">입구</button><button data-mode="stage">중앙 무대</button><button data-mode="balcony">발코니</button><button id="play">왕복 재생</button></nav>
+<div class="row"><label for="distance">동선 위치</label><input id="distance" type="range" min="0" max="1000" value="0"><output id="status"></output></div>
+<p>입구 → 무대 정면 경사로 → 중앙 무대 → 동쪽 경사로 → 북측 발코니. 화면을 드래그해 시선을 돌릴 수 있습니다.</p></main>
+<script>
+const canvas=document.querySelector('canvas'), statusText=document.querySelector('#status'), slider=document.querySelector('#distance'), play=document.querySelector('#play');
+function init(){
+const gl=canvas.getContext('webgl',{antialias:true}); if(!gl)throw Error('WebGL을 사용할 수 없습니다. 그래픽 가속 설정을 확인해 주세요.');
+const data=Uint8Array.from(atob('__GLB__'),s=>s.charCodeAt(0)), view=new DataView(data.buffer), jl=view.getUint32(12,true), doc=JSON.parse(new TextDecoder().decode(data.subarray(20,20+jl))), bin=28+jl;
+function shader(type,source){const sh=gl.createShader(type);gl.shaderSource(sh,source);gl.compileShader(sh);if(!gl.getShaderParameter(sh,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(sh));return sh;}
+const program=gl.createProgram();
+gl.attachShader(program,shader(gl.VERTEX_SHADER,`attribute vec3 pos,norm; uniform vec3 eye,right,up,front,color; uniform vec2 lens; varying vec3 rgb;
+void main(){vec3 d=pos-eye;float z=dot(d,front);gl_Position=vec4(dot(d,right)*lens.x,dot(d,up)*lens.y,z*1.001-.12,z);
+float light=.45+.55*max(dot(norm,normalize(vec3(-.45,1.,.55))),0.);rgb=pow(color*light,vec3(.64));}`));
+gl.attachShader(program,shader(gl.FRAGMENT_SHADER,'precision mediump float; varying vec3 rgb;void main(){gl_FragColor=vec4(rgb,1.);}'));
+gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(program));
+gl.useProgram(program);gl.enable(gl.DEPTH_TEST);gl.clearColor(.105,.145,.17,1);
+const buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,data.subarray(bin),gl.STATIC_DRAW);
+const loc=Object.fromEntries(['eye','front','right','up','color','lens'].map(n=>[n,gl.getUniformLocation(program,n)]));
+const attrs=['pos','norm'].map(n=>gl.getAttribLocation(program,n));attrs.forEach(n=>gl.enableVertexAttribArray(n));
+const primitives=doc.meshes.flatMap(m=>m.primitives),path=doc.extras.reviewRoute, lengths=[0];
+for(let i=1;i<path.length;i++) lengths.push(lengths[i-1]+Math.hypot(...path[i].map((x,k)=>x-path[i-1][k])));
+const end=lengths.at(-1), stage=lengths[doc.extras.stageIndex];
+let distance=0,mode='overview',yaw=0,pitch=0,direction=1,running=false,prev=0;
+function point(d){let i=1;while(i<lengths.length-1&&lengths[i]<d)i++;const k=(d-lengths[i-1])/(lengths[i]-lengths[i-1]);return path[i].map((x,j)=>path[i-1][j]+k*(x-path[i-1][j]));}
+function render(){
+const ratio=Math.min(devicePixelRatio||1,2), w=Math.round(canvas.clientWidth*ratio),h=Math.round(canvas.clientHeight*ratio);if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}
+gl.viewport(0,0,w,h);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+const overview=mode==='overview',at=point(distance);let eye,az,el;
+if(overview){const a=.48+yaw, elevation=Math.max(.26,Math.min(1.45,.86+pitch)),r=56*Math.max(1,1.3*h/w);eye=[r*Math.cos(elevation)*Math.sin(a),r*Math.sin(elevation),3+r*Math.cos(elevation)*Math.cos(a)];az=a+Math.PI;el=-elevation;}
+else{eye=[at[0],at[1]+1.65,at[2]];const next=point(Math.min(end,Math.max(0,distance+direction*1.3)));
+let dx=next[0]-at[0],dz=next[2]-at[2];if(!running&&(mode==='stage'||mode==='balcony')||Math.hypot(dx,dz)<.01){dx=-at[0];dz=mode==='stage'?-12:-at[2];}
+az=Math.atan2(dx,dz)+yaw;el=Math.max(-1.25,Math.min(1.25,pitch+(mode==='balcony'?-.25:-.04)));}
+const ca=Math.cos(az),sa=Math.sin(az),ce=Math.cos(el),se=Math.sin(el);
+gl.uniform3fv(loc.eye,eye);gl.uniform3f(loc.front,sa*ce,se,ca*ce);gl.uniform3f(loc.right,-ca,0,sa);gl.uniform3f(loc.up,-sa*se,ce,-ca*se);const focal=overview?1.68:1.5;gl.uniform2f(loc.lens,focal*h/w,focal);
+for(const p of primitives){const ac=[doc.accessors[p.attributes.POSITION],doc.accessors[p.attributes.NORMAL]];ac.forEach((a,i)=>gl.vertexAttribPointer(attrs[i],3,gl.FLOAT,false,0,doc.bufferViews[a.bufferView].byteOffset));gl.uniform3fv(loc.color,doc.materials[p.material].pbrMetallicRoughness.baseColorFactor.slice(0,3));gl.drawArrays(gl.TRIANGLES,0,ac[0].count);}
+slider.value=Math.round(distance/end*1000);statusText.value=overview?'전체 조감':distance.toFixed(1)+' / '+end.toFixed(1)+' m';document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===mode)));
+}
+function stop(){running=false;play.textContent='왕복 재생';}
+document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{stop();mode=b.dataset.mode;direction=1;yaw=pitch=0;distance=({overview:0,entry:0,stage,balcony:end})[mode];render();});
+slider.oninput=()=>{stop();mode='path';direction=1;yaw=pitch=0;distance=end*slider.value/1000;render();};
+function tick(now){if(!running)return;distance+=direction*Math.min((now-prev)/1000,.1)*4;prev=now;if(distance>=end){distance=end;direction=-1;}else if(distance<=0&&direction<0){distance=0;stop();mode='entry';direction=1;}render();if(running)requestAnimationFrame(tick);}
+play.onclick=()=>{if(running){stop();return;}mode='path';if(distance>=end)direction=-1;running=true;prev=performance.now();yaw=pitch=0;play.textContent='일시 정지';requestAnimationFrame(tick);};
+let drag;canvas.onpointerdown=e=>{drag=[e.clientX,e.clientY];canvas.setPointerCapture(e.pointerId);};canvas.onpointermove=e=>{if(!drag)return;yaw+=(e.clientX-drag[0])*.006;pitch+=(e.clientY-drag[1])*.006;drag=[e.clientX,e.clientY];render();};canvas.onlostpointercapture=()=>drag=null;
+new ResizeObserver(render).observe(canvas);render();
+}
+try{init();}catch(e){statusText.value=e.message;console.error(e);}
+</script></html>
