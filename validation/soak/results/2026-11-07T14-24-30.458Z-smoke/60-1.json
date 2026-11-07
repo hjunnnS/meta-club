@@ -1,0 +1,167 @@
+{
+  "roomId": "0WwaHUohC",
+  "capacity": 60,
+  "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)",
+  "version": "9.35.0",
+  "width": 1920,
+  "height": 1080,
+  "wallStart": "2026-11-07T14:24:32.968Z",
+  "rejoins": [
+    5,
+    3.799999952316284,
+    4.199999928474426,
+    5.399999976158142,
+    6,
+    6.700000047683716,
+    6.600000023841858,
+    6.5,
+    5.900000095367432,
+    5.599999904632568
+  ],
+  "visibility": [
+    {
+      "view": "floor",
+      "avatars": 60,
+      "ai": 5
+    },
+    {
+      "view": "deck",
+      "avatars": 60,
+      "ai": 5
+    }
+  ],
+  "buckets": [
+    {
+      "index": 0,
+      "view": "floor",
+      "beats": 38,
+      "badRoster": 0,
+      "maxSilence": 53.89999997615814,
+      "stalls": 0,
+      "frameCount": 240,
+      "frameP95": 9.100000000000364,
+      "frameMax": 9.399999999999636,
+      "remoteP95": 64.20000004768372,
+      "remoteCount": 767,
+      "tickP95": 2.5417080000042915,
+      "musicMax": 48.32500000000073,
+      "musicSamples": 8,
+      "rxBytes": 24070,
+      "txBytes": 34635,
+      "heap": 80394647
+    },
+    {
+      "index": 1,
+      "view": "deck",
+      "beats": 38,
+      "badRoster": 0,
+      "maxSilence": 56.59999990463257,
+      "stalls": 0,
+      "frameCount": 240,
+      "frameP95": 8.899999999999636,
+      "frameMax": 9.200000000000728,
+      "remoteP95": 64.20000004768372,
+      "remoteCount": 767,
+      "tickP95": 2.0903330000001006,
+      "musicMax": 48.27700000000186,
+      "musicSamples": 8,
+      "rxBytes": 24473,
+      "txBytes": 37778,
+      "heap": 77338379
+    },
+    {
+      "index": 2,
+      "view": "floor",
+      "beats": 38,
+      "badRoster": 0,
+      "maxSilence": 56.10000002384186,
+      "stalls": 0,
+      "frameCount": 240,
+      "frameP95": 9.100000000000364,
+      "frameMax": 9.399999999999636,
+      "remoteP95": 63.89999997615814,
+      "remoteCount": 826,
+      "tickP95": 2.1651249999995343,
+      "musicMax": 125.05400000000009,
+      "musicSamples": 8,
+      "rxBytes": 26411,
+      "txBytes": 35392,
+      "heap": 99488139
+    },
+    {
+      "index": 3,
+      "view": "deck",
+      "beats": 38,
+      "badRoster": 0,
+      "maxSilence": 56.60000002384186,
+      "stalls": 0,
+      "frameCount": 240,
+      "frameP95": 9.099999999998545,
+      "frameMax": 9.300000000001091,
+      "remoteP95": 55.89999997615814,
+      "remoteCount": 767,
+      "tickP95": 2.5289170000032755,
+      "musicMax": 58.29200000000128,
+      "musicSamples": 8,
+      "rxBytes": 24951,
+      "txBytes": 35525,
+      "heap": 96173515
+    },
+    {
+      "index": 4,
+      "view": "floor",
+      "beats": 38,
+      "badRoster": 0,
+      "maxSilence": 56.59999990463257,
+      "stalls": 0,
+      "frameCount": 240,
+      "frameP95": 9,
+      "frameMax": 9.299999999999272,
+      "remoteP95": 64.30000007152557,
+      "remoteCount": 767,
+      "tickP95": 2.5246250000054715,
+      "musicMax": 58.54599999999846,
+      "musicSamples": 8,
+      "rxBytes": 24941,
+      "txBytes": 38317,
+      "heap": 91778499
+    }
+  ],
+  "events": [
+    {
+      "at": 5804.300000023843,
+      "error": 125.05400000000009
+    }
+  ],
+  "unexpected": 0,
+  "contextLoss": 0,
+  "lateError": {
+    "ms": 48.22100000000137,
+    "afterMs": 2754.3000000238417
+  },
+  "lastRecovery": {
+    "ms": 58.33599999999933,
+    "afterMs": 2750
+  },
+  "observedActors": 60,
+  "actualMs": 10003.800000023843,
+  "warmMs": 5000,
+  "durationMs": 10000,
+  "done": true,
+  "browser": "156.0.8078.81",
+  "resources": [],
+  "verdict": {
+    "checks": {
+      "duration": true,
+      "hardware": true,
+      "roster": true,
+      "rendered": true,
+      "stable": true,
+      "frame": true,
+      "server": true,
+      "music": true,
+      "restore": true
+    },
+    "pass": true
+  }
+}

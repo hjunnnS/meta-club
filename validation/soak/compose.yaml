@@ -1,0 +1,10 @@
+name: meta-club-soak
+services:
+  room:
+    image: node:22-alpine
+    cpus: 1
+    mem_limit: 512m
+    volumes: ["..:/check:ro"]
+    working_dir: /check
+    command: ["node", "soak/server.cjs"]
+    ports: ["127.0.0.1:17352:7351"]

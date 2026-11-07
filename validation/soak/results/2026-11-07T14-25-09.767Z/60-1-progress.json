@@ -1,0 +1,47 @@
+{
+  "state": {
+    "measuredSec": 133.7075,
+    "buckets": 2,
+    "done": false
+  },
+  "buckets": [
+    {
+      "index": 0,
+      "view": "floor",
+      "beats": 1113,
+      "badRoster": 0,
+      "maxSilence": 63.39999997615814,
+      "stalls": 0,
+      "frameCount": 7200,
+      "frameP95": 9.899999999965075,
+      "frameMax": 10.400000000023283,
+      "remoteP95": 64.69999992847443,
+      "remoteCount": 23600,
+      "tickP95": 2.353624999988824,
+      "musicMax": 1858.0579999999973,
+      "musicSamples": 236,
+      "rxBytes": 805677,
+      "txBytes": 1137375,
+      "heap": 53165136
+    },
+    {
+      "index": 1,
+      "view": "deck",
+      "beats": 1105,
+      "badRoster": 0,
+      "maxSilence": 63.89999997615814,
+      "stalls": 0,
+      "frameCount": 7200,
+      "frameP95": 9.900000000023283,
+      "frameMax": 10.400000000023283,
+      "remoteP95": 65.19999992847443,
+      "remoteCount": 23600,
+      "tickP95": 2.475332999951206,
+      "musicMax": 137.03900000000067,
+      "musicSamples": 236,
+      "rxBytes": 803489,
+      "txBytes": 1136056,
+      "heap": 70106504
+    }
+  ]
+}

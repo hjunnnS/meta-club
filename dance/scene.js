@@ -45,7 +45,7 @@ async function babylon(){
   }
   return {
     gl:engine._gl,version:B.Engine.Version,
-    node:name=>lookup.get(name),rotate:(n,x,y,z,w)=>n.rotationQuaternion.set(x,y,z,w),
+    enable:(node,on)=>node.setEnabled(on),node:name=>lookup.get(name),rotate:(n,x,y,z,w)=>n.rotationQuaternion.set(x,y,z,w),
     move:(n,y)=>n.position.y=y,
     camera:(p,t)=>{cam.position.set(...p);cam.setTarget(B.Vector3.FromArray(t));},
     draw:()=>scene.render(),
@@ -76,7 +76,7 @@ async function playcanvas(){
     return masks.get(id);
   }
   return {
-    gl:app.graphicsDevice.gl,version:pc.version,node:name=>app.root.findByName(name),
+    gl:app.graphicsDevice.gl,version:pc.version,enable:(node,on)=>node.enabled=on,node:name=>app.root.findByName(name),
     rotate:(n,x,y,z,w)=>n.setLocalRotation(x,y,z,w),move:(n,y)=>n.setLocalPosition(n.getLocalPosition().x,y,n.getLocalPosition().z),
     camera:(p,t)=>{cam.setPosition(...p);cam.lookAt(...t);},draw:()=>app.render(),
     mask:on=>{cam.camera.clearColor=on?new pc.Color(0,0,0):bg;instances.forEach((m,j)=>m.material=on?mask(idOf(m.node.name)):originals[j]);},
@@ -89,11 +89,17 @@ async function init(){
   const actors=Array.from({length:65},(_,i)=>jointNames.map(n=>api.node(actorName(i)+'_'+n)));
   if(actors.some(a=>a.some(j=>!j)))throw Error('누락된 군무 관절');
   let view='floor',manual=params.has('test'),start=performance.now();
+  let live=null;
+  function configureLive(state){
+    live=state;
+    actors.forEach((_,i)=>api.enable(api.node(actorName(i)),state.has(i)));
+  }
   function draw(t){
     const phase=t*Math.PI*2*2;
     for(let i=0;i<actors.length;i++){
+      if(live&&!live.has(i))continue;
       const joints=actors[i],ai=aiIds.indexOf(i);
-      const p=phase+((i%3)-1)*.08+(ai>=0&&ai<3?.27:0),beat=Math.sin(p),sway=Math.sin(p*.5);
+      const p=phase+(live&&ai<0?live.get(i)*.24:0)+((i%3)-1)*.08+(ai>=0&&ai<3?.27:0),beat=Math.sin(p),sway=Math.sin(p*.5);
       api.move(joints[0],.938+.035*(1-Math.cos(p*2)));
       for(let j=0;j<joints.length;j++){
         let angle,axis;
@@ -102,7 +108,7 @@ async function init(){
           const side=j<=6?-1:1,part=(j-3)%4;
           axis=part<2?2:0;
           angle=part===0?side*(.65+.52*beat):part===1?side*(.55+.33*sway):part===2?.21*side*beat:.18+.15*beat;
-          if(ai>=3&&part===0&&Math.floor(t/2)%2===1) angle+=side*.65;
+          if(ai>=3&&part===0&&(live?live.get(i):Math.floor(t/2)%2)===1) angle+=side*.65;
         }
         const q=Math.sin(angle/2);api.rotate(joints[j],axis===0?q:0,axis===1?q:0,axis===2?q:0,Math.cos(angle/2));
       }
@@ -128,7 +134,7 @@ async function init(){
   function setView(v){view=v;start=performance.now();draw(.5);}
   document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>setView(b.dataset.view));
   function loop(now){draw((now-start)/1000);requestAnimationFrame(loop);}
-  window.trial={draw,setView,visible,version:api.version,renderer:info?gl.getParameter(info.UNMASKED_RENDERER_WEBGL):'unknown',
+  window.trial={configureLive,draw,setView,visible,version:api.version,renderer:info?gl.getParameter(info.UNMASKED_RENDERER_WEBGL):'unknown',
     width:gl.drawingBufferWidth,height:gl.drawingBufferHeight,samples:gl.getParameter(gl.SAMPLES)};
   draw(.5);status.textContent='금색 AI 표식 · 배경형 3 / 반응형 2';
   if(!manual)requestAnimationFrame(loop);

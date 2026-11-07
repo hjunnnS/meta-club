@@ -1,0 +1,13 @@
+{
+  "name": "meta-club-g0-validation",
+  "private": true,
+  "version": "0.1.0",
+  "dependencies": {
+    "@colyseus/core": "0.16.26",
+    "@colyseus/ws-transport": "0.16.5",
+    "@heroiclabs/nakama-js": "2.8.0",
+    "colyseus.js": "0.16.22",
+    "esbuild": "0.28.2",
+    "playwright-core": "1.65.0"
+  }
+}
