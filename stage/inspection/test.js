@@ -1,4 +1,5 @@
-const type=location.search.slice(1),canvas=document.querySelector('canvas'),url='edm-empty.glb';
+const [type, revision]=location.search.slice(1).split('&');
+const canvas=document.querySelector('canvas'),url=revision==='before'?'before.glb':'edm-empty.glb';
 canvas.width=innerWidth;canvas.height=innerHeight;
 async function script(src){const tag=document.createElement('script');tag.src=src;document.head.append(tag);await new Promise((ok,no)=>{tag.onload=ok;tag.onerror=no;});}
 async function load(){
@@ -62,8 +63,24 @@ async function load(){
    const actual=pose(eye,target),y=ground(actual[0],actual[2]);samples++;if(!Number.isFinite(y))missing++;else worst=Math.max(worst,Math.abs(actual[1]-1.65-y));}
  }
  const anchors=[route[0],route[4],route.at(-1)].map(([x,y,z])=>[x,ground(x,z),z]);
+ // Equal-area stage-top samples. Test sightlines against imported world geometry.
+ const eye=[0,5.65,-13];
+ const candidates=triangles.filter(tri=>tri.some(p=>p[1]>.801) &&
+     tri.some(p=>p[2]>=-13.1) && tri.some(p=>p[2]<=5) &&
+     tri.some(p=>p[0]<=5) && tri.some(p=>p[0]>=-5));
+ const visible=(x,z)=>!candidates.some(tri=>crosses(eye,[x,.801,z],tri));
+ let seen=0;
+ const rings=16,sectors=48;
+ for(let r=0;r<rings;r++){
+   const radius=4.84*Math.sqrt((r+.5)/rings);
+   for(let j=0;j<sectors;j++){
+     const angle=2*Math.PI*(j+.5)/sectors;
+     if(visible(radius*Math.cos(angle),radius*Math.sin(angle)))seen++;
+   }
+ }
+ const visibility={seen,total:rings*sectors,centerVisible:visible(0,0)};
  window.show=(i)=>{const eye=anchors[i].slice();eye[1]+=1.65;pose(eye,i===0?[0,1,0]:i===1?[0,4,-14]:[0,1,0]);draw();};
  window.show(0);
- window.result={type,version,bounds,anchors,length,worst,missing,hits,samples,meshCount:names.length,triangleCount:triangles.length};
+ window.result={type,revision:revision||"after",visibility,version,bounds,anchors,length,worst,missing,hits,samples,meshCount:names.length,triangleCount:triangles.length};
 }
 load().catch(e=>{window.failure=String(e)+' '+(e.stack||'');});

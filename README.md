@@ -1,6 +1,6 @@
 # EDM 빈 스테이지
 
-G0 05a-1의 배치 전 버전 `05a-1.v1`. 검토 화면은 [stage/review.html](stage/review.html)을 내려받아 브라우저에서 연다. 모델이 포함되어 있어 서버나 인터넷 연결 없이 동작한다. 엔진 비교용 원본은 [stage/edm-empty.glb](stage/edm-empty.glb)다.
+G0 빈 스테이지의 발코니 시야 수정본 `05a-2.v2`. 검토 화면은 [stage/review.html](stage/review.html)을 내려받아 브라우저에서 연다. 모델이 포함되어 있어 서버나 인터넷 연결 없이 동작한다. 엔진 비교용 원본은 [stage/edm-empty.glb](stage/edm-empty.glb)다.
 
 ![빈 스테이지 조감](stage/overview.png)
 
@@ -14,4 +14,4 @@ G0 05a-1의 배치 전 버전 `05a-1.v1`. 검토 화면은 [stage/review.html](s
 
 `python3 stage/build.py`는 경로의 각 구간을 101개 지점에서 보행 표면 높이와 대조하고 GLB와 단일 파일 검토 화면을 생성한다. 경로는 GLB의 extras.reviewRoute에 포함돼 있다. 기준 Chrome에서 1100×720 및 844×390 뷰포트로 로컬 파일 로드, 각 지점 이동, 발코니에서 역방향 재생을 확인했다. 이는 검수 카메라 시험이며 플레이어 물리·실물 모바일 성능 시험은 후속 범위다.
 
-두 엔진에서 같은 버전의 스케일·동선·배치 좌표를 대조하는 정식 검수는 [05a-2](https://github.com/hjunnnS/meta-club/issues/14)에서 진행한다.
+두 엔진의 발코니 전후 화면과 왕복 동선 측정값은 [05a-2 검수 보고서](stage/inspection/README.md)에 있다.

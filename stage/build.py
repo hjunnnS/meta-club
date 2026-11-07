@@ -6,7 +6,7 @@ from pathlib import Path
 import struct
 
 ROOT = Path(__file__).resolve().parent
-VERSION = "05a-1.v1"
+VERSION = "05a-2.v2"
 materials = []
 parts = {}
 walkable = []
@@ -84,9 +84,16 @@ for x in [11.3,14.54]:
     rect("Ramp curb",rim,x,x+.16,0,15,4.16,.16,0)
     rect("Ramp rail",amber,x,x+.09,0,15,5.03,1.03,0)
 ring("North balcony",deck,10.75,17.0,0,P,3.68,4,64,True)
-for r in [10.75,16.86]:
-    ring("Balcony rail",metal,r,r+.12,0,P,4,4.95,64)
-    ring("Rail cap",amber,r-.025,r+.145,0,P,4.95,5,64)
+# The inner edge keeps its 1 m handrail, with open sightlines between slim posts.
+inner = 10.75
+ring("Balcony rail",metal,inner,inner+.12,0,P,4,4.09,64)
+ring("Rail cap",amber,inner-.025,inner+.145,0,P,4.95,5,64)
+for i in range(16):
+    # Stagger posts so the central viewpoint looks through the middle of a bay.
+    angle=(i+.5)*P/16
+    ring("Inner posts",metal,inner,inner+.12,angle-.004,angle+.004,4.09,4.95,1)
+ring("Balcony rail",metal,16.86,16.98,0,P,4,4.95,64)
+ring("Rail cap",amber,16.835,17.005,0,P,4.95,5,64)
 for t in [.18,.52,.86,1.2,1.55,1.9,2.24,2.58,2.92]:
     x,_,z=polar(15,t,0)
     box("Balcony columns",metal,x-.23,x+.23,z-.23,z+.23,0,3.68)
