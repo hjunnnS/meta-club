@@ -1,0 +1,78 @@
+{
+  "browser": "156.0.8078.81",
+  "map": "d5aa590",
+  "run": "2026-11-07T13:45:52.536Z",
+  "result": {
+    "kind": "colyseus",
+    "users": 60,
+    "sentInputs": 2400,
+    "duplicate": "rejected",
+    "lastSeatAccepted": 1,
+    "observerBatches": 42,
+    "receivedRemoteInputs": 2360,
+    "finalActorCount": 60,
+    "actorsWithFinalSequence": 60,
+    "overCapacityBatches": 0,
+    "restoredCounts": [
+      60,
+      60,
+      60,
+      60,
+      60,
+      60,
+      60,
+      60,
+      60,
+      60
+    ],
+    "handlerPreviousActiveMsP95": 2,
+    "observerFrameCallbackMsP95": 210.40000009536743,
+    "observerJsonBytes": 232669,
+    "observerJsonKiBps": 33.69304985555309,
+    "recovery": [
+      {
+        "ms": 1027,
+        "restored": true
+      },
+      {
+        "ms": 883,
+        "restored": true
+      },
+      {
+        "ms": 869,
+        "restored": true
+      },
+      {
+        "ms": 870,
+        "restored": true
+      },
+      {
+        "ms": 879,
+        "restored": true
+      },
+      {
+        "ms": 1127,
+        "restored": true
+      },
+      {
+        "ms": 881,
+        "restored": true
+      },
+      {
+        "ms": 884,
+        "restored": true
+      },
+      {
+        "ms": 875,
+        "restored": true
+      },
+      {
+        "ms": 877,
+        "restored": true
+      }
+    ],
+    "recoveryP95": 1127,
+    "missingChannelRejected": true,
+    "safeChannelFresh": true
+  }
+}

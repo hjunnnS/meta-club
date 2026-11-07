@@ -1,0 +1,78 @@
+{
+  "browser": "156.0.8078.81",
+  "map": "d5aa590",
+  "run": "2026-11-07T13:46:56.604Z",
+  "result": {
+    "kind": "nakama",
+    "users": 60,
+    "sentInputs": 2400,
+    "duplicate": "rejected",
+    "lastSeatAccepted": 1,
+    "observerBatches": 42,
+    "receivedRemoteInputs": 2360,
+    "finalActorCount": 60,
+    "actorsWithFinalSequence": 60,
+    "overCapacityBatches": 0,
+    "restoredCounts": [
+      60,
+      60,
+      60,
+      60,
+      60,
+      60,
+      60,
+      60,
+      60,
+      60
+    ],
+    "handlerPreviousActiveMsP95": 3,
+    "observerFrameCallbackMsP95": 331.7000000476837,
+    "observerJsonBytes": 232634,
+    "observerJsonKiBps": 33.83599544657891,
+    "recovery": [
+      {
+        "ms": 943,
+        "restored": true
+      },
+      {
+        "ms": 795,
+        "restored": true
+      },
+      {
+        "ms": 803,
+        "restored": true
+      },
+      {
+        "ms": 800,
+        "restored": true
+      },
+      {
+        "ms": 800,
+        "restored": true
+      },
+      {
+        "ms": 803,
+        "restored": true
+      },
+      {
+        "ms": 800,
+        "restored": true
+      },
+      {
+        "ms": 946,
+        "restored": true
+      },
+      {
+        "ms": 799,
+        "restored": true
+      },
+      {
+        "ms": 2155,
+        "restored": true
+      }
+    ],
+    "recoveryP95": 2155,
+    "missingChannelRejected": true,
+    "safeChannelFresh": true
+  }
+}

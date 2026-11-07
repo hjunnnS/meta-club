@@ -1,0 +1,319 @@
+{
+  "browser": "156.0.8078.81",
+  "map": "d5aa590",
+  "run": "2026-11-07T13:46:55.875Z",
+  "result": [
+    {
+      "repeat": 1,
+      "method": "position",
+      "delay": 0,
+      "blocked": true,
+      "measurements": [
+        {
+          "event": "late-entry",
+          "msSinceRequest": 2901,
+          "playing": true,
+          "expectedMs": 7764,
+          "actualMs": 7565,
+          "errorMs": 199,
+          "roundTripMs": 3
+        },
+        {
+          "event": "resume",
+          "msSinceRequest": 2900,
+          "playing": true,
+          "expectedMs": 11315,
+          "actualMs": 11269,
+          "errorMs": 46,
+          "roundTripMs": 5
+        }
+      ]
+    },
+    {
+      "repeat": 1,
+      "method": "position",
+      "delay": 150,
+      "blocked": false,
+      "measurements": [
+        {
+          "event": "late-entry",
+          "msSinceRequest": 2901,
+          "playing": true,
+          "expectedMs": 2455,
+          "actualMs": 2226,
+          "errorMs": 229,
+          "roundTripMs": 153
+        },
+        {
+          "event": "resume",
+          "msSinceRequest": 2902,
+          "playing": true,
+          "expectedMs": 6009,
+          "actualMs": 5865,
+          "errorMs": 144,
+          "roundTripMs": 154
+        }
+      ]
+    },
+    {
+      "repeat": 1,
+      "method": "timestamp",
+      "delay": 0,
+      "blocked": false,
+      "measurements": [
+        {
+          "event": "late-entry",
+          "msSinceRequest": 2901,
+          "playing": true,
+          "expectedMs": 9120,
+          "actualMs": 9064,
+          "errorMs": 56,
+          "roundTripMs": 3
+        },
+        {
+          "event": "resume",
+          "msSinceRequest": 2902,
+          "playing": true,
+          "expectedMs": 673,
+          "actualMs": 532,
+          "errorMs": 141,
+          "roundTripMs": 5
+        }
+      ]
+    },
+    {
+      "repeat": 1,
+      "method": "timestamp",
+      "delay": 150,
+      "blocked": false,
+      "measurements": [
+        {
+          "event": "late-entry",
+          "msSinceRequest": 2901,
+          "playing": true,
+          "expectedMs": 3800,
+          "actualMs": 3746,
+          "errorMs": 54,
+          "roundTripMs": 154
+        },
+        {
+          "event": "resume",
+          "msSinceRequest": 2901,
+          "playing": true,
+          "expectedMs": 7353,
+          "actualMs": 7291,
+          "errorMs": 62,
+          "roundTripMs": 156
+        }
+      ]
+    },
+    {
+      "repeat": 2,
+      "method": "timestamp",
+      "delay": 0,
+      "blocked": true,
+      "measurements": [
+        {
+          "event": "late-entry",
+          "msSinceRequest": 2900,
+          "playing": true,
+          "expectedMs": 10447,
+          "actualMs": 10400,
+          "errorMs": 47,
+          "roundTripMs": 3
+        },
+        {
+          "event": "resume",
+          "msSinceRequest": 2901,
+          "playing": true,
+          "expectedMs": 1999,
+          "actualMs": 1861,
+          "errorMs": 138,
+          "roundTripMs": 5
+        }
+      ]
+    },
+    {
+      "repeat": 2,
+      "method": "timestamp",
+      "delay": 150,
+      "blocked": true,
+      "measurements": [
+        {
+          "event": "late-entry",
+          "msSinceRequest": 2901,
+          "playing": true,
+          "expectedMs": 5106,
+          "actualMs": 5045,
+          "errorMs": 61,
+          "roundTripMs": 154
+        },
+        {
+          "event": "resume",
+          "msSinceRequest": 2901,
+          "playing": true,
+          "expectedMs": 8659,
+          "actualMs": 8585,
+          "errorMs": 74,
+          "roundTripMs": 155
+        }
+      ]
+    },
+    {
+      "repeat": 2,
+      "method": "position",
+      "delay": 0,
+      "blocked": true,
+      "measurements": [
+        {
+          "event": "late-entry",
+          "msSinceRequest": 2901,
+          "playing": true,
+          "expectedMs": 11764,
+          "actualMs": 11711,
+          "errorMs": 53,
+          "roundTripMs": 3
+        },
+        {
+          "event": "resume",
+          "msSinceRequest": 2901,
+          "playing": true,
+          "expectedMs": 3317,
+          "actualMs": 3275,
+          "errorMs": 42,
+          "roundTripMs": 4
+        }
+      ]
+    },
+    {
+      "repeat": 2,
+      "method": "position",
+      "delay": 150,
+      "blocked": true,
+      "measurements": [
+        {
+          "event": "late-entry",
+          "msSinceRequest": 2900,
+          "playing": true,
+          "expectedMs": 6430,
+          "actualMs": 6297,
+          "errorMs": 133,
+          "roundTripMs": 153
+        },
+        {
+          "event": "resume",
+          "msSinceRequest": 2902,
+          "playing": true,
+          "expectedMs": 9983,
+          "actualMs": 9836,
+          "errorMs": 147,
+          "roundTripMs": 156
+        }
+      ]
+    },
+    {
+      "repeat": 3,
+      "method": "position",
+      "delay": 0,
+      "blocked": true,
+      "measurements": [
+        {
+          "event": "late-entry",
+          "msSinceRequest": 2902,
+          "playing": true,
+          "expectedMs": 1073,
+          "actualMs": 927,
+          "errorMs": 146,
+          "roundTripMs": 4
+        },
+        {
+          "event": "resume",
+          "msSinceRequest": 2902,
+          "playing": true,
+          "expectedMs": 4626,
+          "actualMs": 4570,
+          "errorMs": 56,
+          "roundTripMs": 4
+        }
+      ]
+    },
+    {
+      "repeat": 3,
+      "method": "position",
+      "delay": 150,
+      "blocked": true,
+      "measurements": [
+        {
+          "event": "late-entry",
+          "msSinceRequest": 2900,
+          "playing": true,
+          "expectedMs": 7726,
+          "actualMs": 7587,
+          "errorMs": 139,
+          "roundTripMs": 154
+        },
+        {
+          "event": "resume",
+          "msSinceRequest": 2902,
+          "playing": true,
+          "expectedMs": 11279,
+          "actualMs": 11150,
+          "errorMs": 129,
+          "roundTripMs": 153
+        }
+      ]
+    },
+    {
+      "repeat": 3,
+      "method": "timestamp",
+      "delay": 0,
+      "blocked": true,
+      "measurements": [
+        {
+          "event": "late-entry",
+          "msSinceRequest": 2902,
+          "playing": true,
+          "expectedMs": 2381,
+          "actualMs": 2227,
+          "errorMs": 154,
+          "roundTripMs": 4
+        },
+        {
+          "event": "resume",
+          "msSinceRequest": 2901,
+          "playing": true,
+          "expectedMs": 5933,
+          "actualMs": 5877,
+          "errorMs": 56,
+          "roundTripMs": 3
+        }
+      ]
+    },
+    {
+      "repeat": 3,
+      "method": "timestamp",
+      "delay": 150,
+      "blocked": true,
+      "measurements": [
+        {
+          "event": "late-entry",
+          "msSinceRequest": 2900,
+          "playing": true,
+          "expectedMs": 9023,
+          "actualMs": 8967,
+          "errorMs": 56,
+          "roundTripMs": 154
+        },
+        {
+          "event": "resume",
+          "msSinceRequest": 2900,
+          "playing": true,
+          "expectedMs": 574,
+          "actualMs": 401,
+          "errorMs": 173,
+          "roundTripMs": 154
+        }
+      ]
+    }
+  ]
+}
