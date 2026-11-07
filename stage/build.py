@@ -6,7 +6,7 @@ from pathlib import Path
 import struct
 
 ROOT = Path(__file__).resolve().parent
-VERSION = "05a-2.v2"
+VERSION = "05a-2.v3"
 materials = []
 parts = {}
 walkable = []
@@ -56,54 +56,132 @@ def ring(group,mat,inner,outer,t1,t2,lo,hi,n,surface=False):
         a=t1+(t2-t1)*i/n;b=t1+(t2-t1)*(i+1)/n
         slab(group,mat,[polar(inner,a,hi),polar(outer,a,hi),polar(outer,b,hi),polar(inner,b,hi)],lo,surface)
 
-P=math.pi
-slab("Arena floor",floor,[polar(21,i*2*P/96,0) for i in range(96)],-.4,True)
-# South portal leaves a clear approach from the entry gallery.
-ring("Arena shell",wall,20.85,21.15,-P/2+.175,1.5*P-.175,-.4,6.1,88)
-ring("Upper coping",rim,20.65,21.25,-P/2+.175,1.5*P-.175,6.1,6.26,88)
-for i in range(32):
-    t=2*P*i/32
-    if abs(math.sin(t)+1)<.02:continue
-    ring("Shell ribs",metal,20.44,20.84,t-.009,t+.009,0,6.3,1)
-for x in [-3.65,3.35]:
-    box("Entry gallery",wall,x,x+.30,20.4,28.8,-.3,4.35)
-for z in [21.4,24.7,28.0]:
-    box("Portal frames",metal,-3.66,3.66,z,z+.26,4.14,4.55)
-    for x in [-3.35,3.13]:box("Portal frames",rim,x,x+.22,z,z+.26,0,4.14)
-box("Entry floor",floor,-3.65,3.65,19.9,29,-.4,0,True)
-for x in [-2.92,2.84]:
-    box("Entry guide",teal,x,x+.08,10,28.8,.001,.012)
-ring("Floor band",rim,8.8,8.86,0,2*P,.001,.012,96)
-ring("Floor band",rim,16.5,16.56,0,2*P,.001,.012,96)
-slab("Central stage",deck,[polar(4.9,i*2*P/64,.8) for i in range(64)],0,True)
-ring("Stage edge",teal,4.84,4.91,0,2*P,.79,.814,64)
-rect("Stage access",deck,-1.7,1.7,4.52,9.5,.8,0,-.04,True)
-# Two sloped curbs and stripes identify the right-hand balcony approach.
-rect("Balcony ramp",deck,11.3,14.7,0,15,4,0,-.06,True)
-for x in [11.3,14.54]:
-    rect("Ramp curb",rim,x,x+.16,0,15,4.16,.16,0)
-    rect("Ramp rail",amber,x,x+.09,0,15,5.03,1.03,0)
-ring("North balcony",deck,10.75,17.0,0,P,3.68,4,64,True)
-# The inner edge keeps its 1 m handrail, with open sightlines between slim posts.
-inner = 10.75
-ring("Balcony rail",metal,inner,inner+.12,0,P,4,4.09,64)
-ring("Rail cap",amber,inner-.025,inner+.145,0,P,4.95,5,64)
-for i in range(16):
-    # Stagger posts so the central viewpoint looks through the middle of a bay.
-    angle=(i+.5)*P/16
-    ring("Inner posts",metal,inner,inner+.12,angle-.004,angle+.004,4.09,4.95,1)
-ring("Balcony rail",metal,16.86,16.98,0,P,4,4.95,64)
-ring("Rail cap",amber,16.835,17.005,0,P,4.95,5,64)
-for t in [.18,.52,.86,1.2,1.55,1.9,2.24,2.58,2.92]:
-    x,_,z=polar(15,t,0)
-    box("Balcony columns",metal,x-.23,x+.23,z-.23,z+.23,0,3.68)
-# Stop rails at the balcony ends, leaving the eastern ramp opening clear.
-for a,b in [(10.75,11.3),(14.7,17),(-17,-10.75)]:
-    box("End rail",metal,a,b,-.12,0,4,5)
-# Camera path carries ground elevation. View targets are independent of travel direction.
-route=[(0,0,27),(0,0,19),(0,0,9.5),(0,.8,4.52),(0,.8,0),
-       (0,.8,4.52),(0,0,9.5),(5,0,13),(11,0,15.5),(13,0,15.5),
-       (13,0,15),(13,4,0)]+[polar(13,i*P/32,4) for i in range(1,17)]
+P = math.pi
+violet = material("Ultraviolet guide", (.54, .08, .98))
+ice = material("Glacier guide", (.03, .75, 1.0))
+pink = material("Fuchsia guide", (1.0, .10, .54))
+indigo = material("Dance floor · indigo", (.07,.065,.17))
+for index in (violet, ice, pink):
+    materials[index]["emissiveFactor"] = [v*.5 for v in materials[index]["pbrMetallicRoughness"]["baseColorFactor"][:3]]
+
+def octagon(name, mat, x, z, width, depth, cut, bottom, top, surface=False):
+    a,b=width/2,depth/2
+    outline=[(-a,-b+cut),(-a,b-cut),(-a+cut,b),(a-cut,b),(a,b-cut),(a,-b+cut),(a-cut,-b),(-a+cut,-b)]
+    slab(name,mat,[(x+dx,top,z+dz) for dx,dz in outline],bottom,surface)
+
+def beam(name,mat,a,b,radius):
+    delta=[v-u for u,v in zip(a,b)]
+    length=math.sqrt(sum(v*v for v in delta))
+    unit=[v/length for v in delta]
+    def cross(u,v):
+        return (u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0])
+    n=cross(unit,(0,1,0) if abs(unit[1])<.9 else (1,0,0))
+    norm=math.sqrt(sum(v*v for v in n))
+    n=[v/norm for v in n]; m=cross(unit,n)
+    def circle(p):
+        return [tuple(v+radius*(n[k]*math.cos(j*P/4)+m[k]*math.sin(j*P/4)) for k,v in enumerate(p)) for j in range(8)]
+    low,high=circle(a),circle(b)
+    for i in range(8):
+        j=(i+1)%8
+        tri(name,mat,low[i],low[j],high[j]);tri(name,mat,low[i],high[j],high[i])
+        tri(name,mat,a,low[j],low[i]);tri(name,mat,b,high[i],high[j])
+
+# Cutaway envelope: open front and low side walls preserve the reference sightline.
+octagon("Arena floor",floor,0,0,45,43,4,-.65,0,True)
+box("Rear wall",wall,-19,19,-21.5,-21.15,0,6)
+for side in [-1,1]:
+    x=side*22.2
+    box("Side wall",metal,x-.18,x+.18,-16,16,0,1.05)
+    box("Side wall coping",violet,x-.2,x+.2,-16,16,1.05,1.12)
+box("Entry floor",deck,-4,4,20.5,27,-.64,0,True)
+for x in [-3.85,3.85]:
+    box("Entry parapet",metal,x-.14,x+.14,19,26.9,.01,.68)
+    box("Entry guide",ice,x-.18,x+.18,19,26.9,.68,.74)
+for z in (22.0,23,24,25,26):
+    box("Entry threshold",ice,-3.45,3.45,z,z+.09,.002,.012)
+
+# Audience circle remains at grade. The performer platform is at the north end.
+slab("Dance floor",indigo,[polar(8.5,i*2*P/96,.018) for i in range(96)],.002,True)
+for r,mat,w in [(8.29,violet,.17),(8.53,ice,.055),(9.1,rim,.045)]:
+    ring("Dance floor perimeter",mat,r,r+w,0,2*P,.018,.034,96)
+for i in range(48):
+    angle=i*2*P/48
+    ring("Floor markers",violet if i%4==0 else rim,8.63,8.89,angle-.007,angle+.007,.002,.014,1)
+# Short lines in the floor lead towards the main stage.
+for x in (-3.0,3.0):
+    box("Processional lane",ice,x-.06,x+.06,8.7,20.7,.003,.021)
+
+octagon("DJ platform",deck,0,-14.2,15,8.4,1.15,-.03,1.35,True)
+rect("DJ access",deck,-2.0,2.0,-10.05,-7.6,1.35,0,-.01,True)
+for x1,x2 in [(-6.25,-2.2),(2.2,6.25)]:
+    box("Stage lip",pink,x1,x2,-10.13,-10.02,1.18,1.31)
+octagon("DJ booth",metal,0,-15.75,6.9,1.65,.45,1.35,2.45)
+box("Booth trim",ice,-3,3,-14.94,-14.90,2.32,2.43)
+box("Stage backdrop",indigo,-6.8,6.8,-18.8,-18.45,1.35,8.0)
+for side in (-1,1):
+    # Architectural fan frames, visible from the entry above the booth.
+    for j,(reach,height) in enumerate([(2.3,7.7),(4.7,7.25),(6.3,6.25)]):
+        beam("Stage fan", (pink,violet,ice)[j],(side*.28,2.48,-18.24),(side*reach,height,-18.24),.13)
+    for x,h in [(7.7,6.7),(9.1,5.65)]:
+        beam("Stage pylons",metal,(side*x,0,-15),(side*(x+.65),h,-17),.35)
+        beam("Pylon trim",violet,(side*x,1.1,-14.65),(side*(x+.65),h,-16.65),.09)
+
+for side, label in [(-1,"West"),(1,"East")]:
+    x=side*14.6
+    octagon(label+" dance zone",deck,x,6,10.2,11,1.6,0,.045,True)
+    for dz in [-3.65,-1.85,0,1.85,3.65]:
+        box(label+" floor pattern",indigo,x-3.75,x+3.75,6+dz-.8,6+dz+.8,.046,.055)
+    # Distinct edges along the outside, leaving the centre-side entrance clear.
+    for z in [1.7,10.3]:
+        box(label+" threshold",violet,x-3.65,x+3.65,z,z+.13,.055,.07)
+    box(label+" zone edge",violet,x+side*4.65-.08,x+side*4.65+.08,2.6,9.4,.05,.09)
+    # Approach is behind each side zone. A broad opening connects to its upper deck.
+    rect(label+" deck ramp",deck,x-1.55,x+1.55,-8,0,4,0,-.01,True)
+    for edge in [x-1.5,x+1.5]:
+        beam(label+" ramp rail",violet,(edge,1,0),(edge,5,-8),.055)
+        for i in range(5):
+            z=-2*i;y=i+.04
+            box(label+" ramp posts",metal,edge-.055,edge+.055,z-.055,z+.055,y,y+.95)
+    octagon(label+" upper deck",deck,x,-13.8,10.8,11.8,.8,3.64,4,True)
+    inner=x-side*5.32;outer=x+side*5.32
+    for edge in (inner,outer):
+        beam(label+" deck handrail",ice,(edge,5,-18.9),(edge,5,-8.75),.06)
+        for z in [-18.9,-16.5,-14.2,-11.8,-8.75]:
+            box(label+" posts",metal,edge-.06,edge+.06,z-.06,z+.06,4,5)
+    for xc in [x-4,x+4]:
+        for z in [-17.4,-9.4]:box(label+" supports",metal,xc-.21,xc+.21,z-.21,z+.21,0,3.64)
+    for lo,hi in [(x-4.5,x-1.65),(x+1.65,x+4.5)]:
+        beam(label+" deck handrail",ice,(lo,5,-8),(hi,5,-8),.06)
+    beam(label+" deck handrail",ice,(x-4.5,5,-19.6),(x+4.5,5,-19.6),.06)
+
+# Frame the side rooms on their outer edges; their inner thresholds stay open.
+for side in (-1,1):
+    x=side*19.6
+    for z in [2.6,5.0,7.4,9.8]:
+        box("Side room fins",metal,x-.20,x+.20,z-.20,z+.20,0,2.2)
+    beam("Side room header",violet,(x,2.2,2.6),(x,2.2,9.8),.13)
+    box("Side room parapet",wall,x-.12,x+.12,2.6,9.8,.05,.82)
+    for z in [2.6,9.8]:
+        beam("Side room return",rim,(x,2.2,z),(x-side*2.4,1.45,z),.13)
+    for r in [9.5,10.1]:
+        start=-.9 if side==1 else P-.9
+        ring("Arena apron",violet,r,r+.12,start,start+1.8,.002,.028,32)
+    # The two approach walls converge on the audience floor.
+    beam("Lobby wings",metal,(side*3.9,1.0,20.7),(side*8.4,1.3,15.5),.27)
+    beam("Lobby wing trim",ice,(side*3.9,1.25,20.7),(side*8.4,1.55,15.5),.08)
+    for z in [-18,-15,-12,-9]:
+        box("Upper deck fascia",violet,side*14.6-4.5,side*14.6+4.5,z,z+.07,4.002,4.018)
+# Proscenium brackets distinguish the elevated stage from the two audience decks.
+for side in (-1,1):
+    beam("Stage surround",metal,(side*7.4,1.36,-17.85),(side*7.4,7.5,-17.85),.26)
+    beam("Stage surround",metal,(side*7.4,7.5,-17.85),(side*4.8,8.55,-17.85),.26)
+    beam("Stage surround trim",ice,(side*7.4,7.55,-17.52),(side*4.8,8.6,-17.52),.07)
+beam("Stage surround",metal,(-4.8,8.55,-17.85),(4.8,8.55,-17.85),.26)
+
+route=[(0,0,25),(0,0,12),(0,.018,0),(0,.018,-7.6),(0,1.35,-10.05),(0,1.35,-13),
+       (0,1.35,-10.05),(0,.018,-7.6),(0,.018,0),(-14.6,.045,6),(0,.018,0),
+       (14.6,.045,6),(14.6,0,0),(14.6,4,-8),(14.6,4,-13),(10.1,4,-13)]
+stops=dict(entry=0,floor=2,stage=5,west=9,east=11,balcony=15)
 def ground(x,z):
     top=-999
     for (ax,ay,az),(bx,by,bz),(cx,cy,cz) in walkable:
@@ -113,7 +191,7 @@ def ground(x,z):
         v=((cz-az)*(x-cx)+(ax-cx)*(z-cz))/det
         if min(u,v,1-u-v)>=-1e-6:top=max(top,u*ay+v*by+(1-u-v)*cy)
     return top
-# Disk and access ramp overlap at the lip. Allow its small transition at z=4.9.
+# Allow small trim and threshold transitions.
 for a,b in zip(route,route[1:]):
     for j in range(101):
         x,y,z=[a[i]+(b[i]-a[i])*j/100 for i in range(3)]
@@ -131,7 +209,7 @@ for group in dict.fromkeys(g for g,m in parts):
     for (g,m),(pos,norm) in parts.items():
         if g==group: primitives.append(dict(attributes=dict(POSITION=attr(pos),NORMAL=attr(norm)),material=m))
     meshes.append(dict(name=group,primitives=primitives));nodes.append(dict(name=group,mesh=len(meshes)-1))
-doc=dict(asset=dict(version="2.0",generator="meta-club "+VERSION),scene=0,scenes=[dict(nodes=list(range(len(nodes))))],nodes=nodes,meshes=meshes,materials=materials,buffers=[dict(byteLength=len(buf))],bufferViews=views,accessors=access,extras=dict(version=VERSION,unit="metre",reviewRoute=route,eyeHeight=1.65,stageIndex=4))
+doc=dict(asset=dict(version="2.0",generator="meta-club "+VERSION),scene=0,scenes=[dict(nodes=list(range(len(nodes))))],nodes=nodes,meshes=meshes,materials=materials,buffers=[dict(byteLength=len(buf))],bufferViews=views,accessors=access,extras=dict(version=VERSION,unit="metre",reviewRoute=route,eyeHeight=1.65,stageIndex=stops["stage"],stops=stops))
 js=json.dumps(doc,separators=(',',':')).encode();js+=b' '*((-len(js))%4)
 glb=struct.pack('<4sII',b'glTF',2,28+len(js)+len(buf))+struct.pack('<I4s',len(js),b'JSON')+js+struct.pack('<I4s',len(buf),b'BIN\0')+buf
 (ROOT/'edm-empty.glb').write_bytes(glb)
