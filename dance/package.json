@@ -1,0 +1,7 @@
+{
+  "name":"meta-club-10a-1",
+  "private":true,
+  "type":"module",
+  "scripts":{"preview":"node serve.js","bench":"node benchmark.js"},
+  "dependencies":{"babylonjs":"9.35.0","babylonjs-loaders":"9.35.0","playcanvas":"2.23.3","playwright-core":"1.65.0"}
+}
