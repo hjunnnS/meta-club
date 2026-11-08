@@ -1,5 +1,6 @@
 const main = document.querySelector('main'),
-  form = document.querySelector('form');
+  form = document.querySelector('form'),
+  refreshStatus = document.getElementById('refresh-status');
 function mark(step) {
   try {
     const key = 'edm-first-visit',
@@ -65,26 +66,33 @@ function clubCard(club, testLobby) {
 }
 async function load() {
   try {
-    const res = await fetch('/api/lobby');
+    const res = await fetch('/api/lobby', { signal: AbortSignal.timeout(10000) });
     if (!res.ok) throw Error();
     const { clubs } = await res.json();
     const listing = JSON.stringify(clubs);
-    if (listing === lastListing) return;
+    if (listing === lastListing) {
+      refreshStatus.textContent = '';
+      return;
+    }
     const testLobby = clubs.some(club => club.review);
     document.body.classList.toggle('test-lobby', testLobby);
     const focus = main.contains(document.activeElement) ? document.activeElement.href : null;
     main.replaceChildren(...clubs.map(club => clubCard(club, testLobby)));
     if (focus) [...main.querySelectorAll('a')].find(a => a.href === focus)?.focus({preventScroll:true});
     lastListing = listing;
+    refreshStatus.textContent = '';
   } catch {
-    lastListing = undefined;
-    main.textContent = '로비 정보를 불러오지 못했습니다.';
+    const message = lastListing === undefined
+      ? '클럽 목록을 불러오지 못했습니다. 잠시 후 자동으로 다시 시도합니다.'
+      : '접속 인원 갱신이 지연되고 있습니다. 마지막으로 확인한 인원을 표시합니다.';
+    if (refreshStatus.textContent !== message) refreshStatus.textContent = message;
   }
 }
-await load();
-setInterval(() => {
-  if (!document.hidden) load();
-}, 4000);
+async function refreshLobby() {
+  if (!document.hidden) await load();
+  setTimeout(refreshLobby, 4000);
+}
+refreshLobby();
 const session = await (await fetch('/api/session')).json();
 if (session.status === 'authenticated') {
   document.getElementById('signin').hidden = true;
