@@ -36,10 +36,11 @@ async function run(capacity,rep){
  await p.goto(url);await p.waitForFunction(()=>window.trial||window.failure,null,{timeout:60000});
  await p.addScriptTag({path:path.join(root,'../node_modules/colyseus.js/dist/colyseus.js')});
  await p.addScriptTag({path:path.join(root,'client.js')});
- await p.evaluate(data=>{
-   const audio=document.createElement('audio');audio.id='soakMusic';audio.loop=true;audio.src='data:audio/wav;base64,'+data;
+ await p.addScriptTag({path:path.join(root,'loop-player.js')});
+ await p.evaluate(async data=>{
+   const audio=window.loopPlayer=await window.createLoopPlayer(data);
    const button=document.createElement('button');button.textContent='시험 음악 시작';button.onclick=()=>audio.play();
-   document.body.append(audio,button);
+   document.body.append(button);
  },wav.toString('base64'));
  await p.getByText('시험 음악 시작',{exact:true}).click();
  await p.evaluate(([cap,w,d])=>window.startSoak(cap,w,d),[capacity,warm,duration]);

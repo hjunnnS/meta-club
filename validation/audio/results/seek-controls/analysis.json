@@ -1,0 +1,884 @@
+{
+  "capture": "macOS process output tap",
+  "seconds": 240,
+  "partial": false,
+  "calibration": {
+    "first": {
+      "wall": 1794095595348,
+      "commandMs": 450.599853515625,
+      "measuredMs": 440,
+      "offsetMs": 70.297119140625
+    },
+    "last": {
+      "wall": 1794095841663.7,
+      "commandMs": 451,
+      "measuredMs": 440,
+      "offsetMs": 69.197021484375
+    }
+  },
+  "groups": {
+    "wrap": {
+      "clusters": 20,
+      "isolated": 14,
+      "isolatedWithGap": 14
+    },
+    "correction": {
+      "clusters": 36,
+      "isolated": 30,
+      "isolatedWithGap": 0
+    }
+  },
+  "measuredCaptureFaults": 0,
+  "excludedGaps": 0,
+  "anchors": 1,
+  "captureDiscontinuities": [],
+  "events": {
+    "wrap": {
+      "total": 20,
+      "withGap": 20
+    },
+    "correction": {
+      "total": 38,
+      "withGap": 2
+    }
+  },
+  "gaps": [
+    {
+      "wall": 1794095607883.897,
+      "nearby": [
+        "wrap"
+      ],
+      "atSec": 7.496322242764888,
+      "ms": 85,
+      "nearest": "wrap",
+      "deltaMs": -75.444091796875,
+      "associated": true
+    },
+    {
+      "wall": 1794095619798.897,
+      "nearby": [
+        "wrap"
+      ],
+      "atSec": 19.411322242764886,
+      "ms": 70,
+      "nearest": "wrap",
+      "deltaMs": -60.291015625,
+      "associated": true
+    },
+    {
+      "wall": 1794095631883.897,
+      "nearby": [
+        "wrap"
+      ],
+      "atSec": 31.496322242764887,
+      "ms": 60,
+      "nearest": "wrap",
+      "deltaMs": -50.3369140625,
+      "associated": true
+    },
+    {
+      "wall": 1794095643838.897,
+      "nearby": [
+        "wrap"
+      ],
+      "atSec": 43.45132224276489,
+      "ms": 75,
+      "nearest": "wrap",
+      "deltaMs": -69.483642578125,
+      "associated": true
+    },
+    {
+      "wall": 1794095655893.897,
+      "nearby": [
+        "wrap"
+      ],
+      "atSec": 55.50632224276489,
+      "ms": 75,
+      "nearest": "wrap",
+      "deltaMs": -65.2294921875,
+      "associated": true
+    },
+    {
+      "wall": 1794095667778.897,
+      "nearby": [
+        "wrap"
+      ],
+      "atSec": 67.39132224276489,
+      "ms": 70,
+      "nearest": "wrap",
+      "deltaMs": -63.57666015625,
+      "associated": true
+    },
+    {
+      "wall": 1794095679883.897,
+      "nearby": [
+        "wrap",
+        "correction"
+      ],
+      "atSec": 79.49632224276489,
+      "ms": 85,
+      "nearest": "wrap",
+      "deltaMs": -75.222412109375,
+      "associated": true
+    },
+    {
+      "wall": 1794095691808.897,
+      "nearby": [
+        "wrap"
+      ],
+      "atSec": 91.42132224276489,
+      "ms": 60,
+      "nearest": "wrap",
+      "deltaMs": -50.16943359375,
+      "associated": true
+    },
+    {
+      "wall": 1794095703888.897,
+      "nearby": [
+        "wrap"
+      ],
+      "atSec": 103.50132224276489,
+      "ms": 55,
+      "nearest": "wrap",
+      "deltaMs": -45.215576171875,
+      "associated": true
+    },
+    {
+      "wall": 1794095715838.897,
+      "nearby": [
+        "wrap"
+      ],
+      "atSec": 115.45132224276489,
+      "ms": 75,
+      "nearest": "wrap",
+      "deltaMs": -61.761962890625,
+      "associated": true
+    },
+    {
+      "wall": 1794095727883.897,
+      "nearby": [
+        "wrap"
+      ],
+      "atSec": 127.49632224276489,
+      "ms": 60,
+      "nearest": "wrap",
+      "deltaMs": -50.00830078125,
+      "associated": true
+    },
+    {
+      "wall": 1794095739838.897,
+      "nearby": [
+        "wrap"
+      ],
+      "atSec": 139.4513222427649,
+      "ms": 75,
+      "nearest": "wrap",
+      "deltaMs": -61.7548828125,
+      "associated": true
+    },
+    {
+      "wall": 1794095751883.897,
+      "nearby": [
+        "wrap",
+        "correction"
+      ],
+      "atSec": 151.4963222427649,
+      "ms": 85,
+      "nearest": "wrap",
+      "deltaMs": -75.0009765625,
+      "associated": true
+    },
+    {
+      "wall": 1794095763803.897,
+      "nearby": [
+        "wrap"
+      ],
+      "atSec": 163.4163222427649,
+      "ms": 65,
+      "nearest": "wrap",
+      "deltaMs": -54.947998046875,
+      "associated": true
+    },
+    {
+      "wall": 1794095775878.897,
+      "nearby": [
+        "wrap"
+      ],
+      "atSec": 175.4913222427649,
+      "ms": 65,
+      "nearest": "wrap",
+      "deltaMs": -54.89404296875,
+      "associated": true
+    },
+    {
+      "wall": 1794095787838.897,
+      "nearby": [
+        "wrap"
+      ],
+      "atSec": 187.4513222427649,
+      "ms": 75,
+      "nearest": "wrap",
+      "deltaMs": -61.640380859375,
+      "associated": true
+    },
+    {
+      "wall": 1794095799893.897,
+      "nearby": [
+        "wrap"
+      ],
+      "atSec": 199.5063222427649,
+      "ms": 95,
+      "nearest": "wrap",
+      "deltaMs": -81.58642578125,
+      "associated": true
+    },
+    {
+      "wall": 1794095811803.897,
+      "nearby": [
+        "wrap"
+      ],
+      "atSec": 211.4163222427649,
+      "ms": 70,
+      "nearest": "wrap",
+      "deltaMs": -54.133544921875,
+      "associated": true
+    },
+    {
+      "wall": 1794095823888.897,
+      "nearby": [
+        "wrap"
+      ],
+      "atSec": 223.5013222427649,
+      "ms": 80,
+      "nearest": "wrap",
+      "deltaMs": -69.179443359375,
+      "associated": true
+    },
+    {
+      "wall": 1794095835783.897,
+      "nearby": [
+        "wrap"
+      ],
+      "atSec": 235.3963222427649,
+      "ms": 65,
+      "nearest": "wrap",
+      "deltaMs": -58.12646484375,
+      "associated": true
+    }
+  ],
+  "covered": [
+    {
+      "kind": "wrap",
+      "atSec": 7.571800048828125,
+      "gap": true
+    },
+    {
+      "kind": "correction",
+      "atSec": 7.87310009765625,
+      "gap": false
+    },
+    {
+      "kind": "correction",
+      "atSec": 10.55760009765625,
+      "gap": false
+    },
+    {
+      "kind": "wrap",
+      "atSec": 19.4717001953125,
+      "gap": true
+    },
+    {
+      "kind": "correction",
+      "atSec": 22.531000244140625,
+      "gap": false
+    },
+    {
+      "kind": "correction",
+      "atSec": 22.773800048828125,
+      "gap": false
+    },
+    {
+      "kind": "wrap",
+      "atSec": 31.546800048828125,
+      "gap": true
+    },
+    {
+      "kind": "correction",
+      "atSec": 34.6152001953125,
+      "gap": false
+    },
+    {
+      "kind": "wrap",
+      "atSec": 43.52100024414062,
+      "gap": true
+    },
+    {
+      "kind": "correction",
+      "atSec": 46.5792001953125,
+      "gap": false
+    },
+    {
+      "kind": "correction",
+      "atSec": 46.82290014648437,
+      "gap": false
+    },
+    {
+      "kind": "wrap",
+      "atSec": 55.57180004882812,
+      "gap": true
+    },
+    {
+      "kind": "correction",
+      "atSec": 55.88110009765625,
+      "gap": false
+    },
+    {
+      "kind": "correction",
+      "atSec": 58.54360009765625,
+      "gap": false
+    },
+    {
+      "kind": "wrap",
+      "atSec": 67.4552001953125,
+      "gap": true
+    },
+    {
+      "kind": "correction",
+      "atSec": 70.51980004882813,
+      "gap": false
+    },
+    {
+      "kind": "correction",
+      "atSec": 70.58110009765625,
+      "gap": false
+    },
+    {
+      "kind": "wrap",
+      "atSec": 79.57190014648438,
+      "gap": true
+    },
+    {
+      "kind": "correction",
+      "atSec": 79.67290014648438,
+      "gap": true
+    },
+    {
+      "kind": "correction",
+      "atSec": 82.55660009765624,
+      "gap": false
+    },
+    {
+      "kind": "wrap",
+      "atSec": 91.47190014648437,
+      "gap": true
+    },
+    {
+      "kind": "correction",
+      "atSec": 94.53130004882813,
+      "gap": false
+    },
+    {
+      "kind": "correction",
+      "atSec": 94.63950024414062,
+      "gap": false
+    },
+    {
+      "kind": "wrap",
+      "atSec": 103.54700024414062,
+      "gap": true
+    },
+    {
+      "kind": "correction",
+      "atSec": 106.6147001953125,
+      "gap": false
+    },
+    {
+      "kind": "wrap",
+      "atSec": 115.51360009765625,
+      "gap": true
+    },
+    {
+      "kind": "correction",
+      "atSec": 118.57900024414063,
+      "gap": false
+    },
+    {
+      "kind": "correction",
+      "atSec": 118.73960009765625,
+      "gap": false
+    },
+    {
+      "kind": "correction",
+      "atSec": 120.01060009765625,
+      "gap": false
+    },
+    {
+      "kind": "correction",
+      "atSec": 120.0107001953125,
+      "gap": false
+    },
+    {
+      "kind": "wrap",
+      "atSec": 127.54690014648438,
+      "gap": true
+    },
+    {
+      "kind": "correction",
+      "atSec": 130.61530004882812,
+      "gap": false
+    },
+    {
+      "kind": "wrap",
+      "atSec": 139.5137001953125,
+      "gap": true
+    },
+    {
+      "kind": "correction",
+      "atSec": 142.58000024414062,
+      "gap": false
+    },
+    {
+      "kind": "correction",
+      "atSec": 142.58140014648438,
+      "gap": false
+    },
+    {
+      "kind": "wrap",
+      "atSec": 151.5720002441406,
+      "gap": true
+    },
+    {
+      "kind": "correction",
+      "atSec": 151.6979001464844,
+      "gap": true
+    },
+    {
+      "kind": "correction",
+      "atSec": 154.55600024414062,
+      "gap": false
+    },
+    {
+      "kind": "wrap",
+      "atSec": 163.47200024414062,
+      "gap": true
+    },
+    {
+      "kind": "correction",
+      "atSec": 166.53180004882813,
+      "gap": false
+    },
+    {
+      "kind": "correction",
+      "atSec": 166.64840014648436,
+      "gap": false
+    },
+    {
+      "kind": "wrap",
+      "atSec": 175.54700024414063,
+      "gap": true
+    },
+    {
+      "kind": "correction",
+      "atSec": 178.6149001464844,
+      "gap": false
+    },
+    {
+      "kind": "wrap",
+      "atSec": 187.51380004882813,
+      "gap": true
+    },
+    {
+      "kind": "correction",
+      "atSec": 190.58000024414062,
+      "gap": false
+    },
+    {
+      "kind": "correction",
+      "atSec": 190.72310009765624,
+      "gap": false
+    },
+    {
+      "kind": "wrap",
+      "atSec": 199.58880004882812,
+      "gap": true
+    },
+    {
+      "kind": "correction",
+      "atSec": 199.88980004882814,
+      "gap": false
+    },
+    {
+      "kind": "correction",
+      "atSec": 202.55690014648437,
+      "gap": false
+    },
+    {
+      "kind": "wrap",
+      "atSec": 211.47140014648437,
+      "gap": true
+    },
+    {
+      "kind": "correction",
+      "atSec": 214.5317001953125,
+      "gap": false
+    },
+    {
+      "kind": "correction",
+      "atSec": 214.7895002441406,
+      "gap": false
+    },
+    {
+      "kind": "wrap",
+      "atSec": 223.57150024414062,
+      "gap": true
+    },
+    {
+      "kind": "correction",
+      "atSec": 223.88150024414062,
+      "gap": false
+    },
+    {
+      "kind": "correction",
+      "atSec": 226.54300024414061,
+      "gap": false
+    },
+    {
+      "kind": "wrap",
+      "atSec": 235.45550024414064,
+      "gap": true
+    },
+    {
+      "kind": "correction",
+      "atSec": 238.51950024414063,
+      "gap": false
+    },
+    {
+      "kind": "correction",
+      "atSec": 238.56560009765624,
+      "gap": false
+    }
+  ],
+  "load": {
+    "capacity": 60,
+    "actors": 60,
+    "unexpected": 0,
+    "badRoster": 0,
+    "visible": [
+      {
+        "view": "floor",
+        "avatars": 60,
+        "ai": 5
+      },
+      {
+        "view": "deck",
+        "avatars": 60,
+        "ai": 5
+      }
+    ]
+  },
+  "analysisWindowMs": 5,
+  "minimumSilenceMs": 10,
+  "peakThreshold": 0.000008,
+  "probes": [
+    {
+      "kind": "probe-sham",
+      "wall": 1794095603865.2,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 500
+    },
+    {
+      "kind": "probe-seek",
+      "delta": 0.15,
+      "wall": 1794095610874.9,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 405
+    },
+    {
+      "kind": "probe-sham",
+      "wall": 1794095615768.7,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 500
+    },
+    {
+      "kind": "probe-seek",
+      "delta": -0.15,
+      "wall": 1794095622848.3,
+      "additionalCommands": 1,
+      "gap": false,
+      "beatIntervalMs": 195
+    },
+    {
+      "kind": "probe-sham",
+      "wall": 1794095627853.0999,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 500
+    },
+    {
+      "kind": "probe-seek",
+      "delta": 0.15,
+      "wall": 1794095634932.5,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 390
+    },
+    {
+      "kind": "probe-sham",
+      "wall": 1794095639816.8,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 500
+    },
+    {
+      "kind": "probe-seek",
+      "delta": -0.15,
+      "wall": 1794095646896.4,
+      "additionalCommands": 1,
+      "gap": false,
+      "beatIntervalMs": 195
+    },
+    {
+      "kind": "probe-sham",
+      "wall": 1794095651866.9,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 500
+    },
+    {
+      "kind": "probe-seek",
+      "delta": 0.15,
+      "wall": 1794095658860.9,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 395
+    },
+    {
+      "kind": "probe-sham",
+      "wall": 1794095663757,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 500
+    },
+    {
+      "kind": "probe-seek",
+      "delta": -0.15,
+      "wall": 1794095670837.0999,
+      "additionalCommands": 1,
+      "gap": false,
+      "beatIntervalMs": 530
+    },
+    {
+      "kind": "probe-sham",
+      "wall": 1794095675865.2,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 500
+    },
+    {
+      "kind": "probe-seek",
+      "delta": 0.15,
+      "wall": 1794095682873.9,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 405
+    },
+    {
+      "kind": "probe-sham",
+      "wall": 1794095687780.7,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 500
+    },
+    {
+      "kind": "probe-seek",
+      "delta": -0.15,
+      "wall": 1794095694848.5999,
+      "additionalCommands": 1,
+      "gap": false,
+      "beatIntervalMs": 510
+    },
+    {
+      "kind": "probe-sham",
+      "wall": 1794095699865.3,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 500
+    },
+    {
+      "kind": "probe-seek",
+      "delta": 0.15,
+      "wall": 1794095706932,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 390
+    },
+    {
+      "kind": "probe-sham",
+      "wall": 1794095711816.3,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 500
+    },
+    {
+      "kind": "probe-seek",
+      "delta": -0.15,
+      "wall": 1794095718896.3,
+      "additionalCommands": 1,
+      "gap": false,
+      "beatIntervalMs": 195
+    },
+    {
+      "kind": "probe-sham",
+      "wall": 1794095723865.2,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 500
+    },
+    {
+      "kind": "probe-seek",
+      "delta": 0.15,
+      "wall": 1794095730932.5999,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 390
+    },
+    {
+      "kind": "probe-sham",
+      "wall": 1794095735816.7,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 500
+    },
+    {
+      "kind": "probe-seek",
+      "delta": -0.15,
+      "wall": 1794095742897.3,
+      "additionalCommands": 1,
+      "gap": false,
+      "beatIntervalMs": 465
+    },
+    {
+      "kind": "probe-sham",
+      "wall": 1794095747866,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 500
+    },
+    {
+      "kind": "probe-seek",
+      "delta": 0.15,
+      "wall": 1794095754873.3,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 405
+    },
+    {
+      "kind": "probe-sham",
+      "wall": 1794095759780.5999,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 500
+    },
+    {
+      "kind": "probe-seek",
+      "delta": -0.15,
+      "wall": 1794095766849.0999,
+      "additionalCommands": 1,
+      "gap": false,
+      "beatIntervalMs": 500
+    },
+    {
+      "kind": "probe-sham",
+      "wall": 1794095771853.2,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 500
+    },
+    {
+      "kind": "probe-seek",
+      "delta": 0.15,
+      "wall": 1794095778932.2,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 390
+    },
+    {
+      "kind": "probe-sham",
+      "wall": 1794095783816.7,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 500
+    },
+    {
+      "kind": "probe-seek",
+      "delta": -0.15,
+      "wall": 1794095790897.3,
+      "additionalCommands": 1,
+      "gap": false,
+      "beatIntervalMs": 195
+    },
+    {
+      "kind": "probe-sham",
+      "wall": 1794095795864.7,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 500
+    },
+    {
+      "kind": "probe-seek",
+      "delta": 0.15,
+      "wall": 1794095802874.2,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 405
+    },
+    {
+      "kind": "probe-sham",
+      "wall": 1794095807780.8,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 500
+    },
+    {
+      "kind": "probe-seek",
+      "delta": -0.15,
+      "wall": 1794095814849,
+      "additionalCommands": 1,
+      "gap": false,
+      "beatIntervalMs": 195
+    },
+    {
+      "kind": "probe-sham",
+      "wall": 1794095819865.3,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 500
+    },
+    {
+      "kind": "probe-seek",
+      "delta": 0.15,
+      "wall": 1794095826860.3,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 400
+    },
+    {
+      "kind": "probe-sham",
+      "wall": 1794095831757.2,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 500
+    },
+    {
+      "kind": "probe-seek",
+      "delta": -0.15,
+      "wall": 1794095838836.8,
+      "additionalCommands": 1,
+      "gap": false,
+      "beatIntervalMs": 545
+    }
+  ]
+}

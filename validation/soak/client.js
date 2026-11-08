@@ -9,7 +9,7 @@ window.startSoak = async function(capacity, warmMs, durationMs) {
   let roomId, clockOffset, epoch, lastBeat=0, musicStarted=false, current=null;
   let finished=false, unexpected=0, contextLoss=0, monitoring=false, bytes=0, inputBytes=0;
   let nextSeq=0, syncAt=0, lastRecovery=null, lateError=null, probeAt=0;
-  const music=document.querySelector('#soakMusic');
+  const music=window.loopPlayer ?? document.querySelector('#soakMusic');
   const loopError=(a,b)=>Math.abs(((a-b+18000)%12000+12000)%12000-6000);
   const serverTime=()=>Date.now()+clockOffset;
   const danceMs=()=>serverTime()-epoch;
@@ -83,7 +83,9 @@ window.startSoak = async function(capacity, warmMs, durationMs) {
     }
   },150);
   // Playback has been unlocked by an actual click. Seek to the server epoch.
-  await music.play();music.currentTime=(danceMs()%12000)/1000;
+  await music.play();
+  const entry=(danceMs()%12000)/1000;
+  if(music.alignAtEntry)music.alignAtEntry(entry);else music.currentTime=entry;
   syncAt=performance.now();musicStarted=true;
   const started=performance.now(), measurement=started+warmMs;
   let previous=null, lastBucket=-1, lastView='floor', lastSample=0;

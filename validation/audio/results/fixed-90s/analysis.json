@@ -1,0 +1,314 @@
+{
+  "capture": "macOS process output tap",
+  "seconds": 90,
+  "partial": false,
+  "calibration": {
+    "first": {
+      "wall": 1794096267079.6,
+      "commandMs": 450.300048828125,
+      "measuredMs": 445,
+      "offsetMs": 32.642822265625
+    },
+    "last": {
+      "wall": 1794096363039.6,
+      "commandMs": 450.5,
+      "measuredMs": 440,
+      "offsetMs": 29.609619140625
+    }
+  },
+  "groups": {
+    "wrap": {
+      "clusters": 7,
+      "isolated": 7,
+      "isolatedWithGap": 0
+    },
+    "correction": {
+      "clusters": 17,
+      "isolated": 17,
+      "isolatedWithGap": 0
+    }
+  },
+  "measuredCaptureFaults": 1,
+  "excludedGaps": 0,
+  "anchors": 2,
+  "captureDiscontinuities": [
+    [
+      2997760,
+      1794096327108.043,
+      12.167
+    ]
+  ],
+  "events": {
+    "wrap": {
+      "total": 7,
+      "withGap": 0
+    },
+    "correction": {
+      "total": 18,
+      "withGap": 0
+    }
+  },
+  "gaps": [],
+  "covered": [
+    {
+      "kind": "wrap",
+      "atSec": 7.444699951171875,
+      "gap": false
+    },
+    {
+      "kind": "correction",
+      "atSec": 10.441300048828126,
+      "gap": false
+    },
+    {
+      "kind": "correction",
+      "atSec": 16.37889990234375,
+      "gap": false
+    },
+    {
+      "kind": "wrap",
+      "atSec": 19.378199951171876,
+      "gap": false
+    },
+    {
+      "kind": "correction",
+      "atSec": 22.43639990234375,
+      "gap": false
+    },
+    {
+      "kind": "correction",
+      "atSec": 28.53760009765625,
+      "gap": false
+    },
+    {
+      "kind": "wrap",
+      "atSec": 31.50310009765625,
+      "gap": false
+    },
+    {
+      "kind": "correction",
+      "atSec": 34.44839990234375,
+      "gap": false
+    },
+    {
+      "kind": "correction",
+      "atSec": 40.70410009765625,
+      "gap": false
+    },
+    {
+      "kind": "wrap",
+      "atSec": 43.369800048828125,
+      "gap": false
+    },
+    {
+      "kind": "correction",
+      "atSec": 45.00269995117188,
+      "gap": false
+    },
+    {
+      "kind": "correction",
+      "atSec": 45.00269995117188,
+      "gap": false
+    },
+    {
+      "kind": "correction",
+      "atSec": 46.43630004882812,
+      "gap": false
+    },
+    {
+      "kind": "correction",
+      "atSec": 52.837300048828126,
+      "gap": false
+    },
+    {
+      "kind": "wrap",
+      "atSec": 55.5115,
+      "gap": false
+    },
+    {
+      "kind": "correction",
+      "atSec": 58.44819995117187,
+      "gap": false
+    },
+    {
+      "kind": "correction",
+      "atSec": 65.00410009765625,
+      "gap": false
+    },
+    {
+      "kind": "correction",
+      "atSec": 65.26260009765625,
+      "gap": false
+    },
+    {
+      "kind": "wrap",
+      "atSec": 67.36980004882813,
+      "gap": false
+    },
+    {
+      "kind": "correction",
+      "atSec": 70.43769995117188,
+      "gap": false
+    },
+    {
+      "kind": "correction",
+      "atSec": 77.39589990234376,
+      "gap": false
+    },
+    {
+      "kind": "correction",
+      "atSec": 77.65410009765625,
+      "gap": false
+    },
+    {
+      "kind": "wrap",
+      "atSec": 79.52819995117187,
+      "gap": false
+    },
+    {
+      "kind": "correction",
+      "atSec": 82.47210009765625,
+      "gap": false
+    },
+    {
+      "kind": "correction",
+      "atSec": 89.80510009765625,
+      "gap": false
+    }
+  ],
+  "load": {
+    "capacity": 60,
+    "actors": 60,
+    "unexpected": 0,
+    "badRoster": 0,
+    "visible": [
+      {
+        "view": "floor",
+        "avatars": 60,
+        "ai": 5
+      },
+      {
+        "view": "deck",
+        "avatars": 60,
+        "ai": 5
+      }
+    ]
+  },
+  "analysisWindowMs": 5,
+  "minimumSilenceMs": 10,
+  "peakThreshold": 0.000008,
+  "probes": [
+    {
+      "kind": "probe-sham",
+      "wall": 1794096275557,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 500
+    },
+    {
+      "kind": "probe-seek",
+      "delta": 0.15,
+      "wall": 1794096282554.1,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 500
+    },
+    {
+      "kind": "probe-sham",
+      "wall": 1794096287459.8,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 490
+    },
+    {
+      "kind": "probe-seek",
+      "delta": -0.15,
+      "wall": 1794096294552.5,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 510
+    },
+    {
+      "kind": "probe-sham",
+      "wall": 1794096299664.7002,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 510
+    },
+    {
+      "kind": "probe-seek",
+      "delta": 0.15,
+      "wall": 1794096306564.4001,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 490
+    },
+    {
+      "kind": "probe-sham",
+      "wall": 1794096311460.7002,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 490
+    },
+    {
+      "kind": "probe-seek",
+      "delta": -0.15,
+      "wall": 1794096318552.4001,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 510
+    },
+    {
+      "kind": "probe-sham",
+      "wall": 1794096323653.1,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 510
+    },
+    {
+      "kind": "probe-seek",
+      "delta": 0.15,
+      "wall": 1794096330564.3,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 490
+    },
+    {
+      "kind": "probe-sham",
+      "wall": 1794096335472.7002,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 490
+    },
+    {
+      "kind": "probe-seek",
+      "delta": -0.15,
+      "wall": 1794096342553.8,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 510
+    },
+    {
+      "kind": "probe-sham",
+      "wall": 1794096347653.5,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 510
+    },
+    {
+      "kind": "probe-seek",
+      "delta": 0.15,
+      "wall": 1794096354588.2002,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 490
+    },
+    {
+      "kind": "probe-sham",
+      "wall": 1794096359484.5,
+      "additionalCommands": 0,
+      "gap": false,
+      "beatIntervalMs": 490
+    }
+  ]
+}
