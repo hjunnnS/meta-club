@@ -1,4 +1,6 @@
 import { readFileSync } from 'node:fs';
+import { matchMaker } from '@colyseus/core';
+import { seatSeconds } from './club-room.js';
 import { ReviewRoom } from './review-room.js';
 // The inspection GLB owns the landmarks, walkable footprints and gateway geometry.
 const bytes = readFileSync(new URL('../stage/hiphop/hiphop-empty.glb', import.meta.url));
@@ -31,7 +33,43 @@ function point([x, y, z]) {
 }
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
 export const hiphopRooms = new Map();
+const reservations = new Map();
+const admitted = new Map();
+
+// Both entry URLs share one seat per member, including while matchmaking is in flight.
+export function reserveHipHop(identity, expires) {
+  if (admitted.has(identity)) throw Error('already_joined');
+  if (reservations.has(identity)) return reservations.get(identity);
+  const release = () => {
+    if (reservations.get(identity) === request) reservations.delete(identity);
+  };
+  const request = matchMaker.joinOrCreate('hiphop', { identity, expires }).then(seat => {
+    setTimeout(release, seatSeconds * 1000).unref();
+    return seat;
+  }).catch(error => {
+    release();
+    throw error;
+  });
+  reservations.set(identity, request);
+  return request;
+}
+
 export class HipHopRoom extends ReviewRoom {
+  onCreate() {
+    super.onCreate();
+    this.setSeatReservationTime(seatSeconds);
+  }
+  onJoin(client, options) {
+    if (admitted.has(options.identity)) throw Error('already_joined');
+    super.onJoin(client, options);
+    admitted.set(options.identity, client);
+    reservations.delete(options.identity);
+  }
+  onLeave(client) {
+    const identity = client.userData?.identity;
+    if (admitted.get(identity) === client) admitted.delete(identity);
+    if (this.members.has(client.sessionId)) super.onLeave(client);
+  }
   registry = hiphopRooms;
   area = area;
   entry = point(anchors['입구']);
