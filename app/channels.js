@@ -96,25 +96,31 @@ export async function startChannels(app, { origin, secret, port }) {
   app.get('/operator/operations.js', serveFile('./public/operations.js'));
   app.get('/lobby', serveFile('./public/lobby.html'));
   app.get('/lobby.js', serveFile('./public/lobby.js'));
-  app.get('/api/lobby', (_req, res) =>
-    res.json({
-      clubs: [
-        { id: 'edm', name: 'EDM', open: true, channels: channelList(), capacity },
-        ...Object.entries({ hiphop: '힙합', social: '소셜 라운지', retro: '레트로 디스코' }).map(
-          ([club, name]) => ({
-            id: club,
-            name,
-            review:
-              localTest && res.locals.session.user
-                ? '/clubs/' + club + '/'
-                : undefined,
-            open: false,
-            channels: [],
-          }),
-        ),
-      ],
-    }),
-  );
+  const clubRooms = {
+    edm: rooms,
+    hiphop: hiphop?.hiphopRooms,
+    social: social?.socialRooms,
+    retro: retro?.retroRooms,
+  };
+  app.get('/api/lobby', (_req, res) => {
+    const testMember = localTest && res.locals.session.user;
+    const clubs = [
+      { id: 'edm', name: 'EDM', open: true, channels: channelList(), capacity },
+      ...Object.entries({ hiphop: '힙합', social: '소셜 라운지', retro: '레트로 디스코' }).map(
+        ([id, name]) => ({
+          id, name, open: false, channels: [],
+          review: testMember ? '/clubs/' + id + '/' : undefined,
+        }),
+      ),
+    ];
+    if (testMember) {
+      for (const club of clubs) {
+        club.people = 0;
+        for (const room of clubRooms[club.id].values()) club.people += room.members.size;
+      }
+    }
+    res.json({ clubs });
+  });
   app.get('/api/account/profile', (_req, res) =>
     res.json({ ...profile(res.locals.account.id), avatars }),
   );
