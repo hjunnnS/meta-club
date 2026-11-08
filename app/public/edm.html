@@ -117,7 +117,8 @@
     #shop-dialog li {
       line-height: 1.5;
     }
-  </style>
+  button[data-dance][aria-pressed="true"]{font-weight:700;box-shadow:inset 0 -3px currentColor}
+</style>
   <header>
     <h1>EDM 클럽</h1>
     <output id="zones"></output><output id="population">채널 배정 중…</output><button id="retry" hidden>다시 입장</button
@@ -135,7 +136,7 @@
     <button id="shop-open" hidden>EDM 상품</button>
     <button id="shop-stop" hidden>미리보기 종료</button>
     <button id="music">음악 시작</button><output id="track"></output
-    ><button data-action="dance">춤</button><button data-action="wave">인사</button
+    ><span id="dance-options"></span><button data-action="wave">인사</button
     ><button data-action="idle">멈춤</button><button id="seat">앉기 / 일어나기</button
     ><label
       >화질

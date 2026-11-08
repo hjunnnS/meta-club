@@ -1,3 +1,4 @@
+import { dances } from './public/free-dance.js';
 import { Room } from '@colyseus/core';
 import { ManagedChannelZones } from './managed-channel-zones.js';
 import { playlist } from './music.js';
@@ -22,6 +23,10 @@ export class ReviewRoom extends Room {
     });
     this.onMessage('snapshot', (c) => c.send('snapshot', this.snapshot()));
     this.onMessage('move', (c, p) => this.move(c, p));
+    this.onMessage('free-dance', (c, action) => {
+      const actor = this.members.get(c.sessionId);
+      if (actor && !actor.seat && dances.has(action)) actor.action = action;
+    });
     this.registerActivities();
     this.setSimulationInterval(() => {
       this.tickZones(performance.now());

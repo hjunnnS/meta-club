@@ -1,4 +1,5 @@
 import { permittedPath } from './edm-layout.js';
+import { dances, danceCamera, animateDance } from './free-dance.js';
 import { avatarFactory } from './avatar.js';
 export function startLiveScene({
   B,
@@ -16,6 +17,7 @@ export function startLiveScene({
     make = avatarFactory(B, scene, glow);
   let epoch = Date.now(),
     offset = 0;
+  const viewDance = danceCamera(B, scene);
   let own,
     mode = 'auto',
     low = false,
@@ -39,11 +41,17 @@ export function startLiveScene({
     .map((material) => ({ material, base: material.emissiveColor.clone() }));
   function onSnapshot({ actors, self, zones }) {
     if (zones) states = zones;
-    dancers = actors.filter((a) => a.action === 'dance').length;
+    dancers = actors.filter((a) => a.action === 'dance' || dances.has(a.action)).length;
     own = self;
     const remaining = new Set(models.keys());
     for (const a of actors) {
-      if (a.id === self) continue;
+      if (a.id === self) {
+        if (!dances.has(a.action)) {
+          if (scene.activeCamera?.name === 'free dance') scene.activeCamera = cam;
+          continue;
+        }
+        if (!preview) viewDance(a);
+      }
       let model = models.get(a.id);
       if (!model) {
         model = make(a);
@@ -211,6 +219,20 @@ export function startLiveScene({
         ai++;
         if ((close ? m.torso : m.far).isInFrustum(planes)) visibleAI++;
       }
+      if (dances.has(a.action)) {
+        if (close) {
+          animateDance(m, a.action, t);
+          detailed++;
+        } else {
+          const sway = Math.sin(phase / 2);
+          m.far.position.x = a.action === 'side-step' ? 0.28 * sway : 0;
+          m.far.position.y = 0.79 + (a.action === 'groove' ? 0.14 : 0.06) * Math.abs(beatWave);
+          m.far.rotation.z = (a.action === 'disco-point' ? 0.24 : 0.1) * sway;
+        }
+        continue;
+      }
+      m.near.position.x = 0;
+      m.far.position.x = 0;
       const beat = a.action === 'dance' ? beatWave : Math.sin(t * (a.action === 'walk' ? 8 : 6));
       if (!close) {
         m.far.position.y = a.action === 'sit' ? 0.47 : 0.79;
