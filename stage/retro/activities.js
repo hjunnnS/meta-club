@@ -165,8 +165,7 @@ export async function startDisco({ B, scene, cam, canvas, extras, eye, hint, nav
       if (free) view.actor(m, viewDance(a));
       else if (acting) {
         observe.position.set(a.x + Math.sign(a.x) * 2, a.y + 2, a.z + 5.7);
-        observe.setTarget(new B.Vector3(a.x * 0.72, a.y + 2.2, a.z));
-        view.actor(m, observe, true);
+        view.actor(m, { camera: observe, target: new B.Vector3(a.x * 0.72, a.y + 2.2, a.z) }, true);
       } else view.actor(m);
     }
     for (const [id, m] of models)

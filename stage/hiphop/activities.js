@@ -104,8 +104,7 @@ export async function startActivities({ B, scene, cam, canvas, engine, extras, e
       if (free) view.actor(m, viewDance(a));
       else if (acting) {
         observe.position.set(a.x + 2.1, a.y + 1.65, a.z + 2.3);
-        observe.setTarget(new B.Vector3(a.x, a.y + 0.95, a.z));
-        view.actor(m, observe, true);
+        view.actor(m, { camera: observe, target: new B.Vector3(a.x, a.y + 0.95, a.z) }, true);
       } else view.actor(m);
       photo.hidden = a.action !== 'pose';
     }

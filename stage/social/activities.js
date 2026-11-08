@@ -143,8 +143,7 @@ export async function startTables({ B, scene, cam, canvas, extras, eye, hint, na
         const [cx, , cz] = extras.zones[t.id].center;
         const dir = new B.Vector3(cx - x, 0, cz - z).normalize();
         observe.position.set(x - dir.x * 4.7, y + 3.2, z - dir.z * 4.7);
-        observe.setTarget(new B.Vector3(x, y + 0.9, z));
-        view.actor(m, observe, true);
+        view.actor(m, { camera: observe, target: new B.Vector3(x, y + 0.9, z) }, true);
       } else if (free) view.actor(m, viewDance(a));
       else view.actor(m);
     }

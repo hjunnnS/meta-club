@@ -106,13 +106,25 @@ export function playerView(B, scene, cam, canvas, eyeHeight, controls) {
   follow.fov = cam.fov;
   const button = document.createElement('button');
   button.type = 'button';
+  button.title = '3인칭 거리 조절: 화면 위에서 마우스 휠을 사용하세요.';
   if (controls === document.body)
     button.style.cssText = 'position:fixed;top:12px;right:12px;background:#21172a;color:white;border:1px solid #ddd8;';
   controls.append(button);
 
   let thirdPerson = true, model, activity, fixed, preview;
+  const defaultDistance = 3.4;
+  let zoomDistance = defaultDistance;
+  function wheel(event) {
+    if (!thirdPerson || preview || event.ctrlKey || !event.deltaY) return;
+    event.preventDefault();
+    const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? canvas.clientHeight : 1;
+    zoomDistance = Math.max(1.2, Math.min(9, zoomDistance * Math.exp(event.deltaY * unit * 0.002)));
+  }
+  canvas.addEventListener('wheel', wheel, { passive: false });
+  scene.onDisposeObservable.addOnce(() => canvas.removeEventListener('wheel', wheel));
+
   function select() {
-    scene.activeCamera = preview || (thirdPerson ? activity || follow : fixed ? seatedEye : cam);
+    scene.activeCamera = preview || (thirdPerson ? activity?.camera || follow : fixed ? seatedEye : cam);
     if (model) model.root.setEnabled(thirdPerson);
     button.disabled = Boolean(preview);
   }
@@ -140,22 +152,30 @@ export function playerView(B, scene, cam, canvas, eyeHeight, controls) {
       seatedEye.position.copyFrom(model.root.position);
       seatedEye.position.y += eyeHeight - (model.actor.seat != null ? 0.35 : 0);
     }
-    if (scene.activeCamera !== follow) return;
-    const target = model.root.position.add(new B.Vector3(0, 1.25, 0));
-    const direction = cam.getForwardRay().direction.negate();
-    direction.y += 0.32;
-    direction.normalize();
-    const length = 3.4;
+    if (!thirdPerson || preview) return;
+    const camera = activity?.camera || follow;
+    const target = activity?.target || model.root.position.add(new B.Vector3(0, 1.25, 0));
+    let direction, length;
+    if (activity) {
+      direction = activity.offset.normalizeToNew();
+      length = activity.offset.length() * zoomDistance / defaultDistance;
+    } else {
+      direction = cam.getForwardRay().direction.negate();
+      direction.y += 0.32;
+      direction.normalize();
+      length = zoomDistance;
+    }
     const hit = scene.pickWithRay(new B.Ray(target, direction, length),
       mesh => mesh.checkCollisions || mesh.name.startsWith('wall/') || mesh.name.startsWith('floor/'));
     const distance = hit?.hit ? Math.max(0.08, hit.distance - 0.12) : length;
-    follow.position.copyFrom(target).addInPlace(direction.scale(distance));
-    follow.setTarget(target);
+    camera.position.copyFrom(target).addInPlace(direction.scale(distance));
+    camera.setTarget(target);
   });
   return {
     actor(next, activityCamera = null, stationary = false) {
       model = next;
       activity = activityCamera;
+      if (activity) activity.offset = activity.camera.position.subtract(activity.target);
       fixed = stationary;
       select();
     },
