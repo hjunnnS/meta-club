@@ -5,7 +5,7 @@ const accounts = new Set((process.env.OPERATOR_ACCOUNT_IDS ?? '')
   .filter(Boolean));
 
 export function isOperator(session) {
-  return session.status === 'authenticated' && accounts.has(session.user.id);
+  return session.status === 'authenticated' && !session.user.id.startsWith('local-test:') && accounts.has(session.user.id);
 }
 
 export function requireOperator(req, res, next) {

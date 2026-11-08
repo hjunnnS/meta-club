@@ -12,11 +12,7 @@ const dir=path.join(root,'results',new Date().toISOString().replaceAll(':','-')+
 await fs.mkdir(dir,{recursive:true});
 const save=(name,value)=>fs.writeFile(path.join(dir,name),JSON.stringify(value,null,2)+'\n');
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
-const wav=Buffer.alloc(44+12000*12*2);
-wav.write('RIFF');wav.writeUInt32LE(wav.length-8,4);wav.write('WAVEfmt ',8);wav.writeUInt32LE(16,16);
-wav.writeUInt16LE(1,20);wav.writeUInt16LE(1,22);wav.writeUInt32LE(12000,24);wav.writeUInt32LE(24000,28);wav.writeUInt16LE(2,32);
-wav.writeUInt16LE(16,34);wav.write('data',36);wav.writeUInt32LE(wav.length-44,40);
-for(let j=0;j<(wav.length-44)/2;j++){const t=j/12000;wav.writeInt16LE(Math.round(1200*Math.sin(2*Math.PI*220*t)*Math.exp(-12*(t%.5))),44+j*2);}
+const wav=await fs.readFile(new URL('../../app/fixtures/g0-loop.wav', import.meta.url));
 function verdict(r){
  const checks={duration:r.actualMs>=duration&&r.buckets.length===(smoke?5:30),hardware:/M5 Pro/.test(r.renderer)&&r.width===1920&&r.height===1080,
    roster:r.unexpected===0&&r.observedActors===r.capacity&&r.buckets.every(b=>b.badRoster===0&&b.beats>0&&b.maxSilence<1000),

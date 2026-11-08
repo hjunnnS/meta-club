@@ -40,7 +40,7 @@ export function musicPlayer(notice, playing, failed) {
   }
   function target() {
     const now = Date.now() + clockOffset;
-    const valid = tracks.filter((t) => now < Date.parse(t.until));
+    const valid = tracks.filter((t) => t.until === null || now < Date.parse(t.until));
     const duration = valid.reduce((total, t) => total + t.duration, 0);
     if (!duration) return null;
     const age = Math.max(0, (now - epoch) / 1000);
@@ -110,8 +110,10 @@ export function musicPlayer(notice, playing, failed) {
       offset = actual.time;
       rate = 1;
       source.start(started, offset % buffer.duration);
-      const remainingRights = (Date.parse(actual.track.until) - Date.now() - clockOffset) / 1000;
-      source.stop(started + Math.max(0, remainingRights));
+      if (actual.track.until !== null) {
+        const remainingRights = (Date.parse(actual.track.until) - Date.now() - clockOffset) / 1000;
+        source.stop(started + Math.max(0, remainingRights));
+      }
       current = id;
       pendingId = null;
       lastFailure = null;
