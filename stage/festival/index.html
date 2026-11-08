@@ -1,6 +1,7 @@
 <!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EDM 클럽 · 공간 검토</title>
-<style>*{box-sizing:border-box}body{margin:0;background:#100e18;color:white;font:15px system-ui}canvas{display:block;width:100vw;height:100dvh;touch-action:none}nav{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);display:flex;max-width:96vw;overflow:auto;padding:5px;border:1px solid #ffffff38;border-radius:12px;background:#15131eee}button{white-space:nowrap;border:0;background:transparent;color:#ddd;padding:9px 14px;cursor:pointer;border-radius:8px}button[aria-pressed=true]{background:#534268;color:white}output{position:absolute;inset:44% 10% auto;text-align:center}</style>
+<style>*{box-sizing:border-box}body{margin:0;background:#100e18;color:white;font:15px system-ui}canvas{display:block;width:100vw;height:100dvh;touch-action:none}nav{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);display:flex;max-width:96vw;overflow:auto;padding:5px;border:1px solid #ffffff38;border-radius:12px;background:#15131eee}button{white-space:nowrap;border:0;background:transparent;color:#ddd;padding:9px 14px;cursor:pointer;border-radius:8px}button[aria-pressed=true]{background:#534268;color:white}.tour{position:fixed;bottom:78px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:8px;padding:5px 12px;border:1px solid #ffffff38;border-radius:12px;background:#15131eee;white-space:nowrap}.tour[hidden]{display:none}.tour input{width:min(26vw,230px);accent-color:#cf91ff}.tour span{font-size:13px}output{position:absolute;inset:44% 10% auto;text-align:center}</style>
 <canvas aria-label="EDM 클럽 3D 공간"></canvas><output>공간을 여는 중…</output><nav aria-label="시점"></nav>
+<div class="tour" hidden><button type="button" id="play">동선 둘러보기</button><input type="range" min="0" max="1000" value="0" aria-label="입구에서 발코니까지 동선 위치"><span id="location">입구</span></div>
 <script type="module">
 const sources=window.festivalAssets||{engine:'../../dance/node_modules/babylonjs/babylon.js',loader:'../../dance/node_modules/babylonjs-loaders/babylonjs.loaders.min.js',map:'edm-festival.glb'};
 const canvas=document.querySelector('canvas'), status=document.querySelector('output');
@@ -14,13 +15,86 @@ async function open(){
  cam.attachControl(canvas,true);cam.inputs.removeByType('FreeCameraKeyboardMoveInput');cam.angularSensibility=2200;
  const sky=new B.HemisphericLight('ambient',new B.Vector3(.2,1,.4),scene);
  sky.diffuse=new B.Color3(.72,.66,.92);sky.groundColor=new B.Color3(.26,.18,.35);sky.intensity=.95;
- await B.SceneLoader.ImportMeshAsync('','',sources.map,scene,null,'.glb');
+ const response=await fetch(sources.map);
+ if(!response.ok)throw Error('맵 파일을 불러올 수 없습니다.');
+ const bytes=await response.arrayBuffer();
+ const jsonLength=new DataView(bytes).getUint32(12,true);
+ const {reviewRoute,eyeHeight,stops}=JSON.parse(new TextDecoder().decode(new Uint8Array(bytes,20,jsonLength))).extras;
+ const model=URL.createObjectURL(new Blob([bytes],{type:'model/gltf-binary'}));
+ try{await B.SceneLoader.ImportMeshAsync('','',model,scene,null,'.glb');}
+ finally{URL.revokeObjectURL(model);}
  for(const m of scene.materials)if('maxSimultaneousLights' in m)m.maxSimultaneousLights=10;
  const glow=new B.GlowLayer('light diffusion',scene,{blurKernelSize:48});glow.intensity=.53;
  const views={'입구':[[0,1.65,25],[0,3.4,-16]],'발코니':[[10.1,5.65,-13],[0,.4,0]],'바': [[-7.8,1.65,19.7],[-14,1.6,14]],'라운지':[[8,1.65,13.5],[15,.85,17]],'무대':[[0,1.67,3],[0,3.6,-17]]};
- function select(name){const [p,t]=views[name];cam.position.set(...p);cam.cameraRotation.set(0,0);cam.setTarget(B.Vector3.FromArray(t));for(const b of document.querySelectorAll('button'))b.setAttribute('aria-pressed',b.textContent===name?'true':'false');}
- for(const name of Object.keys(views)){const b=document.createElement('button');b.textContent=name;b.onclick=()=>select(name);document.querySelector('nav').append(b);}
- select('입구');await scene.whenReadyAsync();engine.runRenderLoop(()=>scene.render());window.addEventListener('resize',()=>engine.resize());status.hidden=true;window.setView=select;
+ const nav=document.querySelector('nav'), tour=document.querySelector('.tour');
+ const play=document.querySelector('#play'), slider=tour.querySelector('input'), locationLabel=document.querySelector('#location');
+ const points=reviewRoute.map(p=>B.Vector3.FromArray(p));
+ const lengths=[0];
+ for(let i=1;i<points.length;i++)lengths.push(lengths[i-1]+B.Vector3.Distance(points[i-1],points[i]));
+ const end=lengths.at(-1);
+ const landmarks=[[0,'입구'],[stops.floor,'중앙 플로어'],[stops.stage,'DJ 무대'],[8,'중앙 플로어'],[stops.west,'서쪽 댄스존'],[10,'중앙 플로어'],[stops.east,'동쪽 댄스존'],[12,'경사로 입구'],[13,'2층 데크'],[stops.balcony,'발코니']];
+ let distance=0, playing=false, onRoute=false;
+ function pointAt(d){
+   let i=1;
+   while(i<lengths.length-1 && lengths[i]<d)i++;
+   return B.Vector3.Lerp(points[i-1],points[i],(d-lengths[i-1])/(lengths[i]-lengths[i-1]));
+ }
+ function syncControls(){
+   slider.value=String(Math.round(1000*distance/end));
+   const next=landmarks.find(([i])=>lengths[i]>distance+.02);
+   locationLabel.textContent=!onRoute?'입구 출발':distance===0?'입구':next?next[1]+' 방면':'발코니';
+   play.textContent=playing?'일시 정지':!onRoute?'동선 둘러보기':distance>=end?'처음부터':distance>0?'이어서 보기':'동선 둘러보기';
+ }
+ function placeOnRoute(snap){
+   const p=pointAt(distance);
+   cam.position.set(p.x,p.y+eyeHeight,p.z);
+   const ahead=pointAt(Math.min(end,distance+.65));
+   const heading=ahead.subtract(p);
+   if(distance>=end){cam.setTarget(B.Vector3.FromArray(views['발코니'][1]));}
+   else if(heading.lengthSquared()>0.000001){
+     const direction=heading.normalize();
+     // Turn at the stage and side-zone returns without snapping through 180°.
+     const oldYaw=cam.rotation.y, oldPitch=cam.rotation.x;
+     cam.setTarget(cam.position.add(direction));
+     const turn=cam.rotation.y-oldYaw;
+     const blend=snap?1:1-Math.exp(-engine.getDeltaTime()*.007);
+     cam.rotation.y=oldYaw+Math.atan2(Math.sin(turn),Math.cos(turn))*blend;
+     cam.rotation.x=oldPitch+(cam.rotation.x-oldPitch)*blend;
+   }
+   cam.cameraRotation.set(0,0);
+   syncControls();
+ }
+ function markView(name){
+   for(const b of nav.querySelectorAll('button'))b.setAttribute('aria-pressed',String(b.textContent===name));
+ }
+ function select(name){
+   playing=false;onRoute=false;distance=0;
+   const [p,t]=views[name];cam.position.set(...p);cam.cameraRotation.set(0,0);
+   cam.setTarget(B.Vector3.FromArray(t));markView(name);syncControls();
+ }
+ for(const name of Object.keys(views)){
+   const b=document.createElement('button');b.textContent=name;b.onclick=()=>select(name);nav.append(b);
+ }
+ play.onclick=()=>{
+   if(playing){playing=false;syncControls();return;}
+   const start=!onRoute||distance>=end;
+   if(start)distance=0;
+   onRoute=true;playing=true;markView(null);placeOnRoute(start);
+ };
+ slider.oninput=()=>{
+   playing=false;onRoute=true;distance=end*Number(slider.value)/1000;
+   markView(distance>=end?'발코니':null);placeOnRoute(true);
+ };
+ select('입구');await scene.whenReadyAsync();
+ engine.runRenderLoop(()=>{
+   if(playing){
+     distance=Math.min(end,distance+Math.min(engine.getDeltaTime(),100)*.003);
+     if(distance>=end){playing=false;markView('발코니');}
+     placeOnRoute(false);
+   }
+   scene.render();
+ });
+ window.addEventListener('resize',()=>engine.resize());status.hidden=true;tour.hidden=false;window.setView=select;
 }
 open().catch(e=>{status.textContent='장면을 열 수 없습니다. '+e;console.error(e)});
 </script></html>
