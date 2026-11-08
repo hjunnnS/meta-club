@@ -71,8 +71,21 @@ export async function startChannels(app, { origin, secret, port }) {
   installMusic(app);
   installShop(app);
   app.get('/clubs/edm/shop.js', serveFile('./public/shop.js'));
+  const clubRooms = {
+    edm: rooms,
+    hiphop: hiphop?.hiphopRooms,
+    social: social?.socialRooms,
+    retro: retro?.retroRooms,
+  };
   const channelList = () => [...rooms.values()].map((r) => r.population());
-  app.get('/api/operator/channels', (_req, res) => res.json(channelList()));
+  app.get('/api/operator/channels', (_req, res) => {
+    const channels = [];
+    for (const [clubId, registry] of Object.entries(clubRooms)) {
+      if (!registry) continue;
+      for (const room of registry.values()) channels.push({ clubId, ...room.population() });
+    }
+    res.json(channels);
+  });
   app.post('/api/operator/channels/:id/event-tier', (req, res) => {
     const tier = req.body?.tier;
     if (![0, 1, 2].includes(tier)) return res.sendStatus(400);
@@ -96,12 +109,6 @@ export async function startChannels(app, { origin, secret, port }) {
   app.get('/operator/operations.js', serveFile('./public/operations.js'));
   app.get('/lobby', serveFile('./public/lobby.html'));
   app.get('/lobby.js', serveFile('./public/lobby.js'));
-  const clubRooms = {
-    edm: rooms,
-    hiphop: hiphop?.hiphopRooms,
-    social: social?.socialRooms,
-    retro: retro?.retroRooms,
-  };
   app.get('/api/lobby', (_req, res) => {
     const testMember = localTest && res.locals.session.user;
     const clubs = [

@@ -40,6 +40,9 @@ export class ReviewRoom extends Room {
     for (const tier of [2, 1])
       if (this.zones.state(tier) === 'DRAINING') this.zones.drain(tier, now);
   }
+  population() {
+    return { channelId: this.roomId, people: this.members.size, capacity: this.maxClients, ai: 0 };
+  }
   snapshot() {
     return {
       actors: [...this.members.values()],
