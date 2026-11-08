@@ -1,0 +1,26 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EDM 클럽 · 공간 검토</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#100e18;color:white;font:15px system-ui}canvas{display:block;width:100vw;height:100dvh;touch-action:none}nav{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);display:flex;max-width:96vw;overflow:auto;padding:5px;border:1px solid #ffffff38;border-radius:12px;background:#15131eee}button{white-space:nowrap;border:0;background:transparent;color:#ddd;padding:9px 14px;cursor:pointer;border-radius:8px}button[aria-pressed=true]{background:#534268;color:white}output{position:absolute;inset:44% 10% auto;text-align:center}</style>
+<canvas aria-label="EDM 클럽 3D 공간"></canvas><output>공간을 여는 중…</output><nav aria-label="시점"></nav>
+<script type="module">
+const sources=window.festivalAssets||{engine:'../../dance/node_modules/babylonjs/babylon.js',loader:'../../dance/node_modules/babylonjs-loaders/babylonjs.loaders.min.js',map:'edm-festival.glb'};
+const canvas=document.querySelector('canvas'), status=document.querySelector('output');
+async function script(url){const el=document.createElement('script');el.src=url;const done=new Promise((ok,no)=>{el.onload=ok;el.onerror=no});document.head.append(el);await done;}
+async function open(){
+ await script(sources.engine);await script(sources.loader);
+ const B=BABYLON, engine=new B.Engine(canvas,true,{preserveDrawingBuffer:true,stencil:true});
+ const scene=new B.Scene(engine);scene.useRightHandedSystem=true;
+ scene.clearColor=new B.Color4(.038,.026,.075,1);
+ const cam=new B.FreeCamera('visitor',B.Vector3.Zero(),scene);cam.minZ=.06;cam.fov=1.14;
+ cam.attachControl(canvas,true);cam.inputs.removeByType('FreeCameraKeyboardMoveInput');cam.angularSensibility=2200;
+ const sky=new B.HemisphericLight('ambient',new B.Vector3(.2,1,.4),scene);
+ sky.diffuse=new B.Color3(.72,.66,.92);sky.groundColor=new B.Color3(.26,.18,.35);sky.intensity=.95;
+ await B.SceneLoader.ImportMeshAsync('','',sources.map,scene,null,'.glb');
+ for(const m of scene.materials)if('maxSimultaneousLights' in m)m.maxSimultaneousLights=10;
+ const glow=new B.GlowLayer('light diffusion',scene,{blurKernelSize:48});glow.intensity=.53;
+ const views={'입구':[[0,1.65,25],[0,3.4,-16]],'발코니':[[10.1,5.65,-13],[0,.4,0]],'바': [[-7.8,1.65,19.7],[-14,1.6,14]],'라운지':[[8,1.65,13.5],[15,.85,17]],'무대':[[0,1.67,3],[0,3.6,-17]]};
+ function select(name){const [p,t]=views[name];cam.position.set(...p);cam.cameraRotation.set(0,0);cam.setTarget(B.Vector3.FromArray(t));for(const b of document.querySelectorAll('button'))b.setAttribute('aria-pressed',b.textContent===name?'true':'false');}
+ for(const name of Object.keys(views)){const b=document.createElement('button');b.textContent=name;b.onclick=()=>select(name);document.querySelector('nav').append(b);}
+ select('입구');await scene.whenReadyAsync();engine.runRenderLoop(()=>scene.render());window.addEventListener('resize',()=>engine.resize());status.hidden=true;window.setView=select;
+}
+open().catch(e=>{status.textContent='장면을 열 수 없습니다. '+e;console.error(e)});
+</script></html>

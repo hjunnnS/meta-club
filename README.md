@@ -23,3 +23,9 @@ Babylon.js 9.35.0과 PlayCanvas 2.23.3에서 동일 GLB를 불러와 Chrome 156 
 [10a-1 중앙 플로어 군무와 데스크톱 성능 비교](dance/README.md)
 
 [G1 Google·Apple 계정 인증 실행 안내](app/README.md)
+
+## EDM 페스티벌 인테리어 검토본
+
+[입구](stage/festival/entry.jpg) · [발코니](stage/festival/balcony.jpg) · [바](stage/festival/bar.jpg) · [라운지](stage/festival/lounge.jpg) · [3D 모델](stage/festival/edm-festival.glb)
+
+v3 이동 경로와 관찰점을 사용하는 무대·플로어·바·라운지 장식본이다. `python3 stage/build.py --festival`로 생성한다. 저장소 루트에서 정적 파일 서버를 열면 `/stage/festival/index.html`로 볼 수 있다. 뷰어에는 dance 패키지의 Babylon.js 의존성이 필요하다. `python3 stage/festival/pack.py edm-interior.html`로 오프라인 검토 파일을 만들 수 있다.
