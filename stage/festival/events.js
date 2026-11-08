@@ -84,6 +84,27 @@ export function ledScreen(B, scene, message, nickname = '', overlay = lettering(
   return screen;
 }
 
+export function houseScreen(B, scene) {
+  let title, overlay, lastFrame = -1;
+  const screen = ledScreen(B, scene, 'EDM CLUB');
+  screen.name = 'EDM house screen';
+  const texture = screen.material.emissiveTexture;
+  const ctx = texture.getContext();
+  return (track, beats, visible) => {
+    screen.setEnabled(visible);
+    if (!visible) return;
+    const frame = Math.floor(beats * 3);
+    if (title !== track) {
+      title = track;
+      overlay = lettering('EDM CLUB', track);
+    } else if (lastFrame === frame) return;
+    lastFrame = frame;
+    mediaWall(ctx, beats * 0.36);
+    ctx.drawImage(overlay, 0, 0);
+    texture.update();
+  };
+}
+
 function paint(B, scene, name, hex, intensity = 0.7) {
   const material = new B.StandardMaterial(name, scene);
   material.diffuseColor = B.Color3.FromHexString(hex);
@@ -259,18 +280,22 @@ function lasers(B, scene, root, event, fastFlash) {
         const radius = phase === 0 ? 5.7 : 7.3 + 1.6 * Math.sin(t * 1.5);
         target.set(radius * Math.cos(a), 0.08, -6 + radius * Math.sin(a));
       }
+      // Alternate sides across the audience, then wash the rear wall above the entrance.
+      const side = i % 2 ? 1 : -1;
+      if (phase === 1) target.set(side * (14.6 + 2.7 * Math.sin(a)), 4.06, -13.8 + 3.7 * Math.cos(a));
+      if (phase === 3) target.set(side * (10 + 8 * Math.sin(a)), 2.8, 18 + 5 * Math.cos(a));
       aim(head.shaft, head.origin, target);
       aim(head.ray, head.origin, target);
-      head.spot.position.copyFrom(target);
+      head.spot.position.set(target.x, phase === 1 ? 4.05 : 0.08, target.z);
     }
     for (const {mesh, origin, side, spread} of fans) {
       mesh.setEnabled(phase === 1 || phase === 3);
       if (!mesh.isEnabled()) continue;
       if (phase === 1) {
-        target.set(-side * 4 + spread * 10, 4.3 + 3.2 * spread * side + Math.sin(t * 1.8), -1.8);
+        target.set(-side * 12 + spread * 8, 3.8 + 1.7 * spread * side + Math.sin(t * 1.8), 20 + spread * 3);
       } else {
         const angle = t * 1.15 + spread * 1.5;
-        target.set(-side * 3 + 6.8 * Math.cos(angle), 4.2 + 3.1 * Math.sin(angle) * side, -1.3);
+        target.set(-side * 14 + 6 * Math.cos(angle), 4.8 + 1.8 * Math.sin(angle) * side, 9 + 12 * Math.cos(angle * 0.6));
       }
       aim(mesh, origin, target);
     }
@@ -358,5 +383,5 @@ export function eventPlayer(B, scene, now = Date.now, fastFlash = () => false) {
     else animate?.(t);
   }
   scene.onBeforeRenderObservable.add(tick);
-  return {set, stop};
+  return {set, stop, get kind() { return current?.kind; }};
 }

@@ -213,8 +213,8 @@ async function open(){
    allowedStep=startLiveScene({B,cam,scene,engine,canvas,glow,eyeHeight,
      joystick:(x,y)=>{joystick={x,y};},
      place(actor){
-       seated=actor.seat!==null;
-       cam.position.set(actor.x,actor.y+eyeHeight-(seated?.35:0),actor.z);
+       seated=actor.seat!==null || actor.trainSlot>0;
+       cam.position.set(actor.x,actor.y+eyeHeight-(actor.seat != null ? .35 : 0),actor.z);
        walker.position.set(actor.x,actor.y+walker.ellipsoid.y+.12,actor.z);
        cam.rotation.y=actor.yaw;cam.cameraRotation.set(0,0);
      }});

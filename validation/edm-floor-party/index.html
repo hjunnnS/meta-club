@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EDM 클럽 · 데스크톱 전후 비교</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#161519;color:#f2efed;font:16px/1.55 system-ui,sans-serif}
+main{max-width:1320px;margin:auto;padding:32px clamp(14px,3vw,46px)}h1{font-size:clamp(24px,4vw,40px);margin:0}nav{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0}
+button{padding:8px 13px;color:inherit;font:inherit;border:1px solid #655d6c;background:#27242c;border-radius:5px;cursor:pointer}
+button[aria-pressed=true]{background:#d6f2ed;color:#162020;border-color:#d6f2ed}section{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}figure{margin:0}figcaption{margin-bottom:6px;font-weight:600}video,img{width:100%;display:block;border-radius:5px}p{max-width:78ch}#sync{margin-top:12px}small{color:#c3bdbf}@media(max-width:720px){section{grid-template-columns:1fr}}
+</style>
+<main><h1>EDM 클럽 · 데스크톱 전후 비교</h1>
+<p id="description"></p><nav aria-label="비교 장면"></nav><section aria-live="polite"></section>
+<button id="sync" type="button">두 영상 처음부터 재생</button>
+<p><small>데스크톱 Chrome · 기존 기본 아바타 · 동일한 시험 음원. 춤 영상은 그루브 → 사이드 스텝 → 디스코 포인트 순서입니다. 영상 소리는 수정 후 화면에서 재생됩니다.</small></p></main>
+<script>
+const scenes=[
+ ['춤 영상','기존 캐릭터가 박자에 따라 체중을 옮기고 팔을 뻗는 모습을 비교하세요.','before-dance.webm','after-dance.webm'],
+ ['그루브','몸을 낮춘 뒤 어깨가 박자보다 살짝 늦게 따라옵니다.','before-groove.jpg','after-groove.jpg'],
+ ['사이드 스텝','좌우로 디디며 몸의 중심과 팔이 반대 방향으로 움직입니다.','before-side-step.jpg','after-side-step.jpg'],
+ ['디스코 포인트','한쪽 팔을 올린 자세를 유지하다가 반대편으로 무게를 넘깁니다.','before-disco-point.jpg','after-disco-point.jpg'],
+ ['건반 바닥','세 겹의 바닥 건반이 차례로 켜지고 네 마디 끝에는 바깥 링으로 빛이 퍼집니다.','before-balcony.jpg','after-balcony.jpg'],
+ ['레이저 · 입구','입구 방향으로 뻗는 빔과 측면을 가로지르는 빛을 같은 자리에서 비교하세요.','before-hall.jpg','after-hall.jpg'],
+ ['레이저 · 발코니','같은 발코니 관찰점에서 본 빛과 원형 댄스플로어입니다.','before-balcony.jpg','after-balcony.jpg'],
+ ['무드봉','오른손에 붙은 광봉이 팔의 궤적을 따라갑니다. 내 봉과 다른 손님의 봉은 별도로 조절합니다.','before-groove.jpg','after-groove.jpg'],
+ ['전광판','수정 후 화면 두 장입니다. 축하 문구의 노출 시간이 지나면 현재 곡으로 돌아옵니다.','after-led.jpg','after-house.jpg','축하 중','기본 화면 복귀'],
+ ['댄스 기차','중앙 플로어에서 선두가 직접 걸으면 다음 사람이 같은 길을 따라옵니다. 오른쪽은 두 시험 회원이 합류한 장면입니다.','before-hall.jpg','after-train.jpg','기존 입장 화면','기차 참여 중']
+];
+const nav=document.querySelector('nav'),section=document.querySelector('section'),sync=document.querySelector('#sync');
+function show(index){
+ const [name,description,left,right,leftLabel='수정 전',rightLabel='수정 후']=scenes[index];
+ document.querySelector('#description').textContent=description;
+ [...nav.children].forEach((b,i)=>b.setAttribute('aria-pressed',i===index));
+ section.replaceChildren();sync.hidden=index!==0;
+ for(const [file,label] of [[left,leftLabel],[right,rightLabel]]){
+  const fig=document.createElement('figure'),caption=document.createElement('figcaption');
+  caption.textContent=label;
+  const media=document.createElement(index===0?'video':'img');
+  if(index===0){media.controls=true;media.playsInline=true;media.muted=file===left;media.poster=file.replace('-dance.webm','-groove.jpg');}
+  else media.alt=name+' · '+label;
+  media.src=file;fig.append(caption,media);section.append(fig);
+ }
+}
+sync.onclick=()=>{for(const v of section.querySelectorAll('video')){v.currentTime=0;v.play().catch(()=>{});}};
+scenes.forEach(([name],i)=>{const b=document.createElement('button');b.textContent=name;b.onclick=()=>show(i);nav.append(b);});show(0);
+</script>
+</html>

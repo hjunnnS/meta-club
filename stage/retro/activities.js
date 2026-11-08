@@ -223,11 +223,13 @@ export async function startDisco({ B, scene, cam, canvas, extras, eye, hint, nav
     const seconds = (Date.now() + offset - epoch) / 1000,
       beat = Math.sin(seconds * Math.PI * 4);
     animateBall(seconds);
+    const danceBeat = music.beat();
     for (const m of models.values()) {
       if (dances.has(m.actor.action)) {
-        animateDance(m, m.actor.action, (Date.now() + offset - epoch) / 1000);
+        animateDance(m, m.actor.action, danceBeat);
         continue;
       }
+      m.near.rotation.setAll(0);
       m.near.position.x = 0;
       const dance = m.actor.action === 'disco',
         right = Math.floor(seconds * 2) % 4 < 2;

@@ -35,28 +35,29 @@ export function danceCamera(B, scene) {
   };
 }
 
-export function animateDance(model, action, seconds) {
-  const phase = seconds * Math.PI * 4,
-    beat = Math.sin(phase),
-    sway = Math.sin(phase / 2);
-  const step = action === 'side-step',
-    point = action === 'disco-point';
-  model.near.position.x = step ? 0.28 * sway : 0;
-  model.near.position.y = (point ? 0.05 : step ? 0.08 : 0.14) * Math.abs(beat);
-  model.torso.rotation.z = (step ? 0.12 : point ? 0.19 : 0.09) * sway;
+// One unit is a musical beat. The supporting leg and the reaching arm alternate every beat.
+export function animateDance(model, action, beats) {
+  const cycle = beats * Math.PI;
+  const weight = Math.sin(cycle);
+  const lift = Math.abs(weight);
+  const rebound = Math.sin(2 * cycle - 0.45);
+  const side = action === 'side-step', point = action === 'disco-point';
+  const accent = Math.tanh(3.6 * Math.sin(cycle / 2));
+  model.near.position.x = side ? 0.32 * weight : point ? 0.12 * accent : 0.13 * weight;
+  model.near.position.y = side ? 0.085 * lift : point ? 0.065 * lift : 0.11 * rebound;
+  model.near.rotation.z = side ? -0.18 * weight : point ? -0.19 * accent : 0.2 * weight;
+  model.near.rotation.y = (point ? 0.34 : 0.19) * Math.sin(cycle - 0.35);
+  model.torso.rotation.z = 0.11 * Math.sin(cycle - 0.5);
   model.limbs.forEach((joint, i) => {
-    const sign = i < 2 ? -1 : 1,
-      arm = i % 2 === 0;
-    const raised = point && sign > 0 === sway > 0;
-    joint.rotation.x = arm
-      ? step
-        ? sign * 0.6 * sway
-        : -0.35 + 0.24 * beat
-      : sign * (step ? 0.62 : 0.25) * beat;
-    joint.rotation.z = arm
-      ? sign * (raised ? 2.52 : point ? 0.46 : step ? 0.33 : 0.9 + 0.65 * beat)
-      : step
-        ? sign * 0.23 * Math.abs(sway)
-        : 0;
+    const sign = i < 2 ? -1 : 1;
+    const raised = Math.max(0, sign * weight);
+    if (i % 2 === 0) {
+      joint.rotation.x = side ? -0.48 + sign * 0.69 * weight : -0.48 + 0.48 * rebound;
+      joint.rotation.z = sign * (point ? 0.28 + 2.36 * (1 + sign * accent) / 2
+        : side ? 0.48 + 0.42 * raised : 0.8 + 0.56 * Math.sin(2 * cycle - sign * 0.42));
+    } else {
+      joint.rotation.x = (side ? 0.83 : 0.5) * raised - 0.14;
+      joint.rotation.z = sign * (side ? 0.09 + 0.69 * raised : 0.08 + 0.24 * raised);
+    }
   });
 }
