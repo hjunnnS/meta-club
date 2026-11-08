@@ -79,6 +79,7 @@ function display(data) {
 function disconnected(message, reconnect) {
   firstVisitFailure(message);
   shop.channel(null);
+  el('event-controls').hidden = true;
   music.reset();
   room = undefined;
   snapshot = null;
@@ -208,6 +209,7 @@ window.addEventListener('message', (event) => {
   const { kind, data } = event.data || {};
   if (kind === 'scene-ready') {
     ready = true;
+    el('event-controls').hidden = !memberId?.startsWith('local-test:');
     if (memberId?.startsWith('local-test:')) shop.channel(room.roomId, memberId);
     room.send('snapshot');
     room.send('clock', Date.now());
@@ -236,6 +238,10 @@ window.addEventListener('message', (event) => {
     } catch {}
   }
 });
+el('event-controls').onclick = event => {
+  const kind = event.target.closest('[data-event]')?.dataset.event;
+  if (kind && ready) room?.send('preview-event', { kind, message: el('event-message').value });
+};
 el('retry').onclick = () => {
   attempts = 0;
   enter();

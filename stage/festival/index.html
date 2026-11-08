@@ -1,7 +1,14 @@
 <!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EDM 클럽 · 공간 검토</title>
-<style>*{box-sizing:border-box}body{margin:0;background:#100e18;color:white;font:15px system-ui}canvas{display:block;width:100vw;height:100dvh;touch-action:none}nav{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);display:flex;max-width:96vw;overflow:auto;padding:5px;border:1px solid #ffffff38;border-radius:12px;background:#15131eee}button{white-space:nowrap;border:0;background:transparent;color:#ddd;padding:9px 14px;cursor:pointer;border-radius:8px}button[aria-pressed=true]{background:#534268;color:white}.tour{position:fixed;bottom:78px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:8px;padding:5px 12px;border:1px solid #ffffff38;border-radius:12px;background:#15131eee;white-space:nowrap}.tour[hidden]{display:none}.tour{max-width:96vw;flex-wrap:wrap;justify-content:center}.tour input{width:min(26vw,230px);accent-color:#cf91ff}.tour span{font-size:13px}output{position:absolute;inset:44% 10% auto;text-align:center}</style>
+<style>*{box-sizing:border-box}body{margin:0;background:#100e18;color:white;font:15px system-ui}canvas{display:block;width:100vw;height:100dvh;touch-action:none}nav{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);display:flex;max-width:96vw;overflow:auto;padding:5px;border:1px solid #ffffff38;border-radius:12px;background:#15131eee}button{white-space:nowrap;border:0;background:transparent;color:#ddd;padding:9px 14px;cursor:pointer;border-radius:8px}button[aria-pressed=true]{background:#534268;color:white}.tour{position:fixed;bottom:78px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:8px;padding:5px 12px;border:1px solid #ffffff38;border-radius:12px;background:#15131eee;white-space:nowrap}.tour[hidden]{display:none}.tour{max-width:96vw;flex-wrap:wrap;justify-content:center}.tour input{width:min(26vw,230px);accent-color:#cf91ff}.tour span{font-size:13px}output{position:absolute;inset:44% 10% auto;text-align:center}
+#event-panel{position:fixed;top:16px;left:16px;right:16px;max-width:fit-content;padding:12px 16px;color:#faf9ff;background:#161223ef;border:1px solid #ffffff40;border-radius:12px}
+#event-panel h1{font-size:16px;margin:0 0 8px}#event-panel button{border:1px solid #ffffff45;margin:2px}
+#event-panel select{color:inherit;background:#2c2535;padding:5px;border-radius:4px}#event-panel span{margin-left:8px}
+</style>
 <canvas tabindex="0" aria-label="EDM 클럽 3D 공간"></canvas><output>공간을 여는 중…</output><nav aria-label="시점"></nav>
 <div class="tour" hidden><button type="button" id="walk" aria-pressed="false">직접 걷기</button><button type="button" id="play">동선 둘러보기</button><input type="range" min="0" max="1000" value="0" aria-label="입구에서 발코니까지 동선 위치"><span id="location">입구</span></div>
+<section id="event-panel" hidden><h1>EDM 무대 이벤트</h1><div id="event-buttons"></div>
+<label>전광판 문구 <select id="sample"><option>오늘의 주인공을 축하해요!</option><option>생일 축하해!</option><option>우리의 첫 무대, 함께해 줘서 고마워요</option></select></label>
+<button id="stop-effect">중단</button><span id="effect-state" role="status">이벤트를 선택하세요</span></section>
 <script type="module">
 const sources=window.festivalAssets||{engine:'../../dance/node_modules/babylonjs/babylon.js',loader:'../../dance/node_modules/babylonjs-loaders/babylonjs.loaders.min.js',map:'edm-festival.glb'};
 const canvas=document.querySelector('canvas'), status=document.querySelector('output');
@@ -167,6 +174,35 @@ async function open(){
    scene.render();
  });
  window.addEventListener('resize',()=>engine.resize());status.hidden=true;tour.hidden=false;window.setView=select;
+ if(window.festivalAssets?.events || location.search==='?events'){
+   const {effects,eventPlayer}=await import(sources.events || './events.js');
+   const panel=document.querySelector('#event-panel'), buttons=document.querySelector('#event-buttons');
+   const state=document.querySelector('#effect-state'), player=eventPlayer(B,scene);
+   views['발코니']=[[10.1,5.65,-13],[0,4.2,-10]];
+   views['무대']=[[0,3.4,4.8],[0,4,-10]];
+   select('무대');
+   tour.hidden=true;
+   for(const button of nav.querySelectorAll('button'))button.hidden=!['입구','발코니','무대'].includes(button.textContent);
+   let timer, sequence=0;
+   function finish(){
+     clearTimeout(timer);player.stop();
+     for(const button of buttons.children)button.setAttribute('aria-pressed','false');
+     state.textContent='재생 종료';
+   }
+   for(const [kind,{label,seconds}] of Object.entries(effects)){
+     const button=document.createElement('button');
+     button.textContent=label;button.setAttribute('aria-pressed','false');
+     button.onclick=()=>{
+       finish();
+       player.set({id:++sequence,kind,start:Date.now(),message:document.querySelector('#sample').value,nickname:'클럽 손님'});
+       state.textContent=label+' 재생 중';button.setAttribute('aria-pressed','true');
+       timer=setTimeout(finish,seconds*1000);
+     };
+     buttons.append(button);
+   }
+   document.querySelector('#stop-effect').onclick=finish;
+   panel.hidden=false;
+ }
  if(location.search==='?live' && window.parent!==window && location.protocol!=='file:'){
    const {startLiveScene}=await import('/clubs/edm/scene.js');
    nav.hidden=true;nav.style.display='none';tour.hidden=true;

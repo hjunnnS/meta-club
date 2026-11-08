@@ -1,3 +1,5 @@
+import { effects } from '../stage/festival/events.js';
+import { localTest } from './local-test.js';
 import { ManagedChannelZones } from './managed-channel-zones.js';
 import { edmArea, permittedPath } from './edm-layout.js';
 import { blockedMessage } from './message-filter.js';
@@ -53,6 +55,28 @@ export class EdmRoom extends Room {
     }));
     this.refreshVisitors();
     this.dirty = false;
+    if (localTest) {
+      this.eventSequence = 0;
+      this.onMessage('preview-event', (client, input) => {
+        const actor = this.member(client);
+        if (!actor || !client.userData.identity.startsWith('local-test:')) return;
+        if (input?.kind === 'stop') {
+          this.stageEvent = null;
+        } else {
+          if (typeof input?.kind !== 'string' || !Object.hasOwn(effects, input.kind)) return;
+          const event = { id: ++this.eventSequence, kind: input.kind, start: Date.now() };
+          if (event.kind === 'led') {
+            const message = text(input.message, 80);
+            if (!message || /[\p{Cc}\p{Cf}]/u.test(message + actor.nickname) ||
+                blockedMessage(message) || blockedMessage(actor.nickname) || muted(client.userData.identity))
+              return this.notice(client, '닉네임과 전광판 문구를 확인해 주세요.');
+            Object.assign(event, { message, nickname: actor.nickname });
+          }
+          this.stageEvent = event;
+        }
+        this.dirty = true;
+      });
+    }
     this.onMessage('occupancy', (c) => c.send('occupancy', this.population()));
     this.onMessage('snapshot', (c) => c.send('snapshot', this.snapshot()));
     this.onMessage('clock', (c, sent) => {
@@ -228,7 +252,10 @@ export class EdmRoom extends Room {
     return { channelId: this.roomId, people: this.members.size, ai: this.ai.length, capacity };
   }
   snapshot() {
+    const event = this.stageEvent;
+    if (event && Date.now() >= event.start + effects[event.kind].seconds * 1000) this.stageEvent = null;
     return {
+      ...(localTest && { stageEvent: this.stageEvent ?? null }),
       actors: [...this.members.values(), ...this.ai],
       epoch: this.epoch,
       zones: this.zoneStates(),
