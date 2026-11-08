@@ -1,6 +1,6 @@
 import { enterClub, offerReentry } from './member-entry.js';
 import { dances, danceButtons, danceCamera, animateDance } from '/clubs/edm/free-dance.js';
-import { avatarFactory } from '/clubs/edm/avatar.js';
+import { avatarFactory, playerView } from '/clubs/edm/avatar.js';
 import { musicPlayer } from '/clubs/edm/music.js';
 
 // One textured mirror surface and one rotating mesh of floor highlights.
@@ -125,6 +125,7 @@ export async function startDisco({ B, scene, cam, canvas, extras, eye, hint, nav
     canvas.focus();
   });
   let free = false;
+  const view = playerView(B, scene, cam, canvas, eye, nav);
   const viewDance = danceCamera(B, scene);
   const selectDance = danceButtons(nav, (id) => {
     room.send('free-dance', id);
@@ -160,13 +161,13 @@ export async function startDisco({ B, scene, cam, canvas, extras, eye, hint, nav
       free = dances.has(a.action);
       selectDance(a.action, Boolean(a.seat));
       acting = a.action !== 'idle';
-      m.root.setEnabled(acting);
-      if (free) viewDance(a);
+
+      if (free) view.actor(m, viewDance(a));
       else if (acting) {
         observe.position.set(a.x + Math.sign(a.x) * 2, a.y + 2, a.z + 5.7);
         observe.setTarget(new B.Vector3(a.x * 0.72, a.y + 2.2, a.z));
-        scene.activeCamera = observe;
-      } else scene.activeCamera = cam;
+        view.actor(m, observe, true);
+      } else view.actor(m);
     }
     for (const [id, m] of models)
       if (!present.has(id)) {

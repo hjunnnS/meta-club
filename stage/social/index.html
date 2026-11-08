@@ -70,7 +70,7 @@ async function openMap(){
  canvas.onkeydown=e=>{if(/^Key[WASD]$|^Arrow(Up|Down|Left|Right)$/.test(e.code)){e.preventDefault();keys.add(e.code);}};
  window.addEventListener('keyup',e=>keys.delete(e.code));canvas.onblur=()=>keys.clear();window.addEventListener('blur',()=>keys.clear());
  scene.onBeforeRenderObservable.add(()=>{
-   if(scene.activeCamera!==cam && scene.activeCamera.name!=='free dance')return;
+   if(scene.activeCamera!==cam && !['free dance','third person'].includes(scene.activeCamera.name))return;
    const axis=(a,b)=>Number(keys.has(a)||keys.has(b));
    const f=axis('KeyW','ArrowUp')-axis('KeyS','ArrowDown'),r=axis('KeyD','ArrowRight')-axis('KeyA','ArrowLeft');
    const heading=cam.getForwardRay().direction;

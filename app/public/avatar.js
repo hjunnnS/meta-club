@@ -95,3 +95,73 @@ export function avatarFactory(B, scene, glow) {
     };
   };
 }
+
+// The walking camera stays at the player's eyes for input, collisions and network movement.
+export function playerView(B, scene, cam, canvas, eyeHeight, controls) {
+  const follow = new B.FreeCamera('third person', B.Vector3.Zero(), scene);
+  const seatedEye = new B.FreeCamera('activity eyes', B.Vector3.Zero(), scene);
+  seatedEye.minZ = cam.minZ;
+  seatedEye.fov = cam.fov;
+  follow.minZ = cam.minZ;
+  follow.fov = cam.fov;
+  const button = document.createElement('button');
+  button.type = 'button';
+  if (controls === document.body)
+    button.style.cssText = 'position:fixed;top:12px;right:12px;background:#21172a;color:white;border:1px solid #ddd8;';
+  controls.append(button);
+
+  let thirdPerson = true, model, activity, fixed, preview;
+  function select() {
+    scene.activeCamera = preview || (thirdPerson ? activity || follow : fixed ? seatedEye : cam);
+    if (model) model.root.setEnabled(thirdPerson);
+    button.disabled = Boolean(preview);
+  }
+  function label() {
+    button.textContent = thirdPerson ? '3인칭 · 1인칭으로 전환' : '1인칭 · 3인칭으로 전환';
+  }
+  button.onclick = () => {
+    thirdPerson = !thirdPerson;
+    label();
+    select();
+    canvas.focus();
+  };
+  label();
+  select();
+
+  scene.onBeforeRenderObservable.add(() => {
+    if (scene.activeCamera !== cam) cam.update();
+    if (!model) return;
+    if (!fixed) {
+      model.root.position.copyFrom(cam.position);
+      model.root.position.y -= eyeHeight;
+      model.root.rotation.y = cam.rotation.y;
+    } else if (!thirdPerson) {
+      seatedEye.rotation.copyFrom(cam.rotation);
+      seatedEye.position.copyFrom(model.root.position);
+      seatedEye.position.y += eyeHeight - (model.actor.seat != null ? 0.35 : 0);
+    }
+    if (scene.activeCamera !== follow) return;
+    const target = model.root.position.add(new B.Vector3(0, 1.25, 0));
+    const direction = cam.getForwardRay().direction.negate();
+    direction.y += 0.32;
+    direction.normalize();
+    const length = 3.4;
+    const hit = scene.pickWithRay(new B.Ray(target, direction, length),
+      mesh => mesh.checkCollisions || mesh.name.startsWith('wall/') || mesh.name.startsWith('floor/'));
+    const distance = hit?.hit ? Math.max(0.08, hit.distance - 0.12) : length;
+    follow.position.copyFrom(target).addInPlace(direction.scale(distance));
+    follow.setTarget(target);
+  });
+  return {
+    actor(next, activityCamera = null, stationary = false) {
+      model = next;
+      activity = activityCamera;
+      fixed = stationary;
+      select();
+    },
+    preview(camera) {
+      preview = camera;
+      select();
+    },
+  };
+}

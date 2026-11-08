@@ -1,7 +1,7 @@
 import { eventPlayer, ledScreen } from '/stage/festival/events.js';
 import { permittedPath } from './edm-layout.js';
 import { dances, danceCamera, animateDance } from './free-dance.js';
-import { avatarFactory } from './avatar.js';
+import { avatarFactory, playerView } from './avatar.js';
 export function startLiveScene({
   B,
   cam,
@@ -20,6 +20,7 @@ export function startLiveScene({
     offset = 0;
   let fastFlash = false;
   const stageEvents = eventPlayer(B, scene, () => Date.now() + offset, () => fastFlash);
+  const view = playerView(B, scene, cam, canvas, eyeHeight, document.body);
   const viewDance = danceCamera(B, scene);
   let own,
     mode = 'auto',
@@ -49,19 +50,16 @@ export function startLiveScene({
     own = self;
     const remaining = new Set(models.keys());
     for (const a of actors) {
-      if (a.id === self) {
-        if (!dances.has(a.action)) {
-          if (scene.activeCamera?.name === 'free dance') scene.activeCamera = cam;
-          continue;
-        }
-        if (!preview) viewDance(a);
-      }
       let model = models.get(a.id);
       if (!model) {
         model = make(a);
         models.set(a.id, model);
       }
       model.actor = a;
+      if (a.id === self) {
+        const activity = dances.has(a.action) ? viewDance(a) : null;
+        view.actor(model, activity, a.seat != null);
+      }
       remaining.delete(a.id);
     }
     for (const id of remaining) {
@@ -72,7 +70,7 @@ export function startLiveScene({
   let preview;
   function showPreview(data) {
     if (preview) {
-      scene.activeCamera = cam;
+      view.preview(null);
       preview.camera.dispose();
       preview.screen.dispose(false, true);
       preview = null;
@@ -81,7 +79,7 @@ export function startLiveScene({
     const screen = ledScreen(B, scene, data.message);
     const camera = new B.FreeCamera('LED preview camera', new B.Vector3(0, 4.8, -6), scene);
     camera.setTarget(screen.position);
-    scene.activeCamera = camera;
+    view.preview(camera);
     preview = { screen, camera };
   }
   window.addEventListener('message', (e) => {
@@ -180,8 +178,10 @@ export function startLiveScene({
     for (const m of models.values()) {
       const a = m.actor,
         target = new B.Vector3(a.x, a.y, a.z);
-      m.root.position = B.Vector3.Lerp(m.root.position, target, Math.min(1, dt / 90));
-      m.root.rotation.y = a.yaw;
+      if (a.id !== own || a.seat != null) {
+        m.root.position = B.Vector3.Lerp(m.root.position, target, Math.min(1, dt / 90));
+        m.root.rotation.y = a.yaw;
+      }
       const close =
         B.Vector3.DistanceSquared(scene.activeCamera.position, target) < (low ? 8 : 21) ** 2;
       m.near.setEnabled(close);

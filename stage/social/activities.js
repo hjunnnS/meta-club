@@ -1,7 +1,7 @@
 import { enterClub, offerReentry } from './member-entry.js';
 import { socialTables } from './tables.js';
 import { dances, danceButtons, danceCamera, animateDance } from '/clubs/edm/free-dance.js';
-import { avatarFactory } from '/clubs/edm/avatar.js';
+import { avatarFactory, playerView } from '/clubs/edm/avatar.js';
 import { musicPlayer } from '/clubs/edm/music.js';
 
 export async function startTables({ B, scene, cam, canvas, extras, eye, hint, nav }) {
@@ -85,6 +85,7 @@ export async function startTables({ B, scene, cam, canvas, extras, eye, hint, na
     canvas.focus();
   });
   let free = false;
+  const view = playerView(B, scene, cam, canvas, eye, nav);
   const viewDance = danceCamera(B, scene);
   const selectDance = danceButtons(nav, (id) => {
     room.send('free-dance', id);
@@ -131,7 +132,7 @@ export async function startTables({ B, scene, cam, canvas, extras, eye, hint, na
       free = dances.has(a.action);
       selectDance(a.action, Boolean(a.seat));
       acting = Boolean(a.seat);
-      m.root.setEnabled(acting || free);
+
       if (currentTable !== a.table) {
         notice.textContent = '';
         currentTable = a.table;
@@ -143,9 +144,9 @@ export async function startTables({ B, scene, cam, canvas, extras, eye, hint, na
         const dir = new B.Vector3(cx - x, 0, cz - z).normalize();
         observe.position.set(x - dir.x * 4.7, y + 3.2, z - dir.z * 4.7);
         observe.setTarget(new B.Vector3(x, y + 0.9, z));
-        scene.activeCamera = observe;
-      } else if (free) viewDance(a);
-      else scene.activeCamera = cam;
+        view.actor(m, observe, true);
+      } else if (free) view.actor(m, viewDance(a));
+      else view.actor(m);
     }
     for (const [id, m] of models)
       if (!present.has(id)) {
