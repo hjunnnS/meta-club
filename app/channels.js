@@ -202,7 +202,7 @@ export async function startChannels(app, { origin, secret, port }) {
   matchMaker.defineRoomType('edm', EdmRoom);
   if (localTest) {
     for (const [club, ClubRoom, files] of [
-      ['hiphop', hiphop.HipHopRoom, []],
+      ['hiphop', hiphop.HipHopRoom, ['interior.js']],
       ['social', social.SocialRoom, ['tables.js']],
       ['retro', retro.RetroRoom, []],
     ]) {
