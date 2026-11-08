@@ -138,13 +138,42 @@ function marquee(B, scene, root, event) {
       ctx.closePath();
       ctx.fill();
     }
-    // Leave the animated wall visible during the short beat between text cues.
-    if (reducedMotion.matches || t % 2 < 1.75) ctx.drawImage(overlay, 0, 0);
+    // At 16 texture frames per second: hold 1s, blink 1s, hold 2s, blink 1s.
+    const cueFrame = frame % 80;
+    const blinking = (cueFrame >= 16 && cueFrame < 32) || cueFrame >= 64;
+    const blinkFrame = cueFrame % 16;
+    const lettersOn = !blinking || (blinkFrame % 8 >= 4);
+    if (reducedMotion.matches || lettersOn) ctx.drawImage(overlay, 0, 0);
     texture.update();
   };
 }
 
-function lasers(B, scene, root) {
+function laserBlackouts(start) {
+  // The show start seeds one shared sequence, including for spectators who join mid-show.
+  let seed = start >>> 0;
+  function between(min, max) {
+    seed = (Math.imul(1664525, seed) + 1013904223) >>> 0;
+    return min + (max - min) * seed / 4294967296;
+  }
+  const cuts = [];
+  let at = between(0.55, 1.25);
+  while (at < effects.laser.seconds) {
+    const end = at + between(0.13, 0.34);
+    cuts.push([at, end]);
+    if (between(0, 1) < 0.45) {
+      const second = end + between(0.29, 0.54);
+      at = second + between(0.13, 0.22);
+      cuts.push([second, at]);
+    } else {
+      at = end;
+    }
+    at += between(0.62, 1.8);
+  }
+  return cuts;
+}
+
+function lasers(B, scene, root, event) {
+  const cuts = laserBlackouts(event.start);
   const lime = '#cfff3c', violet = '#bc3aff', amber = '#ffae1e';
   const spectrum = ['#30ecff', '#fe309b', '#4673ff', '#6bff56', '#ffd540', '#ff4141'];
   const palette = Object.fromEntries([...spectrum, lime, violet, amber].map(hex => [hex, B.Color3.FromHexString(hex)]));
@@ -210,8 +239,7 @@ function lasers(B, scene, root) {
   const target = new B.Vector3();
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   return t => {
-    // A short shutter on each beat; only the show rig goes dark.
-    const lightsOn = reducedMotion.matches || t % 0.8 < 0.64;
+    const lightsOn = reducedMotion.matches || !cuts.some(([start, end]) => t >= start && t < end);
     root.setEnabled(lightsOn);
     if (!lightsOn) return;
     const phase = Math.floor(t / 4);
