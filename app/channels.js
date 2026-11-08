@@ -59,6 +59,7 @@ function reserve(identity, channelId, expires) {
 export async function startChannels(app, { origin, secret, port }) {
   const hiphop = localTest ? await import('./hiphop-room.js') : null;
   const social = localTest ? await import('./social-room.js') : null;
+  const retro = localTest ? await import('./retro-room.js') : null;
   const serveFile = (relative) => (_req, res) =>
     res.sendFile(fileURLToPath(new URL(relative, import.meta.url)));
   app.use(express.json({ limit: '8kb' }));
@@ -78,7 +79,8 @@ export async function startChannels(app, { origin, secret, port }) {
     const room =
       rooms.get(req.params.id) ??
       hiphop?.hiphopRooms.get(req.params.id) ??
-      social?.socialRooms.get(req.params.id);
+      social?.socialRooms.get(req.params.id) ??
+      retro?.retroRooms.get(req.params.id);
     if (!room) return res.sendStatus(404);
     room.eventTier = tier;
     res.sendStatus(204);
@@ -98,15 +100,15 @@ export async function startChannels(app, { origin, secret, port }) {
     res.json({
       clubs: [
         { id: 'edm', name: 'EDM', open: true, channels: channelList(), capacity },
-        ...['힙합', '소셜 라운지', '레트로 디스코'].map((name) => ({
-          name,
-          review:
-            localTest && ['힙합', '소셜 라운지'].includes(name) && res.locals.session.user
-              ? '/review/' + (name === '힙합' ? 'hiphop' : 'social') + '/index.html'
-              : undefined,
-          open: false,
-          channels: [],
-        })),
+        ...Object.entries({ hiphop: '힙합', social: '소셜 라운지', retro: '레트로 디스코' }).map(
+          ([club, name]) => ({
+            name,
+            review:
+              localTest && res.locals.session.user ? '/review/' + club + '/index.html' : undefined,
+            open: false,
+            channels: [],
+          }),
+        ),
       ],
     }),
   );
@@ -201,6 +203,7 @@ export async function startChannels(app, { origin, secret, port }) {
     for (const [club, ClubRoom, files] of [
       ['hiphop', hiphop.HipHopRoom, []],
       ['social', social.SocialRoom, ['tables.js']],
+      ['retro', retro.RetroRoom, []],
     ]) {
       ClubRoom.verifyIdentity = EdmRoom.verifyIdentity;
       matchMaker.defineRoomType(club + '-review', ClubRoom);
