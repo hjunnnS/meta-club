@@ -5,6 +5,7 @@
 *{box-sizing:border-box}body{margin:0;background:#1c2023;color:#fcf6e8;font:15px system-ui}canvas{display:block;width:100vw;height:100dvh;touch-action:none;outline:0}
 header,nav,.pin{position:fixed}header{top:18px;left:22px;pointer-events:none;text-shadow:0 1px 8px #111}h1{font-size:24px;margin:0}p{margin:4px 0;color:#dfd9c9}
 nav{bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:6px;padding:6px;background:#202426ed;border-radius:8px;max-width:95vw;overflow:auto}button{white-space:nowrap;background:transparent;color:inherit;border:0;padding:8px 12px;font:inherit;cursor:pointer}button[aria-pressed=true]{background:#b7cd93;color:#231b12;border-radius:4px}.pin{transform:translate(-50%,-100%);background:#22282be8;border-bottom:2px solid #b7cd93;padding:3px 7px;border-radius:3px;font-size:13px;pointer-events:none}
+#conversation{position:fixed;bottom:76px;left:18px;width:min(24rem,90vw);padding:12px;background:#203330ed;border-radius:8px}#conversation ul{list-style:none;padding:0;max-height:8em;overflow:auto}#conversation input{width:70%;padding:7px}nav{align-items:center}nav span{white-space:nowrap}
 </style>
 <canvas tabindex="0" aria-label="소셜 라운지 3D 검수 맵"></canvas>
 <header><h1>소셜 라운지</h1><p id="hint">검수 맵을 여는 중…</p></header>
@@ -63,7 +64,11 @@ async function openMap(){
    const v=new B.Vector3(heading.x*f-heading.z*r,0,heading.z*f+heading.x*r).normalize().scale(3*Math.min(50,engine.getDeltaTime())/1000);
    step(v.x,v.z);
  });
- choose('전체');
+ if(location.pathname==='/review/social/index.html'){
+   choose('입구');nav.replaceChildren();document.querySelector('#pins').hidden=true;
+   const {startTables}=await import('./activities.js');
+   await startTables({B,scene,cam,canvas,extras,eye,hint,nav});
+ }else choose('전체');
  scene.onAfterRenderObservable.add(()=>{if(scene.activeCamera!==overhead)return;
    const w=canvas.clientWidth,h=canvas.clientHeight;
    for(const [el,pt] of pins){const p=B.Vector3.Project(pt,B.Matrix.IdentityReadOnly,scene.getTransformMatrix(),new B.Viewport(0,0,w,h));el.style.left=p.x+'px';el.style.top=p.y+'px';}
