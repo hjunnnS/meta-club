@@ -8,6 +8,7 @@
 <div class="tour" hidden><button type="button" id="walk" aria-pressed="false">직접 걷기</button><button type="button" id="play">동선 둘러보기</button><input type="range" min="0" max="1000" value="0" aria-label="입구에서 발코니까지 동선 위치"><span id="location">입구</span></div>
 <section id="event-panel" hidden><h1>EDM 무대 이벤트</h1><div id="event-buttons"></div>
 <label>전광판 문구 <select id="sample"><option>오늘의 주인공을 축하해요!</option><option>생일 축하해!</option><option>우리의 첫 무대, 함께해 줘서 고마워요</option></select></label>
+<label><input id="fast-flash" type="checkbox" checked>빠른 점멸 (0.1초)</label>
 <button id="stop-effect">중단</button><span id="effect-state" role="status">이벤트를 선택하세요</span></section>
 <script type="module">
 const sources=window.festivalAssets||{engine:'../../dance/node_modules/babylonjs/babylon.js',loader:'../../dance/node_modules/babylonjs-loaders/babylonjs.loaders.min.js',map:'edm-festival.glb'};
@@ -177,7 +178,8 @@ async function open(){
  if(window.festivalAssets?.events || location.search==='?events'){
    const {effects,eventPlayer}=await import(sources.events || './events.js');
    const panel=document.querySelector('#event-panel'), buttons=document.querySelector('#event-buttons');
-   const state=document.querySelector('#effect-state'), player=eventPlayer(B,scene);
+   const state=document.querySelector('#effect-state'), fastFlash=document.querySelector('#fast-flash');
+   const player=eventPlayer(B,scene,Date.now,()=>fastFlash.checked);
    views['발코니']=[[10.1,5.65,-13],[0,4.2,-10]];
    views['무대']=[[0,3.4,4.8],[0,4,-10]];
    select('무대');

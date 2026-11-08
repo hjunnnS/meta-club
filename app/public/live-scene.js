@@ -18,7 +18,8 @@ export function startLiveScene({
     make = avatarFactory(B, scene, glow);
   let epoch = Date.now(),
     offset = 0;
-  const stageEvents = eventPlayer(B, scene, () => Date.now() + offset);
+  let fastFlash = false;
+  const stageEvents = eventPlayer(B, scene, () => Date.now() + offset, () => fastFlash);
   const viewDance = danceCamera(B, scene);
   let own,
     mode = 'auto',
@@ -90,6 +91,7 @@ export function startLiveScene({
       epoch = data.epoch;
       offset = data.offset;
     }
+    if (kind === 'fast-flash') fastFlash = data === true;
     if (kind === 'led-preview') showPreview(data);
     if (kind === 'actors') onSnapshot(data);
     if (kind === 'place') {

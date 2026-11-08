@@ -99,7 +99,7 @@ function attach(mesh, parent, material) {
   return mesh;
 }
 
-function marquee(B, scene, root, event) {
+function marquee(B, scene, root, event, fastFlash) {
   const overlay = lettering(event.message, event.nickname);
   const screen = ledScreen(B, scene, event.message, event.nickname, overlay);
   screen.parent = root;
@@ -108,7 +108,7 @@ function marquee(B, scene, root, event) {
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   let lastFrame = -1;
   return t => {
-    const frame = Math.floor(t * 16);
+    const frame = Math.floor(Math.round(t * 1000) / 50);
     if (frame === lastFrame) return;
     lastFrame = frame;
     mediaWall(ctx, t);
@@ -138,12 +138,12 @@ function marquee(B, scene, root, event) {
       ctx.closePath();
       ctx.fill();
     }
-    // At 16 texture frames per second: hold 1s, blink 1s, hold 2s, blink 1s.
-    const cueFrame = frame % 80;
-    const blinking = (cueFrame >= 16 && cueFrame < 32) || cueFrame >= 64;
-    const blinkFrame = cueFrame % 16;
-    const lettersOn = !blinking || (blinkFrame % 8 >= 4);
-    if (reducedMotion.matches || lettersOn) ctx.drawImage(overlay, 0, 0);
+    // 20 Hz gives each 100 ms shutter state two texture frames.
+    const cycle = frame % 100;
+    const blinking = (cycle >= 20 && cycle < 40) || cycle >= 80;
+    const offFrames = fastFlash() ? 2 : 5;
+    if (reducedMotion.matches || !blinking || Math.floor(cycle / offFrames) % 2 === 1)
+      ctx.drawImage(overlay, 0, 0);
     texture.update();
   };
 }
@@ -172,7 +172,7 @@ function laserBlackouts(start) {
   return cuts;
 }
 
-function lasers(B, scene, root, event) {
+function lasers(B, scene, root, event, fastFlash) {
   const cuts = laserBlackouts(event.start);
   const lime = '#cfff3c', violet = '#bc3aff', amber = '#ffae1e';
   const spectrum = ['#30ecff', '#fe309b', '#4673ff', '#6bff56', '#ffd540', '#ff4141'];
@@ -239,7 +239,11 @@ function lasers(B, scene, root, event) {
   const target = new B.Vector3();
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   return t => {
-    const lightsOn = reducedMotion.matches || !cuts.some(([start, end]) => t >= start && t < end);
+    const ms = Math.round(t * 1000);
+    const rapidCue = fastFlash() && ms >= 8000 && ms < 9000;
+    const blackout = rapidCue ? Math.floor((ms - 8000) / 100) % 2 === 1
+      : cuts.some(([start, end]) => t >= start && t < end);
+    const lightsOn = reducedMotion.matches || !blackout;
     root.setEnabled(lightsOn);
     if (!lightsOn) return;
     const phase = Math.floor(t / 4);
@@ -331,7 +335,7 @@ function phoenix(B, scene, root) {
   };
 }
 
-export function eventPlayer(B, scene, now = Date.now) {
+export function eventPlayer(B, scene, now = Date.now, fastFlash = () => false) {
   let current, root, animate;
   function stop() {
     root?.dispose(false, true);
@@ -343,7 +347,7 @@ export function eventPlayer(B, scene, now = Date.now) {
     stop();
     current = event;
     root = new B.TransformNode('stage event', scene);
-    animate = {led: marquee, laser: lasers, phoenix}[event.kind](B, scene, root, event);
+    animate = {led: marquee, laser: lasers, phoenix}[event.kind](B, scene, root, event, fastFlash);
     tick();
   }
   function tick() {

@@ -214,6 +214,7 @@ window.addEventListener('message', (event) => {
     room.send('snapshot');
     room.send('clock', Date.now());
     if (snapshot) display(snapshot);
+    frame('fast-flash', el('fast-flash').checked);
     frame('quality', el('quality').value);
   }
   if (kind === 'move' && ready) {
@@ -253,6 +254,7 @@ el('music').onclick = () => {
   music.start();
   room?.send('clock', Date.now());
 };
+el('fast-flash').onchange = e => frame('fast-flash', e.target.checked);
 el('quality').onchange = (e) => frame('quality', e.target.value);
 el('seat').onclick = () => room?.send('seat');
 const selectDance = danceButtons(el('dance-options'), (action) => {
