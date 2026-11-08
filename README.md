@@ -51,3 +51,11 @@ PC에서는 **직접 걷기**를 선택한 뒤 WASD 또는 방향키로 이동�
 정적 서버에서 `/stage/social/index.html`을 열어 전체 배치를 회전하거나 구역을 선택해 WASD와 드래그로 걸어본다. `python3 stage/social/build.py`로 검수용 GLB를 재생성한다.
 
 입구 정면은 꽃나무를 둘러 걷는 원형 메인 라운지다. 왼쪽 가든 라운지·VIP 테라스와 오른쪽 프라이빗 부스·카페 라운지로 분산되고, 정원과 부스 양쪽에서 뒤편 루프탑에 오를 수 있다. 원안에 없는 치수는 검수용이다. 연결로 폭은 2.5m(입구 중앙로 3.2m), 루프탑 바닥 높이는 3.1m다. GLB extras의 zones는 원형 구역 경계, gateways는 연결로 양 끝, seatCandidates는 향후 좌석의 바닥 기준 후보점이다. 실제 착석·테이블 모임은 맵 검수 이후 별도 Issue에서 연결한다.
+
+## 레트로 디스코 · 05d-4.v1 빈 스테이지
+
+[조감도](stage/retro/overview.jpg) · [3D 모델](stage/retro/retro-empty.glb) · [Issue #22](https://github.com/hjunnnS/meta-club/issues/22)
+
+정적 서버에서 `/stage/retro/index.html`을 연다. 전체 보기에서 배치를 회전하거나 구역을 선택해 WASD·방향키와 드래그로 걸어볼 수 있다. `python3 stage/retro/build.py`로 GLB를 재생성한다.
+
+입구와 DJ 스테이지를 잇는 14×24m 중앙 홀에서 좌측 보조 홀 A와 우측 보조 홀 B로 수평 이동한다. 각 홀에는 4m 폭 주 통로와 3m 폭 앞쪽 통로가 있다. 앞쪽 레트로 라운지와 바도 중앙으로 이어진다. 치수는 검수용이다. GLB extras의 zones·gateways는 구역 경계와 연결점, placements는 댄스와 미러볼의 후보 좌표(m, X/Y/Z)다. 미러볼 후보는 중앙 바닥에서 5.2m 높이다. 실제 연출은 맵 검수 후 별도 Issue에서 배치한다.
