@@ -4,6 +4,7 @@ import json
 import math
 from pathlib import Path
 import struct
+import sys
 
 ROOT = Path(__file__).resolve().parent
 VERSION = "05a-2.v3"
@@ -178,6 +179,13 @@ for side in (-1,1):
     beam("Stage surround trim",ice,(side*7.4,7.55,-17.52),(side*4.8,8.6,-17.52),.07)
 beam("Stage surround",metal,(-4.8,8.55,-17.85),(4.8,8.55,-17.85),.26)
 
+festival = '--festival' in sys.argv
+images, lights = {}, []
+if festival:
+    from festival.interior import scenery
+    VERSION = 'EDM v3 · festival interior'
+    images, lights = scenery(materials, material, box, octagon, ring, beam, tri)
+
 route=[(0,0,25),(0,0,12),(0,.018,0),(0,.018,-7.6),(0,1.35,-10.05),(0,1.35,-13),
        (0,1.35,-10.05),(0,.018,-7.6),(0,.018,0),(-14.6,.045,6),(0,.018,0),
        (14.6,.045,6),(14.6,0,0),(14.6,4,-8),(14.6,4,-13),(10.1,4,-13)]
@@ -207,11 +215,39 @@ def attr(points):
 for group in dict.fromkeys(g for g,m in parts):
     primitives=[]
     for (g,m),(pos,norm) in parts.items():
-        if g==group: primitives.append(dict(attributes=dict(POSITION=attr(pos),NORMAL=attr(norm)),material=m))
+        if g!=group: continue
+        attributes=dict(POSITION=attr(pos), NORMAL=attr(norm))
+        if m in images:
+            uv=[images[m][1](*point) for point in pos]
+            offset=len(buf)
+            for coords in uv: buf.extend(struct.pack('<2f',*coords))
+            views.append(dict(buffer=0,byteOffset=offset,byteLength=len(buf)-offset,target=34962))
+            access.append(dict(bufferView=len(views)-1,componentType=5126,count=len(uv),type='VEC2'))
+            attributes['TEXCOORD_0']=len(access)-1
+        primitives.append(dict(attributes=attributes,material=m))
     meshes.append(dict(name=group,primitives=primitives));nodes.append(dict(name=group,mesh=len(meshes)-1))
 doc=dict(asset=dict(version="2.0",generator="meta-club "+VERSION),scene=0,scenes=[dict(nodes=list(range(len(nodes))))],nodes=nodes,meshes=meshes,materials=materials,buffers=[dict(byteLength=len(buf))],bufferViews=views,accessors=access,extras=dict(version=VERSION,unit="metre",reviewRoute=route,eyeHeight=1.65,stageIndex=stops["stage"],stops=stops))
+if festival:
+    doc.update(images=[],textures=[],extensionsUsed=['KHR_lights_punctual'],
+               extensions={'KHR_lights_punctual':{'lights':[data for _,_,data in lights]}})
+    for mat,(png,_) in images.items():
+        offset=len(buf);buf.extend(png)
+        views.append(dict(buffer=0,byteOffset=offset,byteLength=len(png)))
+        doc['images'].append(dict(bufferView=len(views)-1,mimeType='image/png'))
+        texture=len(doc['textures'])
+        doc['textures'].append(dict(source=len(doc['images'])-1))
+        materials[mat]['pbrMetallicRoughness']['baseColorTexture']={'index':texture}
+        materials[mat]['emissiveTexture']={'index':texture}
+        buf.extend(bytes(-len(buf)%4))
+    for index,(name,xyz,_) in enumerate(lights):
+        doc['scenes'][0]['nodes'].append(len(nodes))
+        nodes.append(dict(name=name,translation=xyz,extensions={'KHR_lights_punctual':{'light':index}}))
+    doc['buffers'][0]['byteLength']=len(buf)
 js=json.dumps(doc,separators=(',',':')).encode();js+=b' '*((-len(js))%4)
 glb=struct.pack('<4sII',b'glTF',2,28+len(js)+len(buf))+struct.pack('<I4s',len(js),b'JSON')+js+struct.pack('<I4s',len(buf),b'BIN\0')+buf
-(ROOT/'edm-empty.glb').write_bytes(glb)
-(ROOT/'review.html').write_text((ROOT/'review.template').read_text().replace('__GLB__',base64.b64encode(glb).decode()))
+if festival:
+    (ROOT/'festival'/'edm-festival.glb').write_bytes(glb)
+else:
+    (ROOT/'edm-empty.glb').write_bytes(glb)
+    (ROOT/'review.html').write_text((ROOT/'review.template').read_text().replace('__GLB__',base64.b64encode(glb).decode()))
 print(VERSION,len(glb),'bytes;',len(route),'waypoints; route support verified')
