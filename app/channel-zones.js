@@ -7,12 +7,21 @@ const targets = [
 ];
 
 export class ChannelZones {
+  #lastTime = -1;
+  #clock(now) {
+    if (!Number.isFinite(now) || now < 0 || now < this.#lastTime)
+      throw new RangeError('Invalid channel clock');
+    this.#lastTime = now;
+  }
+
   #zones = targets.map((thresholds, i) => {
     const measure = demandByThresholds(thresholds);
     return new ZoneOpening({
-      openDelayMs: 10_000, shrinkDelayMs: 30_000, minOpenMs: 180_000,
+      openDelayMs: 10_000,
+      shrinkDelayMs: 30_000,
+      minOpenMs: 180_000,
       // An event upstairs also keeps its prerequisite tier open.
-      demand: sample => sample.eventTier >= i + 1 ? 'expand' : measure(sample),
+      demand: (sample) => (sample.eventTier >= i + 1 ? 'expand' : measure(sample)),
     });
   });
 
@@ -21,26 +30,43 @@ export class ChannelZones {
     return this.#zones[tier - 1];
   }
 
-  state(tier) { return this.#zone(tier).state; }
-  canEnter(tier) { return this.#zone(tier).canEnter; }
+  state(tier) {
+    return this.#zone(tier).state;
+  }
+  canEnter(tier) {
+    return this.#zone(tier).canEnter;
+  }
   finishOpening(tier, attempt, ready, now) {
+    this.#clock(now);
     return this.#zone(tier).finishOpening(attempt, ready, now);
   }
 
   // Server sample: total humans including the base area, and disjoint occupancy counts.
   // eventTier is the highest expansion tier needed by an active operator event (0 if none).
   observe({ humans, humansByArea, eventTier = 0 }, now) {
-    if (!Number.isSafeInteger(humans) || humans < 0 ||
-        !Array.isArray(humansByArea) || !humansByArea.every(n => Number.isSafeInteger(n) && n >= 0) ||
-        humansByArea.reduce((sum, n) => sum+n, 0) > humans || ![0,1,2].includes(eventTier))
+    if (
+      !Number.isSafeInteger(humans) ||
+      humans < 0 ||
+      !Array.isArray(humansByArea) ||
+      !humansByArea.every((n) => Number.isSafeInteger(n) && n >= 0) ||
+      humansByArea.reduce((sum, n) => sum + n, 0) > humans ||
+      ![0, 1, 2].includes(eventTier)
+    )
       throw new RangeError('Invalid channel occupancy or event tier');
-    const sample = {humans, hotspot: Math.max(0, ...humansByArea), eventTier};
+    const sample = { humans, hotspot: Math.max(0, ...humansByArea), eventTier };
+    this.#clock(now);
     const [first, second] = this.#zones;
+    for (let tier = 1; tier <= eventTier; tier++) this.#zone(tier).retainForEvent(now);
     const attempts = [];
-    const a = first.observe(sample, now, {allowShrink:second.state === 'CLOSED'});
-    if (a !== null) attempts.push({tier:1, attempt:a});
-    const b = second.observe(sample, now, {allowOpen:first.state === 'OPEN'});
-    if (b !== null) attempts.push({tier:2, attempt:b});
+    const a = first.observe(sample, now, { allowShrink: second.state === 'CLOSED' });
+    if (a !== null) attempts.push({ tier: 1, attempt: a });
+    const b = second.observe(sample, now, { allowOpen: first.state === 'OPEN' });
+    if (b !== null) attempts.push({ tier: 2, attempt: b });
     return attempts;
+  }
+
+  finishDraining(tier, now, occupancy) {
+    this.#clock(now);
+    return this.#zone(tier).finishDraining(now, occupancy);
   }
 }
