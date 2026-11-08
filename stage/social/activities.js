@@ -12,7 +12,7 @@ export async function startTables({ B, scene, cam, canvas, extras, eye, hint, na
     document.head.append(sdk);
   });
   const admission = await fetch('./admission', { method: 'POST' });
-  if (!admission.ok) throw Error('검수 채널 입장 실패');
+  if (!admission.ok) throw Error('소셜 라운지 채널에 입장하지 못했습니다. 로비에서 다시 입장해 주세요.');
   const room = await new Colyseus.Client('wss://' + location.host).consumeSeatReservation(
     await admission.json(),
   );
@@ -141,7 +141,7 @@ export async function startTables({ B, scene, cam, canvas, extras, eye, hint, na
   });
   room.onMessage('snapshot', ({ actors, zones }) => {
     const states = { OPEN: '열림', CLOSED: '닫힘', OPENING: '준비 중', DRAINING: '퇴장 대기' };
-    status.textContent = '정원·부스 ' + states[zones[0]] + ' · 테라스 ' + states[zones[1]];
+    status.textContent = '채널 ' + room.roomId + ' · ' + actors.length + '명 · 정원·부스 ' + states[zones[0]] + ' · 테라스 ' + states[zones[1]];
     occupied = new Set(actors.map((a) => a.seat));
     const present = new Set();
     for (const a of actors) {
@@ -210,10 +210,13 @@ export async function startTables({ B, scene, cam, canvas, extras, eye, hint, na
     () => {
       clearInterval(timer);
       music.reset();
-      room.leave();
+      if (joined) room.leave();
     },
     { once: true },
   );
+  window.addEventListener('pageshow', event => {
+    if (event.persisted) location.reload();
+  });
   scene.onBeforeRenderObservable.add(() => {
     if (!joined) return;
     const foot = new B.Vector3(cam.position.x, cam.position.y - eye, cam.position.z);
