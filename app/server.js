@@ -1,5 +1,6 @@
 import express from 'express';
 import { ExpressAuth } from '@auth/express';
+import { isOperator, requireOperator } from './operator.js';
 import { readSession } from './session.js';
 import { auth, origin } from './auth.js';
 
@@ -35,7 +36,8 @@ app.get('/api/session', (_req, res) => {
 app.get('/', (_req, res) => {
   const session = res.locals.session;
   if (session?.user?.id) {
-    return res.send(page('메타 클럽', '<p>로그인되었습니다.</p><a href="/auth/signout">로그아웃</a>'));
+    const operatorLink = isOperator(session) ? '<p><a href="/operator">운영자 공간</a></p>' : '';
+    return res.send(page('메타 클럽', '<p>로그인되었습니다.</p>' + operatorLink + '<a href="/auth/signout">로그아웃</a>'));
   }
   res.send(page('메타 클럽', '<a href="/auth/signin?callbackUrl=%2F">Google 또는 Apple로 로그인</a>'));
 });
@@ -57,5 +59,11 @@ app.use('/api/account', (_req, res, next) => {
   next();
 });
 app.get('/api/account', (_req, res) => res.json(res.locals.account));
+
+app.use(['/operator', '/api/operator'], requireOperator);
+app.get('/operator', (_req, res) => {
+  res.send(page('운영자 공간', '<p>운영자 계정으로 로그인했습니다.</p><a href="/">메타 클럽으로 돌아가기</a>'));
+});
+app.get('/api/operator', (_req, res) => res.json({ role: 'operator' }));
 
 app.listen(Number(process.env.PORT || 3000), '127.0.0.1');
