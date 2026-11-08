@@ -36,13 +36,15 @@ async function open(){
  let distance=0, playing=false, onRoute=false;
  const walk=document.querySelector('#walk');
  const keys=new Set(), movementKeys=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight']);
- const floors=new Set();
+ const floors=new Set(), barriers=new Set();
+ const barrierNames=/^(Rear wall|Side wall|Entry parapet|(East|West) (deck handrail|ramp rail))$/;
  const floorNames=/^(Arena floor|Entry floor|Dance floor|DJ platform|DJ access|(East|West) (dance zone|deck ramp|upper deck))$/;
  const solidNames=/^(Rear wall|Side wall|Entry parapet|DJ booth|DJ platform|DJ access|(East|West) (deck ramp|upper deck|ramp rail|ramp posts|deck handrail|posts|supports)|Lobby wings|Side room (fins|parapet)|Perimeter acoustic bays|Deck banquettes|Deck backrests|Bar base|Bar stone slab|Stool foot|Stool stem|Upholstered stools|Backbar cabinet|Velvet sofa plinth|Velvet sofa cushions|Channel tufted sofa back|Cocktail table (stem|top)|Entrance return walls|Portal uprights|Stage pylons|Stage surround|Stage backdrop)$/;
  for(const m of scene.meshes){
    if(!m.getTotalVertices())continue;
    const names=[m.name,m.parent?.name];
    if(names.some(n=>floorNames.test(n)))floors.add(m);
+   if(names.some(n=>barrierNames.test(n)))barriers.add(m);
    m.checkCollisions=names.some(n=>solidNames.test(n));
  }
  const walker=new B.Mesh('review walker',scene);
@@ -85,6 +87,12 @@ async function open(){
    const delta=heading.scale(forward).add(right.scale(side)).normalize().scale(3*Math.min(engine.getDeltaTime(),50)/1000);
    const foot=cam.position.y-eyeHeight;
    const before=walker.position.clone();
+   // Low parapets and thin handrails must stop the walker before its centre crosses them.
+   const direction=delta.normalizeToNew(), reach=delta.length()+walker.ellipsoid.x;
+   for(const height of [.45,1]){
+     const origin=new B.Vector3(before.x,foot+height,before.z);
+     if(scene.pickWithRay(new B.Ray(origin,direction,reach),mesh=>barriers.has(mesh),true)?.hit)return;
+   }
    const nextGround=groundAt(before.x+delta.x,before.z+delta.z,foot);
    if(nextGround===null)return;
    delta.y=nextGround-foot;
