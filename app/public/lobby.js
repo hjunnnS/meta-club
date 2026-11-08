@@ -45,7 +45,9 @@ function clubCard(club, testLobby) {
   if (testLobby) {
     const activity = document.createElement('p');
     activity.textContent = activities[club.id];
-    info.append(activity);
+    const population = document.createElement('p');
+    population.textContent = '실제 접속 ' + club.people + '명';
+    info.append(activity, population);
   }
   if (club.open || club.review) {
     const join = document.createElement('a');
