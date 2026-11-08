@@ -102,6 +102,7 @@ export async function startChannels(app, { origin, secret, port }) {
         { id: 'edm', name: 'EDM', open: true, channels: channelList(), capacity },
         ...Object.entries({ hiphop: '힙합', social: '소셜 라운지', retro: '레트로 디스코' }).map(
           ([club, name]) => ({
+            id: club,
             name,
             review:
               localTest && res.locals.session.user ? '/review/' + club + '/index.html' : undefined,
@@ -201,6 +202,12 @@ export async function startChannels(app, { origin, secret, port }) {
   await matchMaker.setup();
   matchMaker.defineRoomType('edm', EdmRoom);
   if (localTest) {
+    for (const id of ['edm', 'hiphop', 'social', 'retro']) {
+      app.get('/lobby-maps/' + id + '.webp', (_req, res, next) =>
+        res.locals.session.user ? next() : res.sendStatus(401),
+        serveFile('./public/lobby-maps/' + id + '.webp'),
+      );
+    }
     for (const [club, ClubRoom, files] of [
       ['hiphop', hiphop.HipHopRoom, ['interior.js']],
       ['social', social.SocialRoom, ['tables.js', 'interior.js']],

@@ -33,6 +33,26 @@
     h2 {
       margin: 0.5rem 0;
     }
+    .test-lobby {
+      max-width: 1200px; margin: 0 auto; padding: 32px clamp(16px, 4vw, 56px);
+      background: #101115; color: #faf8f5; font-family: "Apple SD Gothic Neo", system-ui, sans-serif;
+    }
+    .test-lobby h1 { font-size: clamp(32px, 4vw, 52px); letter-spacing: -.055em; line-height: 1.15; margin: 0 0 16px; }
+    .test-lobby form { color: #ceced4; margin-bottom: 24px; }
+    .test-lobby :is(input, select, button) { background: #222329; border: 1px solid #55555c; border-radius: 5px; color: inherit; padding: 3px 8px; }
+    .test-lobby > a { display: inline-block; margin-top: 16px; color: #d5d2d7; }
+    .test-lobby main { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 430px), 1fr)); gap: 18px; }
+    .test-lobby section { padding: 0; border: 1px solid #35363b; border-radius: 12px; overflow: hidden; background: #1b1c21; }
+    .test-lobby img { display: block; width: 100%; height: clamp(145px, 23vh, 220px); object-fit: cover; }
+    .club-info { padding: 15px 18px 18px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 12px; }
+    .club-info h2 { margin: 0; letter-spacing: -.035em; font-size: 24px; }
+    .club-info p { grid-column: 1; margin: 0; color: #c8c6cc; font-size: 15px; }
+    .club-info .enter { grid-column: 2; grid-row: 1 / 3; color: #151619; background: #eee9dc; padding: 7px 13px; border-radius: 6px; text-decoration: none; font-weight: 650; }
+    .club-info .enter:hover { background: white; }
+    .test-lobby :focus-visible { outline: 3px solid #f7bb62; outline-offset: 2px; }
+    .club-channels { padding: 0 18px 12px; }
+    .club-channels:empty { display: none; }
+    .club-channels p { margin: 0; }
   </style>
   <h1>클럽 로비</h1>
   <p id="signin">
