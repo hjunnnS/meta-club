@@ -11,6 +11,8 @@ assets = {
     'engine': root / '../../dance/node_modules/babylonjs/babylon.js',
     'loader': root / '../../dance/node_modules/babylonjs-loaders/babylonjs.loaders.min.js',
 }
+if '--events' in sys.argv[2:]:
+    assets['events'] = root / 'events.js'
 payload = {key: base64.b64encode(gzip.compress(path.read_bytes(), mtime=0)).decode()
            for key, path in assets.items()}
 bootstrap = """
