@@ -203,7 +203,7 @@ export async function startChannels(app, { origin, secret, port }) {
   if (localTest) {
     for (const [club, ClubRoom, files] of [
       ['hiphop', hiphop.HipHopRoom, ['interior.js']],
-      ['social', social.SocialRoom, ['tables.js']],
+      ['social', social.SocialRoom, ['tables.js', 'interior.js']],
       ['retro', retro.RetroRoom, []],
     ]) {
       ClubRoom.verifyIdentity = EdmRoom.verifyIdentity;
