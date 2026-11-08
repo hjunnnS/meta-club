@@ -10,6 +10,8 @@ import { avatars, profile, saveProfile, reports, decisions, moderate } from './s
 import { installShop } from './shop.js';
 import { installMusic } from './music.js';
 import express from 'express';
+import { localTest } from './local-test.js';
+
 import { readSession } from './session.js';
 
 const guestCookie = '__Host-club-guest';
@@ -55,6 +57,7 @@ function reserve(identity, channelId, expires) {
 }
 
 export async function startChannels(app, { origin, secret, port }) {
+  const hiphop = localTest ? await import('./hiphop-room.js') : null;
   const serveFile = (relative) => (_req, res) =>
     res.sendFile(fileURLToPath(new URL(relative, import.meta.url)));
   app.use(express.json({ limit: '8kb' }));
@@ -71,7 +74,7 @@ export async function startChannels(app, { origin, secret, port }) {
   app.post('/api/operator/channels/:id/event-tier', (req, res) => {
     const tier = req.body?.tier;
     if (![0, 1, 2].includes(tier)) return res.sendStatus(400);
-    const room = rooms.get(req.params.id);
+    const room = rooms.get(req.params.id) ?? hiphop?.hiphopRooms.get(req.params.id);
     if (!room) return res.sendStatus(404);
     room.eventTier = tier;
     res.sendStatus(204);
@@ -93,6 +96,10 @@ export async function startChannels(app, { origin, secret, port }) {
         { id: 'edm', name: 'EDM', open: true, channels: channelList(), capacity },
         ...['힙합', '소셜 라운지', '레트로 디스코'].map((name) => ({
           name,
+          review:
+            localTest && name === '힙합' && res.locals.session.user
+              ? '/review/hiphop/index.html'
+              : undefined,
           open: false,
           channels: [],
         })),
@@ -152,6 +159,7 @@ export async function startChannels(app, { origin, secret, port }) {
     }
   });
   app.get('/clubs/edm/client.js', serveFile('./public/channel-client.js'));
+  app.get('/clubs/edm/avatar.js', serveFile('./public/avatar.js'));
   app.get('/clubs/edm/sdk.js', serveFile('./node_modules/colyseus.js/dist/colyseus.js'));
   app.get('/clubs/edm/music.js', serveFile('./public/music.js'));
   app.get('/clubs/edm/edm-layout.js', serveFile('./edm-layout.js'));
@@ -185,6 +193,29 @@ export async function startChannels(app, { origin, secret, port }) {
   };
   await matchMaker.setup();
   matchMaker.defineRoomType('edm', EdmRoom);
+  if (localTest) {
+    const { HipHopRoom } = hiphop;
+    HipHopRoom.verifyIdentity = EdmRoom.verifyIdentity;
+    matchMaker.defineRoomType('hiphop-review', HipHopRoom);
+    app.use('/review/hiphop', (_req, res, next) =>
+      res.locals.session.user ? next() : res.sendStatus(401),
+    );
+    for (const file of ['index.html', 'hiphop-empty.glb', 'activities.js'])
+      app.get('/review/hiphop/' + file, serveFile('../stage/hiphop/' + file));
+    app.post('/review/hiphop/admission', async (_req, res) => {
+      const session = res.locals.session;
+      try {
+        const seat = await matchMaker.joinOrCreate('hiphop-review', {
+          identity: session.user.id,
+          expires: Date.parse(session.expires),
+        });
+        const { name, roomId, processId } = seat.room;
+        res.json({ sessionId: seat.sessionId, room: { name, roomId, processId } });
+      } catch {
+        res.sendStatus(409);
+      }
+    });
+  }
   await matchMaker.accept();
   transport.listen(port, '127.0.0.1');
 }

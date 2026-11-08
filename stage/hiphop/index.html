@@ -63,7 +63,11 @@ async function openMap(){
    const v=new B.Vector3(heading.x*f-heading.z*r,0,heading.z*f+heading.x*r).normalize().scale(3*Math.min(50,engine.getDeltaTime())/1000);
    step(v.x,v.z);
  });
- choose('전체');
+ if(location.pathname==='/review/hiphop/index.html'){
+   choose('입구');nav.replaceChildren();document.querySelector('#pins').hidden=true;
+   const {startActivities}=await import('./activities.js');
+   await startActivities({B,scene,cam,canvas,engine,extras,eye,hint,nav});
+ }else choose('전체');
  scene.onAfterRenderObservable.add(()=>{if(scene.activeCamera!==overhead)return;
    const w=canvas.clientWidth,h=canvas.clientHeight;
    for(const [el,pt] of pins){const p=B.Vector3.Project(pt,B.Matrix.IdentityReadOnly,scene.getTransformMatrix(),new B.Viewport(0,0,w,h));el.style.left=p.x+'px';el.style.top=p.y+'px';}
