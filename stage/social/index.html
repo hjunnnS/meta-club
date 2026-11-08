@@ -22,6 +22,8 @@ async function openMap(){
  const bytes=window.reviewBytes ? Uint8Array.from(atob(window.reviewBytes),c=>c.charCodeAt(0)).buffer : await (await fetch('social-empty.glb')).arrayBuffer();
  const {extras}=JSON.parse(new TextDecoder().decode(new Uint8Array(bytes,20,new DataView(bytes).getUint32(12,true))));
  const asset=URL.createObjectURL(new Blob([bytes]));try{await B.SceneLoader.ImportMeshAsync('','',asset,scene,null,'.glb');}finally{URL.revokeObjectURL(asset);}
+ const {dressGarden}=await import('./interior.js');
+ dressGarden(B,scene,extras);
  const overhead=new B.ArcRotateCamera('overview',Math.PI*.49,.69,62,new B.Vector3(-.5,0,-.5),scene);
  overhead.lowerRadiusLimit=35;overhead.upperRadiusLimit=85;overhead.upperBetaLimit=1.35;overhead.wheelPrecision=18;
  const cam=new B.FreeCamera('walker',B.Vector3.Zero(),scene);cam.minZ=.06;cam.fov=1.13;cam.inputs.removeByType('FreeCameraKeyboardMoveInput');
