@@ -229,9 +229,13 @@ export function startLiveScene({
         ai++;
         if ((close ? m.torso : m.far).isInFrustum(planes)) visibleAI++;
       }
-      if (!close) continue;
-      detailed++;
       const beat = Math.sin(t * (a.action === 'walk' ? 8 : 6));
+      if (!close) {
+        m.far.position.y = a.action === 'sit' ? 0.47 : 0.79;
+        m.far.rotation.z = a.action === 'dance' || a.action === 'wave' ? 0.12 * beat : 0;
+        continue;
+      }
+      detailed++;
       m.near.position.y =
         a.action === 'sit' ? -0.32 : a.action === 'dance' ? 0.07 * Math.abs(beat) : 0;
       m.torso.rotation.z = a.action === 'dance' ? 0.18 * beat : 0;

@@ -203,7 +203,7 @@ window.addEventListener('message', (event) => {
   }
   if (kind === 'move' && ready) {
     room.send('move', data);
-    if (Math.abs(data.z - 25) > 0.5) guide('move');
+    if (Math.hypot(data.x, data.z - 25) > 0.5) guide('move');
   }
   if (kind === 'render-info') {
     el('info').textContent =
