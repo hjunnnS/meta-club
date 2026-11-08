@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>레트로 디스코 · 스테이지 검수</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#1c2023;color:#fcf6e8;font:15px system-ui}canvas{display:block;width:100vw;height:100dvh;touch-action:none;outline:0}
+header,nav,.pin{position:fixed}header{top:18px;left:22px;pointer-events:none;text-shadow:0 1px 8px #111}h1{font-size:24px;margin:0}p{margin:4px 0;color:#dfd9c9}
+nav{bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:6px;padding:6px;background:#202426ed;border-radius:8px;max-width:95vw;overflow:auto}button{white-space:nowrap;background:transparent;color:inherit;border:0;padding:8px 12px;font:inherit;cursor:pointer}button[aria-pressed=true]{background:#ffbd8f;color:#231b12;border-radius:4px}.pin{transform:translate(-50%,-100%);background:#22282be8;border-bottom:2px solid #ffbd8f;padding:3px 7px;border-radius:3px;font-size:13px;pointer-events:none}
+</style>
+<canvas tabindex="0" aria-label="레트로 디스코 3D 검수 맵"></canvas>
+<header><h1>레트로 디스코</h1><p id="hint">검수 맵을 여는 중…</p></header>
+<div id="pins"></div><nav aria-label="검수 시점"></nav>
+<script src="../../dance/node_modules/babylonjs/babylon.js"></script>
+<script src="../../dance/node_modules/babylonjs-loaders/babylonjs.loaders.min.js"></script>
+<script>
+async function openMap(){
+ const B=BABYLON, canvas=document.querySelector('canvas'),engine=new B.Engine(canvas,true,{preserveDrawingBuffer:true}),scene=new B.Scene(engine);
+ scene.useRightHandedSystem=true;scene.clearColor=new B.Color4(.105,.065,.105,1);
+ const sky=new B.HemisphericLight('sky',new B.Vector3(-.4,1,.3),scene);sky.intensity=1.18;sky.groundColor=new B.Color3(.40,.32,.30);
+ const sun=new B.DirectionalLight('sun',new B.Vector3(.45,-1,-.5),scene);sun.intensity=1.4;
+ const bytes=window.reviewBytes ? Uint8Array.from(atob(window.reviewBytes),c=>c.charCodeAt(0)).buffer : await (await fetch('retro-empty.glb')).arrayBuffer();
+ const {extras}=JSON.parse(new TextDecoder().decode(new Uint8Array(bytes,20,new DataView(bytes).getUint32(12,true))));
+ const asset=URL.createObjectURL(new Blob([bytes]));try{await B.SceneLoader.ImportMeshAsync('','',asset,scene,null,'.glb');}finally{URL.revokeObjectURL(asset);}
+ const overhead=new B.ArcRotateCamera('overview',Math.PI*.485,.68,57,new B.Vector3(-.5,0,-.5),scene);
+ overhead.lowerRadiusLimit=35;overhead.upperRadiusLimit=85;overhead.upperBetaLimit=1.35;overhead.wheelPrecision=18;
+ const cam=new B.FreeCamera('walker',B.Vector3.Zero(),scene);cam.minZ=.06;cam.fov=1.13;cam.inputs.removeByType('FreeCameraKeyboardMoveInput');
+ const keys=new Set(), pins=[],buttons=new Map(),eye=1.65;
+ const floor=m=>m.name.startsWith('floor/'),solid=m=>m.name.startsWith('wall/');
+ function step(dx,dz){
+   const d=new B.Vector3(dx,0,dz),distance=d.length();if(!distance)return;
+   const dir=d.scale(1/distance),foot=cam.position.y-eye;
+   for(const h of [.26,.9,1.55]){
+     const start=new B.Vector3(cam.position.x,foot+h,cam.position.z);
+     if(scene.pickWithRay(new B.Ray(start,dir,distance+.23),solid,true).hit)return;
+   }
+   const x=cam.position.x+dx,z=cam.position.z+dz;
+   function ground(x,z){
+     const hit=scene.pickWithRay(new B.Ray(new B.Vector3(x,foot+.19,z),new B.Vector3(0,-1,0),.38),floor);
+     return hit.hit?hit.pickedPoint.y:null;
+   }
+   const y=ground(x,z);if(y===null||ground(x+dir.x*.22,z+dir.z*.22)===null)return;
+   cam.position.set(x,y+eye,z);
+ }
+ const hint=document.querySelector('#hint'),nav=document.querySelector('nav');
+ function choose(name){
+   keys.clear();overhead.detachControl();cam.detachControl();
+   const overview=name==='전체';scene.activeCamera=overview?overhead:cam;
+   if(overview){overhead.attachControl(canvas,true);hint.textContent='드래그로 회전 · 휠로 확대';}
+   else{const [x,y,z]=extras.anchors[name];cam.position.set(x,y+eye,z);cam.setTarget(new B.Vector3(0,1.1,name==='메인 디스코홀'?-14:-4));cam.cameraRotation.set(0,0);cam.attachControl(canvas,true);canvas.focus();hint.textContent='WASD·방향키 이동 · 드래그로 보기';}
+   for(const [id,b] of buttons)b.setAttribute('aria-pressed',String(id===name));
+   document.querySelector('#pins').hidden=!overview;
+ }
+ for(const name of ['전체',...Object.keys(extras.anchors)]){
+   const b=document.createElement('button');b.textContent=name;b.onclick=()=>choose(name);buttons.set(name,b);nav.append(b);
+   if(name!=='전체'){const pin=document.createElement('span');pin.className='pin';pin.textContent=name;document.querySelector('#pins').append(pin);pins.push([pin,B.Vector3.FromArray(extras.anchors[name])]);}
+ }
+ canvas.onkeydown=e=>{if(/^Key[WASD]$|^Arrow(Up|Down|Left|Right)$/.test(e.code)){e.preventDefault();keys.add(e.code);}};
+ window.addEventListener('keyup',e=>keys.delete(e.code));canvas.onblur=()=>keys.clear();window.addEventListener('blur',()=>keys.clear());
+ scene.onBeforeRenderObservable.add(()=>{
+   if(scene.activeCamera!==cam)return;
+   const axis=(a,b)=>Number(keys.has(a)||keys.has(b));
+   const f=axis('KeyW','ArrowUp')-axis('KeyS','ArrowDown'),r=axis('KeyD','ArrowRight')-axis('KeyA','ArrowLeft');
+   const heading=cam.getForwardRay().direction;
+   const v=new B.Vector3(heading.x*f-heading.z*r,0,heading.z*f+heading.x*r).normalize().scale(3*Math.min(50,engine.getDeltaTime())/1000);
+   step(v.x,v.z);
+ });
+ choose('전체');
+ scene.onAfterRenderObservable.add(()=>{if(scene.activeCamera!==overhead)return;
+   const w=canvas.clientWidth,h=canvas.clientHeight;
+   for(const [el,pt] of pins){const p=B.Vector3.Project(pt,B.Matrix.IdentityReadOnly,scene.getTransformMatrix(),new B.Viewport(0,0,w,h));el.style.left=p.x+'px';el.style.top=p.y+'px';}
+ });
+ engine.runRenderLoop(()=>scene.render());window.addEventListener('resize',()=>engine.resize());
+}
+openMap().catch(error=>document.querySelector('#hint').textContent='맵 열기 실패 · '+error.message);
+</script></html>
