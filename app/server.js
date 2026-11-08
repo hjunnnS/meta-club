@@ -5,6 +5,8 @@ import { readSession } from './session.js';
 import { startChannels } from './channels.js';
 import { auth, origin } from './auth.js';
 
+import { localTest } from './local-test.js';
+
 const app = express();
 app.disable('x-powered-by');
 app.set('trust proxy', 'loopback');
@@ -40,7 +42,8 @@ app.get('/', (_req, res) => {
     const operatorLink = isOperator(session) ? '<p><a href="/operator">운영자 공간</a></p>' : '';
     return res.send(page('메타 클럽', '<p>로그인되었습니다.</p><p><a href="/lobby">클럽 로비</a></p>' + operatorLink + '<a href="/auth/signout">로그아웃</a>'));
   }
-  res.send(page('메타 클럽', '<p><a href="/lobby">클럽 로비</a></p><a href="/auth/signin?callbackUrl=%2F">Google 또는 Apple로 로그인</a>'));
+  const label = localTest ? '시험 회원으로 입장' : 'Google 또는 Apple로 로그인';
+  res.send(page('메타 클럽', `<p><a href="/lobby">클럽 로비</a></p><a href="/auth/signin?callbackUrl=%2Flobby">${label}</a>`));
 });
 
 // The lobby and channel admission implementations can share this server policy.

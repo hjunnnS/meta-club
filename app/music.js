@@ -1,8 +1,11 @@
 // The operator supplies the territory and rights records. Empty catalogues
 // are valid: an unapproved track must never be substituted automatically.
 import { readFileSync, existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { resolve, dirname, extname } from 'node:path';
-const catalogue = process.env.CLUB_MUSIC_CATALOG;
+import { localTest } from './local-test.js';
+
+const catalogue = !localTest && process.env.CLUB_MUSIC_CATALOG;
 const territory = process.env.CLUB_TERRITORY;
 const records = catalogue ? JSON.parse(readFileSync(catalogue, 'utf8')) : [];
 const ids = new Set();
@@ -29,7 +32,15 @@ function permitted(r, now) {
     existsSync(resolve(dirname(catalogue), r.file))
   );
 }
+const testLoop = {
+  id: 'g0-loop',
+  title: 'EDM 시험 루프',
+  duration: 12,
+  until: null,
+  url: '/media/edm/g0-loop',
+};
 export function playlist(now = Date.now()) {
+  if (localTest) return [testLoop];
   return records
     .filter((r) => permitted(r, now))
     .map(({ id, title, duration, until }) => ({
@@ -54,6 +65,10 @@ export function installMusic(app) {
     ),
   );
   app.get('/media/edm/:id', (req, res) => {
+    if (localTest) {
+      if (req.params.id !== testLoop.id) return res.sendStatus(404);
+      return res.sendFile(fileURLToPath(new URL('./fixtures/g0-loop.wav', import.meta.url)));
+    }
     const record = records.find((r) => r.id === req.params.id && permitted(r, Date.now()));
     if (!record) return res.sendStatus(404);
     res.sendFile(resolve(dirname(catalogue), record.file), { cacheControl: false });
