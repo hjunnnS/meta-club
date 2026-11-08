@@ -240,8 +240,9 @@ function lasers(B, scene, root, event, fastFlash) {
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   return t => {
     const ms = Math.round(t * 1000);
-    const rapidCue = fastFlash() && ms >= 8000 && ms < 9000;
-    const blackout = rapidCue ? Math.floor((ms - 8000) / 100) % 2 === 1
+    const cycleMs = ms % 3000;
+    const rapidCue = fastFlash() && ms >= 3000 && cycleMs < 1000;
+    const blackout = rapidCue ? Math.floor(cycleMs / 100) % 2 === 1
       : cuts.some(([start, end]) => t >= start && t < end);
     const lightsOn = reducedMotion.matches || !blackout;
     root.setEnabled(lightsOn);
