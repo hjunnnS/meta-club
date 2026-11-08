@@ -6,7 +6,7 @@ import { matchMaker } from '@colyseus/core';
 import { WebSocketTransport } from '@colyseus/ws-transport';
 
 import { capacity, seatSeconds, pending, connected, recent, rooms, EdmRoom } from './club-room.js';
-import { avatars, profile, saveProfile, reports, decisions, moderate } from './store.js';
+import { avatars, profile, saveProfile, reports, decisions } from './store.js';
 import { installShop } from './shop.js';
 import { installMusic } from './music.js';
 import express from 'express';
@@ -100,12 +100,6 @@ export async function startChannels(app, { origin, secret, port }) {
   });
   app.get('/api/operator/decisions', (_req, res) => res.json(decisions()));
   app.get('/api/operator/reports', (_req, res) => res.json(reports()));
-  app.post('/api/operator/reports/:id', (req, res) => {
-    if (!['mute', 'unmute', 'reviewed'].includes(req.body?.action)) return res.sendStatus(400);
-    if (!moderate(req.params.id, res.locals.session.user.id, req.body.action))
-      return res.sendStatus(404);
-    res.sendStatus(204);
-  });
   app.get('/operator/operations.js', serveFile('./public/operations.js'));
   app.get('/lobby', serveFile('./public/lobby.html'));
   app.get('/lobby.js', serveFile('./public/lobby.js'));

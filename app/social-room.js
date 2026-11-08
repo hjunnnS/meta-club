@@ -1,8 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { memberChannelRoom } from './member-channel-room.js';
 import { socialTables } from '../stage/social/tables.js';
-import { blocked, muted } from './store.js';
-import { blockedMessage } from './message-filter.js';
 
 const bytes = readFileSync(new URL('../stage/social/social-empty.glb', import.meta.url));
 const { extras } = JSON.parse(bytes.toString('utf8', 20, 20 + bytes.readUInt32LE(12)));
@@ -68,25 +66,6 @@ export class SocialRoom extends memberChannelRoom('social') {
       Object.assign(actor, c.userData.standing, { seat: null, table: null, action: 'idle' });
       c.send('place', actor);
     });
-    this.onMessage('table-chat', (c, value) => {
-      const actor = this.members.get(c.sessionId);
-      if (!actor?.seat || typeof value !== 'string' || value.length > 320) return;
-      const body = value.trim();
-      if (
-        !body ||
-        /[\u0000-\u001f\u007f]/.test(body) ||
-        blockedMessage(body) ||
-        muted(c.userData.identity)
-      )
-        return c.send('notice', '이 메시지를 보낼 수 없습니다.');
-      if (Date.now() - (c.userData.lastChat ?? 0) < 500) return;
-      c.userData.lastChat = Date.now();
-      for (const other of this.clients)
-        if (
-          this.members.get(other.sessionId)?.table === actor.table &&
-          !blocked(other.userData.identity, c.userData.identity)
-        )
-          other.send('table-chat', { table: actor.table, nickname: actor.nickname, body });
-    });
+
   }
 }

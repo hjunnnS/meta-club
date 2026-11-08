@@ -56,37 +56,16 @@ async function load() {
   const title = document.createElement('h2');
   title.textContent = '채널 접속';
   panel.append(title, channelTable(channels));
-  section('신고', reports);
-  for (const r of reports) {
-    const p = row(panel, [r.id, r.channel, r.target, r.note, r.last_action || '접수']);
-    for (const [action, label] of [
-      ['reviewed', '확인 기록'],
-      ['mute', '채팅 제한'],
-      ['unmute', '제한 해제'],
-    ]) {
-      const b = document.createElement('button');
-      b.textContent = label;
-      p.append(b);
-      b.onclick = async () => {
-        b.disabled = true;
-        try {
-          const res = await fetch('/api/operator/reports/' + encodeURIComponent(r.id), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action }),
-          });
-          if (!res.ok) throw Error();
-          await load();
-        } catch {
-          b.disabled = false;
-          document.querySelector('output').textContent = '조치를 저장하지 못했습니다.';
-        }
-      };
-    }
+  if (reports.length) {
+    section('과거 신고 기록', reports);
+    for (const r of reports)
+      row(panel, [r.id, r.channel, r.target, r.note, r.last_action || '접수']);
   }
-  section('최근 운영 조치', decisions);
-  for (const d of decisions)
-    row(panel, [new Date(d.created).toLocaleString(), d.report_id, d.target, d.operator, d.action]);
+  if (decisions.length) {
+    section('과거 운영 조치', decisions);
+    for (const d of decisions)
+      row(panel, [new Date(d.created).toLocaleString(), d.report_id, d.target, d.operator, d.action]);
+  }
   section('음원 이용 권리', music);
   for (const t of music)
     row(panel, [

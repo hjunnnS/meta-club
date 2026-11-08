@@ -6,7 +6,7 @@ import { blockedMessage } from './message-filter.js';
 import { background } from './visitors.js';
 import { playlist } from './music.js';
 import { Room } from '@colyseus/core';
-import { profile, blocked, block, report, muted } from './store.js';
+import { profile } from './store.js';
 
 export const capacity = 60;
 export const seatSeconds = 15;
@@ -68,7 +68,7 @@ export class EdmRoom extends Room {
           if (event.kind === 'led') {
             const message = text(input.message, 80);
             if (!message || /[\p{Cc}\p{Cf}]/u.test(message + actor.nickname) ||
-                blockedMessage(message) || blockedMessage(actor.nickname) || muted(client.userData.identity))
+                blockedMessage(message) || blockedMessage(actor.nickname))
               return this.notice(client, '닉네임과 전광판 문구를 확인해 주세요.');
             Object.assign(event, { message, nickname: actor.nickname });
           }
@@ -111,47 +111,6 @@ export class EdmRoom extends Room {
       }
       this.dirty = true;
       c.send('place', m);
-    });
-    this.onMessage('chat', (c, message) => {
-      const m = this.member(c);
-      if (!m || !this.allowActivity(c)) return;
-      const body = text(message, 320);
-      if (!body || blockedMessage(body) || muted(c.userData.identity))
-        return this.notice(c, '이 메시지를 보낼 수 없습니다.');
-      if (Date.now() - c.userData.lastChat < 500) return;
-      c.userData.lastChat = Date.now();
-      for (const other of this.clients)
-        if (this.member(other) && !blocked(other.userData.identity, c.userData.identity))
-          other.send('chat', { id: m.id, nickname: m.nickname, body });
-    });
-    this.onMessage('interaction', (c, data) => {
-      if (!this.member(c) || !this.allowActivity(c)) return;
-      const other = this.clients.find((x) => x.sessionId === data?.id);
-      if (!other || !this.member(other) || other === c)
-        return this.notice(c, '대상을 찾을 수 없습니다.');
-      if (data.kind === 'block') {
-        block(c.userData.identity, other.userData.identity);
-        c.send('blocked', other.sessionId);
-      }
-      if (
-        data.kind === 'report' &&
-        text(data.note, 500) &&
-        typeof data.request === 'string' &&
-        /^[a-z0-9-]{36}$/i.test(data.request)
-      ) {
-        try {
-          const id = report(
-            c.userData.identity,
-            other.userData.identity,
-            this.roomId,
-            data.note.trim(),
-            data.request,
-          );
-          c.send('receipt', { request: data.request, id });
-        } catch {
-          this.notice(c, '접수하지 못했습니다. 신고를 다시 눌러 주세요.');
-        }
-      }
     });
     this.setSimulationInterval(() => {
       if (this.dirty) {
@@ -313,7 +272,7 @@ export class EdmRoom extends Room {
       action: 'idle',
       seat: null,
     };
-    client.userData = { identity, lastMove: Date.now(), lastChat: 0 };
+    client.userData = { identity, lastMove: Date.now() };
     this.members.set(client.sessionId, m);
     connected.set(identity, { room: this, client });
     pending.delete(identity);

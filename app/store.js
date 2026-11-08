@@ -1,7 +1,6 @@
 import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import { randomUUID } from 'node:crypto';
 
 const file = resolve(process.env.CLUB_DB || 'data/club.sqlite');
 mkdirSync(dirname(file), { recursive: true });
@@ -9,10 +8,8 @@ const db = new DatabaseSync(file);
 db.exec(`
   PRAGMA journal_mode=WAL;
   CREATE TABLE IF NOT EXISTS profile(account TEXT PRIMARY KEY, nickname TEXT NOT NULL, avatar TEXT NOT NULL);
-  CREATE TABLE IF NOT EXISTS block(owner TEXT NOT NULL, target TEXT NOT NULL, PRIMARY KEY(owner,target));
   CREATE TABLE IF NOT EXISTS report(id TEXT PRIMARY KEY, author TEXT NOT NULL, target TEXT NOT NULL,
     channel TEXT NOT NULL, note TEXT NOT NULL, created INTEGER NOT NULL);
-  CREATE TABLE IF NOT EXISTS report_receipt(author TEXT NOT NULL, request TEXT NOT NULL, report_id TEXT NOT NULL, PRIMARY KEY(author,request));
   CREATE TABLE IF NOT EXISTS decision(id TEXT PRIMARY KEY, report_id TEXT NOT NULL, target TEXT NOT NULL,
     operator TEXT NOT NULL, action TEXT NOT NULL, created INTEGER NOT NULL);
   CREATE INDEX IF NOT EXISTS decisions_by_target ON decision(target, created);
@@ -32,36 +29,6 @@ export function saveProfile(account, nickname, avatar) {
     'INSERT INTO profile VALUES(?,?,?) ON CONFLICT(account) DO UPDATE SET nickname=excluded.nickname, avatar=excluded.avatar',
   ).run(account, nickname, avatar);
 }
-export function block(owner, target) {
-  db.prepare('INSERT OR IGNORE INTO block VALUES(?,?)').run(owner, target);
-}
-export function blocked(owner, target) {
-  return Boolean(db.prepare('SELECT 1 FROM block WHERE owner=? AND target=?').get(owner, target));
-}
-export function report(author, target, channel, note, request) {
-  const saved = db
-    .prepare('SELECT report_id FROM report_receipt WHERE author=? AND request=?')
-    .get(author, request);
-  if (saved) return saved.report_id;
-  const id = randomUUID();
-  db.exec('BEGIN');
-  try {
-    db.prepare('INSERT INTO report VALUES(?,?,?,?,?,?)').run(
-      id,
-      author,
-      target,
-      channel,
-      note,
-      Date.now(),
-    );
-    db.prepare('INSERT INTO report_receipt VALUES(?,?,?)').run(author, request, id);
-    db.exec('COMMIT');
-    return id;
-  } catch (error) {
-    db.exec('ROLLBACK');
-    throw error;
-  }
-}
 export function reports() {
   return db
     .prepare(
@@ -76,29 +43,6 @@ export function decisions() {
     )
     .all();
 }
-export function moderate(id, operator, action) {
-  const item = db.prepare('SELECT target FROM report WHERE id=?').get(id);
-  if (!item) return false;
-  db.prepare('INSERT INTO decision VALUES(?,?,?,?,?,?)').run(
-    randomUUID(),
-    id,
-    item.target,
-    operator,
-    action,
-    Date.now(),
-  );
-  return true;
-}
-export function muted(account) {
-  return (
-    db
-      .prepare(
-        "SELECT action FROM decision WHERE target=? AND action IN ('mute','unmute') ORDER BY rowid DESC LIMIT 1",
-      )
-      .get(account)?.action === 'mute'
-  );
-}
-
 // The sequence is the server's receipt order. Payment verification and grants belong to #31/#34.
 db.exec(`
   CREATE TABLE IF NOT EXISTS mock_order (

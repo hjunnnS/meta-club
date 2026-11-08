@@ -95,29 +95,6 @@ export async function startTables({ B, scene, cam, canvas, extras, eye, hint, na
   const status = document.createElement('p'),
     notice = document.createElement('p');
   hint.after(status, notice);
-  const form = document.createElement('form');
-  form.id = 'conversation';
-  form.hidden = true;
-  form.innerHTML =
-    '<strong></strong><ul aria-live="polite"></ul><input maxlength="320" aria-label="테이블 메시지" required><button>보내기</button>';
-  document.body.append(form);
-  const log = form.querySelector('ul'),
-    input = form.querySelector('input');
-  form.onsubmit = (e) => {
-    e.preventDefault();
-    if (input.value.trim()) {
-      room.send('table-chat', input.value);
-      input.value = '';
-    }
-  };
-  room.onMessage('table-chat', (m) => {
-    if (m.table !== currentTable) return;
-    const line = document.createElement('li');
-    line.textContent = m.nickname + ' · ' + m.body;
-    log.append(line);
-    if (log.children.length > 60) log.firstChild.remove();
-    log.scrollTop = log.scrollHeight;
-  });
   room.onMessage('notice', (m) => (notice.textContent = m));
   let clockOffset = 0,
     epoch = Date.now();
@@ -156,12 +133,9 @@ export async function startTables({ B, scene, cam, canvas, extras, eye, hint, na
       acting = Boolean(a.seat);
       m.root.setEnabled(acting || free);
       if (currentTable !== a.table) {
-        log.replaceChildren();
-        input.value = '';
         notice.textContent = '';
         currentTable = a.table;
       }
-      form.hidden = !acting;
       if (acting) {
         const t = tables.find((t) => t.id === a.table),
           [x, y, z] = t.center;
@@ -170,7 +144,6 @@ export async function startTables({ B, scene, cam, canvas, extras, eye, hint, na
         observe.position.set(x - dir.x * 4.7, y + 3.2, z - dir.z * 4.7);
         observe.setTarget(new B.Vector3(x, y + 0.9, z));
         scene.activeCamera = observe;
-        form.querySelector('strong').textContent = names[a.table] + ' 테이블 대화';
       } else if (free) viewDance(a);
       else scene.activeCamera = cam;
     }
@@ -185,7 +158,6 @@ export async function startTables({ B, scene, cam, canvas, extras, eye, hint, na
     selectDance(null, true);
     music.reset();
     action.disabled = audio.disabled = true;
-    form.hidden = true;
     offerReentry(nav, status);
   });
   room.send('snapshot');

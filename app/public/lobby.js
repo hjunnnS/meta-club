@@ -16,7 +16,7 @@ main.addEventListener('click', (e) => {
 const activities = {
   edm: '중앙 무대에서 조명에 맞춰 군무',
   hiphop: '골목에서 자유 춤 · 루프탑 사진 촬영',
-  social: '정원과 테라스에서 테이블 대화',
+  social: '정원과 테라스에서 함께 앉기',
   retro: '미러볼 아래 중앙·보조 홀에서 디스코 춤',
 };
 let lastListing;
