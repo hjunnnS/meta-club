@@ -21,3 +21,5 @@ Babylon.js 9.35.0과 PlayCanvas 2.23.3에서 동일 GLB를 불러와 Chrome 156 
 `python3 stage/build.py`로 GLB 및 단일 파일 검토 화면을 재생성한다. 두 엔진 검수는 stage/layout-check의 index.html과 test.js 및 stage/edm-empty.glb를 임시 디렉터리에 함께 복사하고 이전 검수 기록의 동일 버전 의존성을 설치해 로컬 HTTP로 실행한다. `/?babylon`, `/?playcanvas`에서 `window.result`와 `show(0)`부터 `show(5)`까지 확인한다.
 
 [10a-1 중앙 플로어 군무와 데스크톱 성능 비교](dance/README.md)
+
+[G1 Google·Apple 계정 인증 실행 안내](app/README.md)
