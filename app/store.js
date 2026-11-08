@@ -98,3 +98,33 @@ export function muted(account) {
       .get(account)?.action === 'mute'
   );
 }
+
+// The sequence is the server's receipt order. Payment verification and grants belong to #31/#34.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS mock_order (
+    sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+    account TEXT NOT NULL, intent TEXT NOT NULL, channel TEXT NOT NULL,
+    product TEXT NOT NULL, message TEXT NOT NULL, amount INTEGER NOT NULL,
+    status TEXT NOT NULL DEFAULT 'requested',
+    UNIQUE(account, intent)
+  );
+`);
+export function mockOrder(account, intent) {
+  return db
+    .prepare(
+      'SELECT sequence,intent,channel,product,message,amount,status FROM mock_order WHERE account=? AND intent=?',
+    )
+    .get(account, intent);
+}
+export function requestMockOrder(account, intent, channel, product, message, amount) {
+  db.prepare(
+    'INSERT INTO mock_order(account,intent,channel,product,message,amount) VALUES(?,?,?,?,?,?) ON CONFLICT(account,intent) DO NOTHING',
+  ).run(account, intent, channel, product, message, amount);
+  return mockOrder(account, intent);
+}
+export function finishMockRequest(account, intent, status) {
+  db.prepare(
+    "UPDATE mock_order SET status=? WHERE account=? AND intent=? AND status='requested'",
+  ).run(status, account, intent);
+  return mockOrder(account, intent);
+}

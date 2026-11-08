@@ -136,6 +136,55 @@ export function startLiveScene({
       models.delete(id);
     }
   }
+  let preview;
+  function showPreview(data) {
+    if (preview) {
+      scene.activeCamera = cam;
+      preview.camera.dispose();
+      preview.screen.dispose();
+      preview.material.dispose();
+      preview.texture.dispose();
+      preview = null;
+    }
+    if (!data) return;
+    const texture = new B.DynamicTexture(
+      'LED preview text',
+      { width: 1024, height: 384 },
+      scene,
+      false,
+    );
+    const ctx = texture.getContext();
+    ctx.fillStyle = '#20132b';
+    ctx.fillRect(0, 0, 1024, 384);
+    ctx.font =
+      Array.from(data.message).length <= 14 ? 'bold 68px sans-serif' : 'bold 44px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffbcea';
+    const lines = [''];
+    for (const char of data.message) {
+      const last = lines.length - 1;
+      if (ctx.measureText(lines[last] + char).width > 940) lines.push(char);
+      else lines[last] += char;
+    }
+    lines.forEach((line, i) => ctx.fillText(line, 512, 207 + (i - (lines.length - 1) / 2) * 58));
+    texture.update();
+    const material = new B.StandardMaterial('LED preview', scene);
+    material.emissiveTexture = texture;
+    material.disableLighting = true;
+    material.backFaceCulling = false;
+    const screen = B.MeshBuilder.CreatePlane(
+      'local LED preview',
+      { width: 12.8, height: 5.3 },
+      scene,
+    );
+    screen.position.set(0, 5.5, -17.9);
+    screen.material = material;
+    screen.isPickable = false;
+    const camera = new B.FreeCamera('LED preview camera', new B.Vector3(0, 4.8, -6), scene);
+    camera.setTarget(screen.position);
+    scene.activeCamera = camera;
+    preview = { screen, camera, material, texture };
+  }
   window.addEventListener('message', (e) => {
     if (e.source !== parent || e.origin !== location.origin) return;
     const { kind, data } = e.data || {};
@@ -143,6 +192,7 @@ export function startLiveScene({
       epoch = data.epoch;
       offset = data.offset;
     }
+    if (kind === 'led-preview') showPreview(data);
     if (kind === 'actors') onSnapshot(data);
     if (kind === 'place') {
       activeSeat = data.seat;

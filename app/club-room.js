@@ -1,3 +1,4 @@
+import { blockedMessage } from './message-filter.js';
 import { background } from './visitors.js';
 import { playlist } from './music.js';
 import { Room } from '@colyseus/core';
@@ -18,12 +19,6 @@ const seats = [-17.6, -15.65, -13.7, -11.75, -9.8].map((x) => ({ x, y: 0, z: 17.
 for (const x of [11.1, 16.9])
   for (const z of [14, 18.65]) seats.push({ x, y: 0, z, yaw: z > 16 ? 0 : Math.PI });
 const emotions = new Set(['idle', 'dance', 'wave']);
-const blockedTerms = (process.env.CHAT_BLOCKED_TERMS || '')
-  .normalize('NFKC')
-  .toLowerCase()
-  .split(',')
-  .map((s) => s.trim())
-  .filter(Boolean);
 function text(value, max) {
   return typeof value === 'string' && value.length <= max && !/[\u0000-\u001f\u007f]/.test(value)
     ? value.trim()
@@ -89,11 +84,7 @@ export class EdmRoom extends Room {
       const m = this.member(c);
       if (!m || !this.allowActivity(c)) return;
       const body = text(message, 320);
-      if (
-        !body ||
-        blockedTerms.some((term) => body.normalize('NFKC').toLowerCase().includes(term)) ||
-        muted(c.userData.identity)
-      )
+      if (!body || blockedMessage(body) || muted(c.userData.identity))
         return this.notice(c, '이 메시지를 보낼 수 없습니다.');
       if (Date.now() - c.userData.lastChat < 500) return;
       c.userData.lastChat = Date.now();
