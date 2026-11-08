@@ -43,3 +43,11 @@ PC에서는 **직접 걷기**를 선택한 뒤 WASD 또는 방향키로 이동�
 저장소 루트에서 정적 서버를 열고 `/stage/hiphop/index.html`에 접속한다. 뷰어는 dance 패키지에 설치된 Babylon.js를 사용한다. 전체 보기에서는 드래그로 회전한다. 구역 이름을 누르면 해당 지점에서 WASD 또는 방향키로 걸으며 드래그로 시선을 돌릴 수 있다. GLB는 `python3 stage/hiphop/build.py`로 다시 생성한다.
 
 05d-2.v1은 원안 이미지의 공간 배치를 해석한 검수용 치수다. 입구에서 중앙 홀로 들어오면 서쪽 골목은 바·스트리트 라운지와 높이 3.5m의 루프탑 경사로로, 동쪽 골목은 크루 라운지와 배틀존으로 이어진다. 메인 홀과 뒷골목을 통해 양쪽을 오갈 수 있다. GLB extras의 gateways는 확장 구역 연결 경계의 대표 통과점이다. placements는 메인 홀 (0,0,1), 배틀존 (12,0,-8), 루프탑 포토존 (-13,3.5,-16)의 후보 좌표로, 단위는 m, 순서는 (X,Y,Z)다.
+
+## 소셜 라운지 · 05d-3.v1 빈 스테이지
+
+[조감도](stage/social/overview.jpg) · [3D 모델](stage/social/social-empty.glb) · [Issue #21](https://github.com/hjunnnS/meta-club/issues/21)
+
+정적 서버에서 `/stage/social/index.html`을 열어 전체 배치를 회전하거나 구역을 선택해 WASD와 드래그로 걸어본다. `python3 stage/social/build.py`로 검수용 GLB를 재생성한다.
+
+입구 정면은 꽃나무를 둘러 걷는 원형 메인 라운지다. 왼쪽 가든 라운지·VIP 테라스와 오른쪽 프라이빗 부스·카페 라운지로 분산되고, 정원과 부스 양쪽에서 뒤편 루프탑에 오를 수 있다. 원안에 없는 치수는 검수용이다. 연결로 폭은 2.5m(입구 중앙로 3.2m), 루프탑 바닥 높이는 3.1m다. GLB extras의 zones는 원형 구역 경계, gateways는 연결로 양 끝, seatCandidates는 향후 좌석의 바닥 기준 후보점이다. 실제 착석·테이블 모임은 맵 검수 이후 별도 Issue에서 연결한다.
