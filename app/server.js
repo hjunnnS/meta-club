@@ -1,5 +1,6 @@
 import express from 'express';
-import { ExpressAuth, getSession } from '@auth/express';
+import { ExpressAuth } from '@auth/express';
+import { readSession } from './session.js';
 import { auth, origin } from './auth.js';
 
 const app = express();
@@ -22,8 +23,17 @@ function page(title, content) {
 <title>${title} · 메타 클럽</title><main><h1>${title}</h1>${content}</main></html>`;
 }
 
-app.get('/', async (req, res) => {
-  const session = await getSession(req, auth);
+app.use(async (req, res, next) => {
+  res.locals.session = await readSession(req, auth.secret);
+  next();
+});
+
+app.get('/api/session', (_req, res) => {
+  res.json(res.locals.session);
+});
+
+app.get('/', (_req, res) => {
+  const session = res.locals.session;
   if (session?.user?.id) {
     return res.send(page('메타 클럽', '<p>로그인되었습니다.</p><a href="/auth/signout">로그아웃</a>'));
   }
@@ -31,8 +41,8 @@ app.get('/', async (req, res) => {
 });
 
 // The lobby and channel admission implementations can share this server policy.
-app.get('/api/access', async (req, res) => {
-  const session = await getSession(req, auth);
+app.get('/api/access', (_req, res) => {
+  const session = res.locals.session;
   res.json({
     role: session?.user?.id ? 'member' : 'guest',
     lobby: { view: true },
@@ -40,9 +50,9 @@ app.get('/api/access', async (req, res) => {
   });
 });
 
-app.use('/api/account', async (req, res, next) => {
-  const session = await getSession(req, auth);
-  if (!session?.user?.id) return res.status(401).json({ error: 'login_required' });
+app.use('/api/account', (_req, res, next) => {
+  const session = res.locals.session;
+  if (!session?.user?.id) return res.status(401).json({ error: session.reason });
   res.locals.account = session.user;
   next();
 });

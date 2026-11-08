@@ -1,4 +1,5 @@
 import Google from '@auth/express/providers/google';
+import { decodeSession } from './session.js';
 import Apple from '@auth/express/providers/apple';
 
 function required(name) {
@@ -19,6 +20,7 @@ export const auth = {
   secret,
   trustHost: true,
   useSecureCookies: true,
+  jwt: { decode: decodeSession },
   providers: [
     Google({
       clientId: required('AUTH_GOOGLE_ID'),
