@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { ReviewRoom } from './review-room.js';
+import { memberChannelRoom } from './member-channel-room.js';
 
 const bytes = readFileSync(new URL('../stage/retro/retro-empty.glb', import.meta.url));
 const jsonEnd = 20 + bytes.readUInt32LE(12);
@@ -34,7 +34,7 @@ const contains = (x, z, [left, right, back, front]) =>
 const [x, y, z] = extras.anchors['입구'];
 const danceAreas = { mainDance: 'hall', danceA: 'A', danceB: 'B' };
 export const retroRooms = new Map();
-export class RetroRoom extends ReviewRoom {
+export class RetroRoom extends memberChannelRoom('retro') {
   registry = retroRooms;
   entry = { x, y, z };
   area({ x, y, z }) {

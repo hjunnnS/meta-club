@@ -60,7 +60,6 @@ export async function startChannels(app, { origin, secret, port }) {
   const hiphop = localTest ? await import('./hiphop-room.js') : null;
   const social = localTest ? await import('./social-room.js') : null;
   const retro = localTest ? await import('./retro-room.js') : null;
-  const memberClubs = new Set(['hiphop', 'social']);
   const serveFile = (relative) => (_req, res) =>
     res.sendFile(fileURLToPath(new URL(relative, import.meta.url)));
   app.use(express.json({ limit: '8kb' }));
@@ -107,7 +106,7 @@ export async function startChannels(app, { origin, secret, port }) {
             name,
             review:
               localTest && res.locals.session.user
-                ? (memberClubs.has(club) ? '/clubs/' + club + '/' : '/review/' + club + '/index.html')
+                ? '/clubs/' + club + '/'
                 : undefined,
             open: false,
             channels: [],
@@ -217,20 +216,15 @@ export async function startChannels(app, { origin, secret, port }) {
       ['retro', retro.RetroRoom, ['interior.js']],
     ]) {
       ClubRoom.verifyIdentity = EdmRoom.verifyIdentity;
-      const memberEntry = memberClubs.has(club);
-      const roomName = memberEntry ? club : club + '-review';
-      const paths = ['/review/' + club];
-      if (memberEntry) paths.push('/clubs/' + club);
-      matchMaker.defineRoomType(roomName, ClubRoom);
+      const path = '/clubs/' + club;
+      const paths = ['/review/' + club, path];
+      matchMaker.defineRoomType(club, ClubRoom);
       app.use(paths, (_req, res, next) =>
         res.locals.session.user ? next() : res.sendStatus(401),
       );
-      if (memberEntry) {
-        // Relative map and activity URLs resolve from the club directory.
-        const path = '/clubs/' + club;
-        app.get(new RegExp('^' + path + '$'), (_req, res) => res.redirect(path + '/'));
-        app.get(path + '/', serveFile('../stage/' + club + '/index.html'));
-      }
+      // Relative map and activity URLs resolve from the club directory.
+      app.get(new RegExp('^' + path + '$'), (_req, res) => res.redirect(path + '/'));
+      app.get(path + '/', serveFile('../stage/' + club + '/index.html'));
       for (const file of ['index.html', club + '-empty.glb', 'activities.js', ...files])
         app.get(paths.map(path => path + '/' + file), serveFile('../stage/' + club + '/' + file));
       app.post(paths.map(path => path + '/admission'), async (_req, res) => {
@@ -238,9 +232,7 @@ export async function startChannels(app, { origin, secret, port }) {
         try {
           const identity = session.user.id;
           const expires = Date.parse(session.expires);
-          const seat = memberEntry
-            ? await ClubRoom.reserve(identity, expires)
-            : await matchMaker.joinOrCreate(roomName, { identity, expires });
+          const seat = await ClubRoom.reserve(identity, expires);
           const { name, roomId, processId } = seat.room;
           res.json({ sessionId: seat.sessionId, room: { name, roomId, processId } });
         } catch {
