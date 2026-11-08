@@ -105,7 +105,9 @@ export async function startChannels(app, { origin, secret, port }) {
             id: club,
             name,
             review:
-              localTest && res.locals.session.user ? '/review/' + club + '/index.html' : undefined,
+              localTest && res.locals.session.user
+                ? (club === 'hiphop' ? '/clubs/hiphop/' : '/review/' + club + '/index.html')
+                : undefined,
             open: false,
             channels: [],
           }),
@@ -214,19 +216,29 @@ export async function startChannels(app, { origin, secret, port }) {
       ['retro', retro.RetroRoom, ['interior.js']],
     ]) {
       ClubRoom.verifyIdentity = EdmRoom.verifyIdentity;
-      matchMaker.defineRoomType(club + '-review', ClubRoom);
-      app.use('/review/' + club, (_req, res, next) =>
+      const isHipHop = club === 'hiphop';
+      const roomName = isHipHop ? 'hiphop' : club + '-review';
+      const paths = ['/review/' + club];
+      if (isHipHop) paths.push('/clubs/hiphop');
+      matchMaker.defineRoomType(roomName, ClubRoom);
+      app.use(paths, (_req, res, next) =>
         res.locals.session.user ? next() : res.sendStatus(401),
       );
+      if (isHipHop) {
+        // Relative map and activity URLs resolve from the club directory.
+        app.get(/^\/clubs\/hiphop$/, (_req, res) => res.redirect('/clubs/hiphop/'));
+        app.get('/clubs/hiphop/', serveFile('../stage/hiphop/index.html'));
+      }
       for (const file of ['index.html', club + '-empty.glb', 'activities.js', ...files])
-        app.get('/review/' + club + '/' + file, serveFile('../stage/' + club + '/' + file));
-      app.post('/review/' + club + '/admission', async (_req, res) => {
+        app.get(paths.map(path => path + '/' + file), serveFile('../stage/' + club + '/' + file));
+      app.post(paths.map(path => path + '/admission'), async (_req, res) => {
         const session = res.locals.session;
         try {
-          const seat = await matchMaker.joinOrCreate(club + '-review', {
-            identity: session.user.id,
-            expires: Date.parse(session.expires),
-          });
+          const identity = session.user.id;
+          const expires = Date.parse(session.expires);
+          const seat = isHipHop
+            ? await hiphop.reserveHipHop(identity, expires)
+            : await matchMaker.joinOrCreate(roomName, { identity, expires });
           const { name, roomId, processId } = seat.room;
           res.json({ sessionId: seat.sessionId, room: { name, roomId, processId } });
         } catch {

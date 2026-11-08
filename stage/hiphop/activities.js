@@ -11,7 +11,7 @@ export async function startActivities({ B, scene, cam, canvas, engine, extras, e
     document.head.append(sdk);
   });
   const admission = await fetch('./admission', { method: 'POST' });
-  if (!admission.ok) throw Error('검수 채널 입장 실패');
+  if (!admission.ok) throw Error('힙합 채널에 입장하지 못했습니다. 로비에서 다시 입장해 주세요.');
   const room = await new Colyseus.Client('wss://' + location.host).consumeSeatReservation(
     await admission.json(),
   );
@@ -94,7 +94,8 @@ export async function startActivities({ B, scene, cam, canvas, engine, extras, e
   });
   room.onMessage('snapshot', ({ actors, zones }) => {
     const states = { OPEN: '열림', CLOSED: '닫힘', OPENING: '준비 중', DRAINING: '퇴장 대기' };
-    status.textContent = '배틀·스트리트 ' + states[zones[0]] + ' · 루프탑·크루 ' + states[zones[1]];
+    status.textContent = '채널 ' + room.roomId + ' · ' + actors.length + '명 · 배틀·스트리트 ' +
+      states[zones[0]] + ' · 루프탑·크루 ' + states[zones[1]];
     const present = new Set();
     for (const a of actors) {
       present.add(a.id);
@@ -143,10 +144,13 @@ export async function startActivities({ B, scene, cam, canvas, engine, extras, e
     () => {
       clearInterval(timer);
       music.reset();
-      room.leave();
+      if (joined) room.leave();
     },
     { once: true },
   );
+  window.addEventListener('pageshow', event => {
+    if (event.persisted) location.reload();
+  });
   scene.onBeforeRenderObservable.add(() => {
     if (!joined) return;
     const foot = new B.Vector3(cam.position.x, cam.position.y - eye, cam.position.z);
