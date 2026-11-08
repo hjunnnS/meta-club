@@ -59,6 +59,98 @@ function attach(mesh, parent, material) {
   return mesh;
 }
 
+function marquee(B, scene, root, event) {
+  const screen = ledScreen(B, scene, event.message, event.nickname);
+  screen.parent = root;
+  const texture = screen.material.emissiveTexture;
+  const ctx = texture.getContext();
+  const base = document.createElement('canvas');
+  base.width = ctx.canvas.width;
+  base.height = ctx.canvas.height;
+  base.getContext('2d').drawImage(ctx.canvas, 0, 0);
+  let lastFrame = -1;
+  return t => {
+    const frame = Math.floor(t * 16);
+    if (frame === lastFrame) return;
+    lastFrame = frame;
+    ctx.drawImage(base, 0, 0);
+    const sweep = (t % 3.5) / 2.6 * 1360 - 170;
+    const shine = ctx.createLinearGradient(sweep - 75, 0, sweep + 75, 45);
+    shine.addColorStop(0, 'transparent');
+    shine.addColorStop(0.5, 'rgba(197,245,255,0.30)');
+    shine.addColorStop(1, 'transparent');
+    ctx.fillStyle = shine;
+    ctx.fillRect(21, 19, 982, 346);
+    for (let i = 0; i < 29; i++) {
+      const wave = (1 + Math.cos(i * 0.5 - t * 4)) / 2;
+      ctx.fillStyle = 'rgba(255,218,158,' + (0.18 + 0.8 * wave ** 3) + ')';
+      const x = 30 + i * 34.4;
+      ctx.fillRect(x, 24, 15, 7);
+      ctx.fillRect(1009 - x, 353, 15, 7);
+    }
+    // A small four-point glint travels along each edge without obscuring the lettering.
+    for (const [x, y] of [[sweep, 29], [1024 - sweep, 356]]) {
+      if (x < 23 || x > 1001) continue;
+      ctx.fillStyle = '#fff3d5';
+      ctx.beginPath();
+      for (let i = 0; i < 8; i++) {
+        const a = i * Math.PI / 4, r = i % 2 ? 3 : 16;
+        ctx.lineTo(x + r * Math.cos(a), y + r * Math.sin(a));
+      }
+      ctx.closePath();
+      ctx.fill();
+    }
+    texture.update();
+  };
+}
+
+// Each burst is one animated mesh. All viewers derive the same trails from the event clock.
+function summonBurst(B, scene, root, x, y, z, start, tint) {
+  const count = 40;
+  const positions = new Float32Array(count * 12);
+  const colors = [], indices = [], velocities = [];
+  const color = B.Color3.FromHexString(tint);
+  for (let i = 0; i < count; i++) {
+    const angle = i * 2.399963;
+    const speed = 1.9 + 1.6 * ((i * 13) % 19) / 18;
+    velocities.push([Math.cos(angle) * speed, Math.sin(angle) * speed, Math.sin(i * 1.7) * 1.1]);
+    const offset = i * 4;
+    indices.push(offset, offset + 1, offset + 2, offset, offset + 2, offset + 3);
+    colors.push(color.r, color.g, color.b, 0, color.r, color.g, color.b, 0.8,
+      1, 0.96, 0.84, 1, color.r, color.g, color.b, 0.8);
+  }
+  const material = paint(B, scene, 'spark light', '#ffffff', 1);
+  material.disableLighting = true;
+  material.alphaMode = B.Engine.ALPHA_ADD;
+  const sparks = attach(new B.Mesh('summon firework', scene), root, material);
+  sparks.hasVertexAlpha = true;
+  sparks.position.set(x, y, z);
+  const data = new B.VertexData();
+  data.positions = positions;
+  data.indices = indices;
+  data.colors = colors;
+  data.applyToMesh(sparks, true);
+  sparks.alwaysSelectAsActiveMesh = true;
+  return t => {
+    const age = t - start;
+    sparks.setEnabled(age >= 0 && age < 1.65);
+    if (!sparks.isEnabled()) return;
+    const prev = Math.max(0, age - 0.22);
+    const reach = 1 - Math.exp(-age * 1.5), tail = 1 - Math.exp(-prev * 1.5);
+    velocities.forEach(([vx, vy, vz], i) => {
+      const hx = vx * reach, hy = vy * reach - 0.68 * age * age, hz = vz * reach;
+      const tx = vx * tail, ty = vy * tail - 0.68 * prev * prev, tz = vz * tail;
+      const dx = hx - tx, dy = hy - ty;
+      const width = 0.042 / Math.max(0.01, Math.hypot(dx, dy));
+      const mx = hx - dx * 0.33, my = hy - dy * 0.33;
+      positions.set([tx, ty, tz, mx - dy * width, my + dx * width, hz,
+        hx, hy, hz, mx + dy * width, my - dx * width, hz], i * 12);
+    });
+    sparks.updateVerticesData(B.VertexBuffer.PositionKind, positions);
+    material.alpha = Math.min(1, (1.65 - age) * 1.8);
+  };
+}
+
 function crystal(B, scene, root) {
   const gem = new B.TransformNode('floating crystal', scene);
   gem.parent = root;
@@ -100,8 +192,16 @@ function crystal(B, scene, root) {
     ring.position.set(0, 0.1, -7);
     return ring;
   });
+  const bursts = [
+    summonBurst(B, scene, root, -2.9, 4.7, -7.8, 0.75, '#ffb34e'),
+    summonBurst(B, scene, root, 3.2, 5.2, -8, 1.05, '#ff85ce'),
+    summonBurst(B, scene, root, -0.5, 6.3, -8.5, 1.55, '#70eaff'),
+  ];
   return t => {
-    gem.position.set(0, 4.1 + Math.sin(t * 1.6) * 0.27, -7);
+    const rise = 1 - (1 - Math.min(1, t / 1.6)) ** 3;
+    gem.scaling.setAll(0.03 + 0.97 * rise);
+    gem.position.set(0, 0.18 + 3.92 * rise + Math.sin(t * 1.6) * 0.27 * rise, -7);
+    for (const burst of bursts) burst(t);
     gem.rotation.y = t * 0.85;
     gem.rotation.z = Math.sin(t * 0.8) * 0.13;
     rings.forEach((r, i) => r.scaling.setAll(1 + 0.08 * Math.sin(t * 2.3 + i * 2)));
@@ -120,18 +220,51 @@ function lasers(B, scene, root) {
       beams.push({ beam, side, i, origin: new B.Vector3(side * 6.8, 4.6, -16) });
     }
   }
+  const hoops = [0, 1, 2].map(i => {
+    const hoop = attach(B.MeshBuilder.CreateTorus('laser tunnel ring', {
+      diameter: 1, thickness: 0.012, tessellation: 64,
+    }, scene), root, paints[i]);
+    hoop.rotation.x = Math.PI / 2;
+    return hoop;
+  });
   return t => {
-    const phase = Math.floor(t / 4);
-    for (const { beam, side, i, origin } of beams) {
+    const phase = Math.floor(t / 4), beat = t % 4;
+    for (const [index, { beam, side, i, origin }] of beams.entries()) {
       const spread = (i - 2.5) / 2.5;
-      const x = (phase % 2 ? -side : side) * 4 + spread * 9 + Math.sin(t * 1.3) * 4;
-      const end = new B.Vector3(x, 4.4 + 2.5 * Math.sin(t * 1.15 + spread * 1.4), 0.5 + 1.5 * Math.cos(t + i));
-      const delta = end.subtract(origin);
+      const a = index * Math.PI / 6 + t * 0.8;
+      let x, y, z;
+      origin.set(side * 6.8, 4.6, -16);
+      if (phase === 0) { // Twin fans unfurl from each side of the booth.
+        x = side * 4 + spread * (3 + 5 * Math.sin(beat * 0.75));
+        y = 4.2 + spread * 2 + Math.sin(t * 1.6);
+        z = -1;
+      } else if (phase === 1) { // Moving pairs weave an X lattice above the floor.
+        origin.y = 2.5 + i * 0.78;
+        x = -side * (5.8 + Math.sin(beat * 2));
+        y = 4.6 - spread * 2.3 + Math.sin(beat * 2 + i * 0.5);
+        z = -1 + spread;
+      } else if (phase === 2) { // Two offset circles of endpoints form a twisting tunnel.
+        origin.set(2.0 * Math.cos(a), 4.4 + 2.0 * Math.sin(a), -15);
+        x = 4.1 * Math.cos(a + 0.45);
+        y = 4.4 + 4.1 * Math.sin(a + 0.45);
+        z = -2;
+      } else { // A rotating crown converges, then opens into a wide finale.
+        x = (2 + 5 * beat / 4) * Math.cos(a);
+        y = 4.7 + 2.7 * Math.sin(a);
+        z = -3 + Math.cos(a) * 1.3;
+      }
+      const delta = new B.Vector3(x, y, z).subtract(origin);
       beam.position.copyFrom(origin).addInPlace(delta.scale(0.5));
       beam.scaling.y = delta.length();
       beam.rotationQuaternion = B.Quaternion.FromUnitVectorsToRef(B.Axis.Y, delta.normalize(), beam.rotationQuaternion || new B.Quaternion());
       beam.material = paints[(i + phase) % paints.length];
     }
+    hoops.forEach((hoop, i) => {
+      hoop.setEnabled(phase === 2);
+      const progress = (beat * 0.45 + i / 3) % 1;
+      hoop.position.set(0, 4.4, -15 + 13 * progress);
+      hoop.scaling.setAll(4 + 4.2 * progress);
+    });
   };
 }
 
@@ -206,8 +339,7 @@ export function eventPlayer(B, scene, now = Date.now) {
     stop();
     current = event;
     root = new B.TransformNode('stage event', scene);
-    if (event.kind === 'led') ledScreen(B, scene, event.message, event.nickname).parent = root;
-    else animate = {crystal, laser:lasers, phoenix}[event.kind](B, scene, root);
+    animate = {led: marquee, crystal, laser: lasers, phoenix}[event.kind](B, scene, root, event);
     tick();
   }
   function tick() {
