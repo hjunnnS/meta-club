@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ko">
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  /><title>클럽 로비</title>
+  <style>
+    body {
+      margin: 2rem auto;
+      padding: 0 1rem;
+      max-width: 48rem;
+      background: #171422;
+      color: #eee8ff;
+      font: 16px/1.6 system-ui;
+    }
+    section {
+      padding: 1rem 0;
+      border-top: 1px solid #594866;
+    }
+    a {
+      color: #d1b5ff;
+    }
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+    label {
+      display: inline-block;
+      margin-right: 1rem;
+    }
+    h1,
+    h2 {
+      margin: 0.5rem 0;
+    }
+  </style>
+  <h1>클럽 로비</h1>
+  <p id="signin">
+    <a href="/auth/signin?callbackUrl=%2Flobby">Google 또는 Apple로 로그인</a>하면 닉네임과 아바타를
+    설정할 수 있습니다.
+  </p>
+  <form hidden>
+    <label>닉네임 <input name="nickname" required maxlength="32" /></label
+    ><label
+      >기본 아바타
+      <select name="avatar"></select></label
+    ><button>저장</button> <output></output>
+  </form>
+  <main aria-live="polite"></main>
+  <a href="/">홈</a>
+  <script type="module" src="/lobby.js"></script>
+</html>

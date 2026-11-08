@@ -22,7 +22,7 @@ Babylon.js 9.35.0과 PlayCanvas 2.23.3에서 동일 GLB를 불러와 Chrome 156 
 
 [10a-1 중앙 플로어 군무와 데스크톱 성능 비교](dance/README.md)
 
-[G1 Google·Apple 계정 인증 실행 안내](app/README.md)
+[G1 클럽 웹 앱 실행 안내](app/README.md)
 
 ## EDM 페스티벌 인테리어 검토본
 

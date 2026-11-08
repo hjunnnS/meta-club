@@ -38,9 +38,9 @@ app.get('/', (_req, res) => {
   const session = res.locals.session;
   if (session?.user?.id) {
     const operatorLink = isOperator(session) ? '<p><a href="/operator">운영자 공간</a></p>' : '';
-    return res.send(page('메타 클럽', '<p>로그인되었습니다.</p><p><a href="/clubs/edm">EDM 클럽 입장</a></p>' + operatorLink + '<a href="/auth/signout">로그아웃</a>'));
+    return res.send(page('메타 클럽', '<p>로그인되었습니다.</p><p><a href="/lobby">클럽 로비</a></p>' + operatorLink + '<a href="/auth/signout">로그아웃</a>'));
   }
-  res.send(page('메타 클럽', '<p><a href="/clubs/edm">EDM 클럽 입장</a></p><a href="/auth/signin?callbackUrl=%2F">Google 또는 Apple로 로그인</a>'));
+  res.send(page('메타 클럽', '<p><a href="/lobby">클럽 로비</a></p><a href="/auth/signin?callbackUrl=%2F">Google 또는 Apple로 로그인</a>'));
 });
 
 // The lobby and channel admission implementations can share this server policy.
@@ -63,7 +63,7 @@ app.get('/api/account', (_req, res) => res.json(res.locals.account));
 
 app.use(['/operator', '/api/operator'], requireOperator);
 app.get('/operator', (_req, res) => {
-  res.send(page('운영자 공간', '<p>운영자 계정으로 로그인했습니다.</p><a href="/">메타 클럽으로 돌아가기</a>'));
+  res.send(page('운영자 공간', '<button id="refresh">새로고침</button><output></output><section id="operations"></section><a href="/">메타 클럽으로 돌아가기</a><script type="module" src="/operator/operations.js"></script>'));
 });
 app.get('/api/operator', (_req, res) => res.json({ role: 'operator' }));
 
