@@ -30,6 +30,16 @@ app.get('/', async (req, res) => {
   res.send(page('메타 클럽', '<a href="/auth/signin?callbackUrl=%2F">Google 또는 Apple로 로그인</a>'));
 });
 
+// The lobby and channel admission implementations can share this server policy.
+app.get('/api/access', async (req, res) => {
+  const session = await getSession(req, auth);
+  res.json({
+    role: session?.user?.id ? 'member' : 'guest',
+    lobby: { view: true },
+    club: { enter: true },
+  });
+});
+
 app.use('/api/account', async (req, res, next) => {
   const session = await getSession(req, auth);
   if (!session?.user?.id) return res.status(401).json({ error: 'login_required' });
