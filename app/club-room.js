@@ -1,3 +1,5 @@
+import { ManagedChannelZones } from './managed-channel-zones.js';
+import { edmArea, permittedPath } from './edm-layout.js';
 import { blockedMessage } from './message-filter.js';
 import { background } from './visitors.js';
 import { playlist } from './music.js';
@@ -32,6 +34,9 @@ export class EdmRoom extends Room {
     this.maxClients = capacity;
     this.setSeatReservationTime(seatSeconds);
     this.members = new Map();
+    this.zones = new ManagedChannelZones();
+    this.preparing = [];
+    this.eventTier = 0;
     this.epoch = Date.now();
     rooms.set(this.roomId, this);
     this.ai = Array.from({ length: 5 }, (_, i) => ({
@@ -65,6 +70,7 @@ export class EdmRoom extends Room {
       const m = this.member(c);
       if (!m || !this.allowActivity(c)) return;
       if (m.seat !== null) {
+        if (!this.positionMember(c.sessionId, m, c.userData.preSeat)) return;
         Object.assign(m, c.userData.preSeat);
         m.seat = null;
         m.action = 'idle';
@@ -74,6 +80,7 @@ export class EdmRoom extends Room {
         );
         if (idx < 0 || [...this.members.values()].some((other) => other.seat === idx))
           return this.notice(c, '가까운 빈 좌석이 필요합니다.');
+        if (!this.positionMember(c.sessionId, m, seats[idx])) return;
         c.userData.preSeat = { x: m.x, y: m.y, z: m.z, yaw: m.yaw };
         Object.assign(m, seats[idx], { seat: idx, action: 'sit' });
       }
@@ -128,12 +135,39 @@ export class EdmRoom extends Room {
       }
     }, 100);
     this.clock.setInterval(() => {
+      this.tickZones(performance.now());
       this.refreshVisitors();
       for (const ai of this.ai.slice(3, 5)) if (Date.now() > (ai.until || 0)) ai.action = 'dance';
       this.dirty = true;
     }, 300);
   }
+  zoneStates() {
+    return [this.zones.state(1), this.zones.state(2)];
+  }
+
+  tickZones(now) {
+    // All geometry is prebuilt. Publish OPENING for a tick before allowing entry.
+    for (const { tier, attempt } of this.preparing)
+      this.zones.finishOpening(tier, attempt, true, now);
+    this.preparing = this.zones.observe(now, this.eventTier);
+    for (const tier of [2, 1]) {
+      if (this.zones.state(tier) !== 'DRAINING') continue;
+      for (const id of this.zones.drain(tier, now).movedAI) {
+        const actor = this.ai.find((a) => a.id === id);
+        if (actor)
+          Object.assign(actor, { x: actor.x < 0 ? -4 : 4, y: 0.018, z: 1, action: 'dance' });
+      }
+    }
+  }
+
+  positionMember(id, from, to) {
+    if (from && !permittedPath(from, to, this.zoneStates())) return false;
+    const { tier, group } = edmArea(to);
+    return this.zones.move('human', id, this.zones.location('human', id), tier, group);
+  }
+
   refreshVisitors() {
+    const before = new Set(this.ai.map((a) => a.id));
     const elapsed = (Date.now() - this.epoch) / 1000;
     for (let i = 0; i < 3; i++) this.ai[i] = background(i, elapsed);
     const extra = Math.min(extraVisitors, capacity - this.members.size);
@@ -146,6 +180,25 @@ export class EdmRoom extends Room {
         nickname: 'AI 손님 ' + (6 + i),
       };
     }
+    // Two reactive dancers use the reviewed side floors once available.
+    for (const [i, actor] of this.ai.entries()) {
+      if (i === 3 || i === 4) {
+        const sign = i === 3 ? -1 : 1;
+        const side = this.zones.canEnter(1);
+        Object.assign(actor, {
+          x: sign * (side ? 14.6 : 4),
+          y: side ? 0.045 : 0.018,
+          z: side ? 6 : 1,
+        });
+      }
+      before.delete(actor.id);
+      const { tier, group } = edmArea(actor);
+      if (!this.zones.move('ai', actor.id, this.zones.location('ai', actor.id), tier, group)) {
+        Object.assign(actor, { x: 0, y: 0.018, z: 0, action: 'dance' });
+        this.zones.move('ai', actor.id, this.zones.location('ai', actor.id), 0, 'dancefloor');
+      }
+    }
+    for (const id of before) this.zones.move('ai', id, this.zones.location('ai', id), null);
   }
   react(member, action, explicit = false) {
     for (const ai of this.ai.slice(3, 5)) {
@@ -174,7 +227,11 @@ export class EdmRoom extends Room {
     return { channelId: this.roomId, people: this.members.size, ai: this.ai.length, capacity };
   }
   snapshot() {
-    return { actors: [...this.members.values(), ...this.ai], epoch: this.epoch };
+    return {
+      actors: [...this.members.values(), ...this.ai],
+      epoch: this.epoch,
+      zones: this.zoneStates(),
+    };
   }
   move(c, p) {
     const m = this.member(c);
@@ -190,6 +247,10 @@ export class EdmRoom extends Room {
       p.y > 4.1 ||
       Math.hypot(p.x - m.x, p.y - m.y, p.z - m.z) > Math.min(5, elapsed * 4.5 + 0.16)
     ) {
+      c.send('place', m);
+      return;
+    }
+    if (!this.positionMember(c.sessionId, m, p)) {
       c.send('place', m);
       return;
     }
@@ -211,7 +272,11 @@ export class EdmRoom extends Room {
       old.client.leave(4001);
     }
     const previous = recent.get(identity);
-    const place = restore && previous?.room === this.roomId ? previous.place : floorEntry;
+    let place = restore && previous?.room === this.roomId ? previous.place : floorEntry;
+    if (!this.positionMember(client.sessionId, null, place)) {
+      place = floorEntry;
+      this.positionMember(client.sessionId, null, place);
+    }
     const m = {
       ...profile(identity),
       ...place,
@@ -240,6 +305,12 @@ export class EdmRoom extends Room {
     if (!m) return;
     client.userData.expiry?.clear();
     const { identity } = client.userData;
+    this.zones.move(
+      'human',
+      client.sessionId,
+      this.zones.location('human', client.sessionId),
+      null,
+    );
     this.members.delete(client.sessionId);
     if (connected.get(identity)?.client === client) connected.delete(identity);
     if (remember) {

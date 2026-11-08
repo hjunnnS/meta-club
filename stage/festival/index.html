@@ -51,7 +51,7 @@ async function open(){
  walker.ellipsoid=new B.Vector3(.28,.71,.28);
  walker.ellipsoidOffset=new B.Vector3(0,walker.ellipsoid.y,0);
  walker.isPickable=false;
- let walking=false;
+ let walking=false, allowedStep=()=>true;
  let joystick={x:0,y:0}, seated=false;
  const down=new B.Vector3(0,-1,0);
  function groundAt(x,z,foot){
@@ -98,7 +98,7 @@ async function open(){
    delta.y=nextGround-foot;
    walker.moveWithCollisions(delta);
    const y=groundAt(walker.position.x,walker.position.z,foot);
-   if(y===null){walker.position.copyFrom(before);return;}
+   if(y===null || !allowedStep({x:before.x,y:foot,z:before.z},{x:walker.position.x,y,z:walker.position.z})){walker.position.copyFrom(before);return;}
    walker.position.y=y+walker.ellipsoid.y+.12;
    cam.position.set(walker.position.x,y+eyeHeight,walker.position.z);
  }
@@ -172,7 +172,7 @@ async function open(){
    nav.hidden=true;nav.style.display='none';tour.hidden=true;
    walkMode(true);
    cam.detachControl();
-   startLiveScene({B,cam,scene,engine,canvas,glow,eyeHeight,
+   allowedStep=startLiveScene({B,cam,scene,engine,canvas,glow,eyeHeight,
      joystick:(x,y)=>{joystick={x,y};},
      place(actor){
        seated=actor.seat!==null;
