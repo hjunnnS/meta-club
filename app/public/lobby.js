@@ -40,6 +40,11 @@ async function load() {
           p.append(a);
           section.append(p);
         }
+      } else if (club.review) {
+        const link = document.createElement('a');
+        link.href = club.review;
+        link.textContent = '데스크톱 활동 검수';
+        section.append(link);
       } else section.append('준비 중');
       content.append(section);
     }
