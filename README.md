@@ -36,7 +36,7 @@ PC에서는 **직접 걷기**를 선택한 뒤 WASD 또는 방향키로 이동�
 
 ## G3 공개 순서와 힙합 골목 검수
 
-공개 순서는 EDM → 힙합 → 소셜 라운지 → 레트로 디스코다. EDM의 첫 공개 공간은 입구·중앙 플로어·DJ 무대·양쪽 댄스존·발코니이며, 핵심 체험은 음악·이동·군무·채팅·AI 손님 5명이다.
+공개 순서는 EDM → 힙합 → 소셜 라운지 → 레트로 디스코다. EDM의 첫 공개 공간은 입구·중앙 플로어·DJ 무대·양쪽 댄스존·발코니이며, 핵심 체험은 음악·이동·군무·AI 손님 5명이다.
 
 [힙합 빈 스테이지 조감도](stage/hiphop/overview.jpg) · [3D 모델](stage/hiphop/hiphop-empty.glb) · [Issue #20](https://github.com/hjunnnS/meta-club/issues/20)
 

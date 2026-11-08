@@ -5,7 +5,7 @@
 *{box-sizing:border-box}body{margin:0;background:#1c2023;color:#fcf6e8;font:15px system-ui}canvas{display:block;width:100vw;height:100dvh;touch-action:none;outline:0}
 header,nav,.pin{position:fixed}header{top:18px;left:22px;pointer-events:none;text-shadow:0 1px 8px #111}h1{font-size:24px;margin:0}p{margin:4px 0;color:#dfd9c9}
 nav{bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:6px;padding:6px;background:#202426ed;border-radius:8px;max-width:95vw;overflow:auto}button{white-space:nowrap;background:transparent;color:inherit;border:0;padding:8px 12px;font:inherit;cursor:pointer}button[aria-pressed=true]{background:#b7cd93;color:#231b12;border-radius:4px}.pin{transform:translate(-50%,-100%);background:#22282be8;border-bottom:2px solid #b7cd93;padding:3px 7px;border-radius:3px;font-size:13px;pointer-events:none}
-#conversation{position:fixed;bottom:76px;left:18px;width:min(24rem,90vw);padding:12px;background:#203330ed;border-radius:8px}#conversation ul{list-style:none;padding:0;max-height:8em;overflow:auto}#conversation input{width:70%;padding:7px}nav{align-items:center}nav span{white-space:nowrap}
+nav{align-items:center}nav span{white-space:nowrap}
 button[data-dance][aria-pressed="true"]{font-weight:700;box-shadow:inset 0 -3px currentColor}
 #lobby-return{position:fixed;top:16px;right:18px;z-index:2;background:#201f25eb;color:#fff;padding:8px 12px;border-radius:6px}
 </style>
@@ -14,7 +14,7 @@ button[data-dance][aria-pressed="true"]{font-weight:700;box-shadow:inset 0 -3px 
 <a id="lobby-return" href="/lobby" hidden>로비로 돌아가기</a>
 <details id="activity-guide" hidden>
   <summary>활동 안내</summary>
-  <p><strong>메인 라운지 · 테이블 모임</strong><br>입구에서 정면의 메인 라운지로 가세요. 빈 의자 곁에서 ‘가까운 자리에 앉기’를 누르면 같은 테이블 사람들과 대화할 수 있습니다. 다른 자리로 가려면 ‘일어서기’를 누르세요.</p>
+  <p><strong>메인 라운지 · 테이블 모임</strong><br>입구에서 정면의 메인 라운지로 가세요. 빈 의자 곁에서 ‘가까운 자리에 앉기’를 누르면 다른 손님과 같은 테이블에 앉을 수 있습니다. 다른 자리로 가려면 ‘일어서기’를 누르세요.</p>
   <p><strong>가든 라운지 · <span data-tier="1">상태 확인 중</span></strong><br>정원이 열리면 메인 라운지 왼쪽 연결로를 따라가세요. 정원 테이블에서도 빈 의자를 골라 앉을 수 있습니다.</p>
 </details>
 <div id="pins"></div><nav aria-label="검수 시점"></nav>

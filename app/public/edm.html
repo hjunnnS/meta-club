@@ -19,7 +19,6 @@
     }
     header,
     nav,
-    form,
     aside {
       display: flex;
       align-items: center;
@@ -65,17 +64,6 @@
       background: #21192bee;
       padding: 0.6rem;
       border-radius: 0.5rem;
-    }
-    #log {
-      max-height: 5rem;
-      overflow: auto;
-      margin: 0;
-      padding: 0 1rem;
-      list-style: none;
-    }
-    form input {
-      flex: 1;
-      min-width: 8rem;
     }
     #orientation {
       display: none;
@@ -128,7 +116,7 @@
   <main>
     <iframe title="EDM 클럽 공간" hidden></iframe>
     <div id="guide" hidden>
-      음악 시작을 누른 뒤 WASD·드래그 또는 이동 패드로 공간을 둘러보세요. 춤과 채팅을 해 보고 위의
+      음악 시작을 누른 뒤 WASD·드래그 또는 이동 패드로 공간을 둘러보세요. 춤을 춰 보고 위의
       로비 링크로 퇴장하세요. <button id="dismiss">닫기</button>
     </div>
   </main>
@@ -156,22 +144,10 @@
     <button data-event="stop">연출 중단</button>
   </details>
   <aside>
-    <label
-      >채널
-      <select id="channels"></select></label
-    ><button id="switch">이동</button
-    ><label
-      >사용자
-      <select id="people"></select></label
-    ><button id="block">차단</button><button id="report">신고</button
-    ><output id="notice" aria-live="polite"></output>
+    <label>채널 <select id="channels"></select></label>
+    <button id="switch">이동</button>
+    <output id="notice" aria-live="polite"></output>
   </aside>
-  <ul id="log" aria-live="polite"></ul>
-  <form id="chat">
-    <input aria-label="채널 메시지" maxlength="320" placeholder="채널 메시지" /><button>
-      보내기
-    </button>
-  </form>
   <dialog id="shop-dialog" aria-labelledby="shop-title">
     <h2 id="shop-title">EDM 상품</h2>
     <p id="shop-price"></p>
