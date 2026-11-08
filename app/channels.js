@@ -68,6 +68,14 @@ export async function startChannels(app, { origin, secret, port }) {
   app.get('/clubs/edm/shop.js', serveFile('./public/shop.js'));
   const channelList = () => [...rooms.values()].map((r) => r.population());
   app.get('/api/operator/channels', (_req, res) => res.json(channelList()));
+  app.post('/api/operator/channels/:id/event-tier', (req, res) => {
+    const tier = req.body?.tier;
+    if (![0, 1, 2].includes(tier)) return res.sendStatus(400);
+    const room = rooms.get(req.params.id);
+    if (!room) return res.sendStatus(404);
+    room.eventTier = tier;
+    res.sendStatus(204);
+  });
   app.get('/api/operator/decisions', (_req, res) => res.json(decisions()));
   app.get('/api/operator/reports', (_req, res) => res.json(reports()));
   app.post('/api/operator/reports/:id', (req, res) => {
@@ -146,6 +154,7 @@ export async function startChannels(app, { origin, secret, port }) {
   app.get('/clubs/edm/client.js', serveFile('./public/channel-client.js'));
   app.get('/clubs/edm/sdk.js', serveFile('./node_modules/colyseus.js/dist/colyseus.js'));
   app.get('/clubs/edm/music.js', serveFile('./public/music.js'));
+  app.get('/clubs/edm/edm-layout.js', serveFile('./edm-layout.js'));
   app.get('/clubs/edm/scene.js', serveFile('./public/live-scene.js'));
   app.get('/stage/festival/index.html', serveFile('../stage/festival/index.html'));
   app.get('/stage/festival/edm-festival.glb', serveFile('../stage/festival/edm-festival.glb'));

@@ -48,6 +48,11 @@ function guide(step) {
 }
 function display(data) {
   snapshot = data;
+  if (data.zones) {
+    const labels = { CLOSED: '닫힘', OPENING: '준비 중', OPEN: '열림', DRAINING: '퇴장 대기' };
+    el('zones').textContent =
+      '사이드존 ' + labels[data.zones[0]] + ' · 발코니 ' + labels[data.zones[1]];
+  }
   if (data.actors.some((a) => a.id === room.sessionId && a.action === 'dance')) guide('dance');
   const names = data.actors.filter((a) => !a.ai && a.id !== room.sessionId);
   const key = JSON.stringify(names.map((a) => [a.id, a.nickname]));

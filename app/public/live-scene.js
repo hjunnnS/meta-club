@@ -1,3 +1,4 @@
+import { permittedPath } from './edm-layout.js';
 const colors = { indigo: '#8973F2', teal: '#49C8B1', rose: '#F28BAB', gold: '#FFCC55' };
 export function startLiveScene({
   B,
@@ -78,11 +79,13 @@ export function startLiveScene({
       66,
       'bold 44px sans-serif',
       actor.ai ? '#ffdb76' : 'white',
-      '#251d32',
+      'transparent',
       true,
     );
     const mat = new B.StandardMaterial('name material', scene);
     mat.diffuseTexture = tex;
+    mat.useAlphaFromDiffuseTexture = true;
+    glow.addExcludedMesh(label);
     mat.emissiveColor = B.Color3.White();
     mat.disableLighting = true;
     label.material = mat;
@@ -97,6 +100,7 @@ export function startLiveScene({
       actor,
       label,
       dispose() {
+        glow.removeExcludedMesh(label);
         root.dispose();
         mat.dispose();
         tex.dispose();
@@ -118,7 +122,17 @@ export function startLiveScene({
     glow.isEnabled = !low;
     engine.setHardwareScalingLevel(low ? 1.5 : 1);
   }
-  function onSnapshot({ actors, self }) {
+  let states = ['CLOSED', 'CLOSED'],
+    dancers = 0;
+  const washes = scene.lights
+    .filter((l) => l.name.startsWith('Stage wash'))
+    .map((light) => ({ light, base: light.intensity }));
+  const strips = scene.materials
+    .filter((m) => ['Orchid LED', 'Ice LED', 'Rose LED'].includes(m.name))
+    .map((material) => ({ material, base: material.emissiveColor.clone() }));
+  function onSnapshot({ actors, self, zones }) {
+    if (zones) states = zones;
+    dancers = actors.filter((a) => a.action === 'dance').length;
     own = self;
     const remaining = new Set(models.keys());
     for (const a of actors) {
@@ -263,6 +277,16 @@ export function startLiveScene({
     const now = performance.now(),
       dt = engine.getDeltaTime(),
       t = (Date.now() + offset - epoch) / 1000;
+    // The 120 BPM test loop and all clients share the room epoch. Smooth washes
+    // follow a four-beat phrase; the floor strips and dancers keep the same phase.
+    const phase = t * Math.PI * 4,
+      beatWave = Math.sin(phase);
+    washes.forEach(({ light, base }, i) => {
+      light.intensity = base * (dancers ? 1 + 0.38 * Math.sin(phase / 4 + (i * Math.PI) / 2) : 1);
+    });
+    strips.forEach(({ material, base }, i) => {
+      base.scaleToRef(dancers ? 1 + 0.26 * Math.sin(phase / 4 + i * 2) : 1, material.emissiveColor);
+    });
     let detailed = 0,
       ai = 0,
       visibleAI = 0;
@@ -272,14 +296,15 @@ export function startLiveScene({
         target = new B.Vector3(a.x, a.y, a.z);
       m.root.position = B.Vector3.Lerp(m.root.position, target, Math.min(1, dt / 90));
       m.root.rotation.y = a.yaw;
-      const close = B.Vector3.DistanceSquared(cam.position, target) < (low ? 8 : 17) ** 2;
+      const close =
+        B.Vector3.DistanceSquared(scene.activeCamera.position, target) < (low ? 8 : 21) ** 2;
       m.near.setEnabled(close);
       m.far.setEnabled(!close);
       if (a.ai) {
         ai++;
         if ((close ? m.torso : m.far).isInFrustum(planes)) visibleAI++;
       }
-      const beat = Math.sin(t * (a.action === 'walk' ? 8 : 6));
+      const beat = a.action === 'dance' ? beatWave : Math.sin(t * (a.action === 'walk' ? 8 : 6));
       if (!close) {
         m.far.position.y = a.action === 'sit' ? 0.47 : 0.79;
         m.far.rotation.z = a.action === 'dance' || a.action === 'wave' ? 0.12 * beat : 0;
@@ -333,4 +358,5 @@ export function startLiveScene({
     }
   });
   send('scene-ready', true);
+  return (from, to) => permittedPath(from, to, states);
 }
