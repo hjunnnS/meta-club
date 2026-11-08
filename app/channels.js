@@ -7,6 +7,7 @@ import { WebSocketTransport } from '@colyseus/ws-transport';
 
 import { capacity, seatSeconds, pending, connected, recent, rooms, EdmRoom } from './club-room.js';
 import { avatars, profile, saveProfile, reports, decisions, moderate } from './store.js';
+import { installShop } from './shop.js';
 import { installMusic } from './music.js';
 import express from 'express';
 import { readSession } from './session.js';
@@ -63,6 +64,8 @@ export async function startChannels(app, { origin, secret, port }) {
   });
   app.use('/clubs/edm', cookieParser(secret));
   installMusic(app);
+  installShop(app);
+  app.get('/clubs/edm/shop.js', serveFile('./public/shop.js'));
   const channelList = () => [...rooms.values()].map((r) => r.population());
   app.get('/api/operator/channels', (_req, res) => res.json(channelList()));
   app.get('/api/operator/decisions', (_req, res) => res.json(decisions()));

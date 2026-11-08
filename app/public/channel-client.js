@@ -1,3 +1,4 @@
+import { initShop } from './shop.js';
 import { musicPlayer } from './music.js';
 const el = (id) => document.getElementById(id),
   map = document.querySelector('iframe');
@@ -31,6 +32,7 @@ function firstVisitFailure(reason) {
   } catch {}
 }
 const frame = (kind, data) => map.contentWindow?.postMessage({ kind, data }, location.origin);
+const shop = initShop(frame);
 function guide(step) {
   try {
     const key = 'edm-first-visit',
@@ -68,6 +70,7 @@ function display(data) {
 }
 function disconnected(message, reconnect) {
   firstVisitFailure(message);
+  shop.channel(null);
   music.reset();
   room = undefined;
   snapshot = null;
@@ -121,6 +124,7 @@ async function enter(channelId) {
           : '다른 입장 처리가 진행 중입니다.',
       );
     const next = await new Colyseus.Client('wss://' + location.host).consumeSeatReservation(a.seat);
+    shop.channel(null);
     room = next;
     el('retry').hidden = true;
     ready = false;
@@ -196,6 +200,7 @@ window.addEventListener('message', (event) => {
   const { kind, data } = event.data || {};
   if (kind === 'scene-ready') {
     ready = true;
+    if (memberId?.startsWith('local-test:')) shop.channel(room.roomId, memberId);
     room.send('snapshot');
     room.send('clock', Date.now());
     if (snapshot) display(snapshot);

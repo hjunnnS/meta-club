@@ -90,6 +90,33 @@
     [hidden] {
       display: none !important;
     }
+    body:has(#shop-stop:not([hidden])) #guide {
+      display: none;
+    }
+    body:has(#shop-stop:not([hidden])) iframe {
+      pointer-events: none;
+    }
+    #shop-dialog {
+      color: inherit;
+      background: #201a29;
+      border: 1px solid #665475;
+      border-radius: 12px;
+      width: min(32rem, 90vw);
+      max-height: 85dvh;
+      overflow: auto;
+    }
+    #shop-dialog::backdrop {
+      background: #100e18aa;
+    }
+    #shop-dialog input {
+      display: block;
+      width: 100%;
+      margin: 0.35rem 0;
+    }
+    #shop-dialog p,
+    #shop-dialog li {
+      line-height: 1.5;
+    }
   </style>
   <header>
     <h1>EDM 클럽</h1>
@@ -105,6 +132,8 @@
     </div>
   </main>
   <nav>
+    <button id="shop-open" hidden>EDM 상품</button>
+    <button id="shop-stop" hidden>미리보기 종료</button>
     <button id="music">음악 시작</button><output id="track"></output
     ><button data-action="dance">춤</button><button data-action="wave">인사</button
     ><button data-action="idle">멈춤</button><button id="seat">앉기 / 일어나기</button
@@ -134,6 +163,22 @@
       보내기
     </button>
   </form>
+  <dialog id="shop-dialog" aria-labelledby="shop-title">
+    <h2 id="shop-title">EDM 상품</h2>
+    <p id="shop-price"></p>
+    <ul id="shop-terms"></ul>
+    <label>전광판 문구 <input id="shop-message" placeholder="축하 메시지를 입력하세요" /></label>
+    <p id="shop-status" role="status"></p>
+    <div id="shop-select">
+      <button id="shop-preview">미리보기</button> <button id="shop-order">모의 구매 요청</button>
+    </div>
+    <div id="shop-checkout" hidden>
+      <button data-result="awaiting_verification">모의 승인 요청</button>
+      <button data-result="cancelled">주문 취소</button>
+      <button data-result="declined">거절 시뮬레이션</button>
+    </div>
+    <button id="shop-new" hidden>새 주문</button> <button id="shop-close">닫기</button>
+  </dialog>
   <script src="/clubs/edm/sdk.js"></script>
   <script type="module" src="/clubs/edm/client.js"></script>
 </html>
