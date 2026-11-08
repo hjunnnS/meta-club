@@ -1,22 +1,20 @@
 // Durations belong to the button preview, not to a purchased item.
 export const effects = {
   led: { label: 'LED 전광판', seconds: 15 },
-  crystal: { label: '크리스털 홀로그램', seconds: 14 },
   laser: { label: '레이저 쇼', seconds: 16 },
   phoenix: { label: '불사조 소환', seconds: 14 },
 };
 
-export function ledScreen(B, scene, message, nickname = '') {
-  const texture = new B.DynamicTexture('stage message', { width: 1024, height: 384 }, scene, false);
-  const ctx = texture.getContext();
-  const gradient = ctx.createLinearGradient(0, 0, 1024, 384);
-  gradient.addColorStop(0, '#171039');
-  gradient.addColorStop(1, '#371634');
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, 1024, 384);
-  ctx.strokeStyle = '#ea94df';
-  ctx.lineWidth = 3;
-  ctx.strokeRect(18, 16, 988, 352);
+function lettering(message, nickname) {
+  const layer = document.createElement('canvas');
+  layer.width = 1024;
+  layer.height = 384;
+  const ctx = layer.getContext('2d');
+  ctx.shadowColor = '#050622';
+  ctx.shadowBlur = 8;
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = '#10142c';
+  ctx.lineWidth = 8;
   ctx.textAlign = 'center';
   ctx.font = Array.from(message).length <= 14 ? 'bold 86px sans-serif' : 'bold 48px sans-serif';
   const lines = [''];
@@ -26,12 +24,54 @@ export function ledScreen(B, scene, message, nickname = '') {
   }
   const spacing = Math.min(80, 235 / lines.length);
   ctx.fillStyle = '#ffdef5';
-  lines.forEach((line, i) => ctx.fillText(line, 512, (nickname ? 170 : 210) + (i - (lines.length - 1) / 2) * spacing));
+  lines.forEach((line, i) => {
+    const y = (nickname ? 170 : 210) + (i - (lines.length - 1) / 2) * spacing;
+    ctx.strokeText(line, 512, y);
+    ctx.fillText(line, 512, y);
+  });
   if (nickname) {
     ctx.font = 'bold 35px sans-serif';
     ctx.fillStyle = '#80f1ee';
+    ctx.strokeText(nickname, 512, 331, 930);
     ctx.fillText(nickname, 512, 331, 930);
   }
+  return layer;
+}
+
+// Original moving artwork. Keep the lettering on a separate layer above the media wall.
+function mediaWall(ctx, t) {
+  const wash = ctx.createLinearGradient(0, 0, 1024, 384);
+  wash.addColorStop(0, '#122b68');
+  wash.addColorStop(0.53, '#090f30');
+  wash.addColorStop(1, '#174858');
+  ctx.fillStyle = wash;
+  ctx.fillRect(0, 0, 1024, 384);
+  for (let ribbon = 0; ribbon < 16; ribbon++) {
+    ctx.beginPath();
+    for (let x = -16; x <= 1040; x += 16) {
+      const y = 175 + ribbon * 5 + 78 * Math.sin(x / 181 - t * 0.94 + ribbon * 0.12)
+        + 44 * Math.sin(x / 89 + t * 0.51 + ribbon * 0.07);
+      if (x === -16) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.lineWidth = ribbon % 4 === 0 ? 3.4 : 1.5;
+    ctx.strokeStyle = ribbon < 8 ? '#467ddb' : '#419daa';
+    ctx.stroke();
+  }
+  for (let i = 0; i < 68; i++) {
+    const x = (i * 103 + t * (12 + i % 5 * 9)) % 1170 - 92;
+    const y = (i * 71 + t * (7 + i % 4)) % 520 - 108;
+    const width = 12 + i * 17 % 73, height = 20 + i * 23 % 102;
+    ctx.strokeStyle = ['#226097', '#24aab2', '#68e1d0', '#669df5'][i % 4];
+    ctx.lineWidth = i % 6 === 0 ? 3 : 1.4;
+    ctx.strokeRect(x, y, width, height);
+  }
+}
+
+export function ledScreen(B, scene, message, nickname = '', overlay = lettering(message, nickname)) {
+  const texture = new B.DynamicTexture('stage message', { width: 1024, height: 384 }, scene, false);
+  const ctx = texture.getContext();
+  mediaWall(ctx, 0);
+  ctx.drawImage(overlay, 0, 0);
   texture.update();
   const material = new B.StandardMaterial('LED message', scene);
   material.emissiveTexture = texture;
@@ -60,20 +100,17 @@ function attach(mesh, parent, material) {
 }
 
 function marquee(B, scene, root, event) {
-  const screen = ledScreen(B, scene, event.message, event.nickname);
+  const overlay = lettering(event.message, event.nickname);
+  const screen = ledScreen(B, scene, event.message, event.nickname, overlay);
   screen.parent = root;
   const texture = screen.material.emissiveTexture;
   const ctx = texture.getContext();
-  const base = document.createElement('canvas');
-  base.width = ctx.canvas.width;
-  base.height = ctx.canvas.height;
-  base.getContext('2d').drawImage(ctx.canvas, 0, 0);
   let lastFrame = -1;
   return t => {
     const frame = Math.floor(t * 16);
     if (frame === lastFrame) return;
     lastFrame = frame;
-    ctx.drawImage(base, 0, 0);
+    mediaWall(ctx, t);
     const sweep = (t % 3.5) / 2.6 * 1360 - 170;
     const shine = ctx.createLinearGradient(sweep - 75, 0, sweep + 75, 45);
     shine.addColorStop(0, 'transparent');
@@ -100,171 +137,103 @@ function marquee(B, scene, root, event) {
       ctx.closePath();
       ctx.fill();
     }
+    ctx.drawImage(overlay, 0, 0);
     texture.update();
   };
 }
 
-// Each burst is one animated mesh. All viewers derive the same trails from the event clock.
-function summonBurst(B, scene, root, x, y, z, start, tint) {
-  const count = 40;
-  const positions = new Float32Array(count * 12);
-  const colors = [], indices = [], velocities = [];
-  const color = B.Color3.FromHexString(tint);
-  for (let i = 0; i < count; i++) {
-    const angle = i * 2.399963;
-    const speed = 1.9 + 1.6 * ((i * 13) % 19) / 18;
-    velocities.push([Math.cos(angle) * speed, Math.sin(angle) * speed, Math.sin(i * 1.7) * 1.1]);
-    const offset = i * 4;
-    indices.push(offset, offset + 1, offset + 2, offset, offset + 2, offset + 3);
-    colors.push(color.r, color.g, color.b, 0, color.r, color.g, color.b, 0.8,
-      1, 0.96, 0.84, 1, color.r, color.g, color.b, 0.8);
-  }
-  const material = paint(B, scene, 'spark light', '#ffffff', 1);
-  material.disableLighting = true;
-  material.alphaMode = B.Engine.ALPHA_ADD;
-  const sparks = attach(new B.Mesh('summon firework', scene), root, material);
-  sparks.hasVertexAlpha = true;
-  sparks.position.set(x, y, z);
-  const data = new B.VertexData();
-  data.positions = positions;
-  data.indices = indices;
-  data.colors = colors;
-  data.applyToMesh(sparks, true);
-  sparks.alwaysSelectAsActiveMesh = true;
-  return t => {
-    const age = t - start;
-    sparks.setEnabled(age >= 0 && age < 1.65);
-    if (!sparks.isEnabled()) return;
-    const prev = Math.max(0, age - 0.22);
-    const reach = 1 - Math.exp(-age * 1.5), tail = 1 - Math.exp(-prev * 1.5);
-    velocities.forEach(([vx, vy, vz], i) => {
-      const hx = vx * reach, hy = vy * reach - 0.68 * age * age, hz = vz * reach;
-      const tx = vx * tail, ty = vy * tail - 0.68 * prev * prev, tz = vz * tail;
-      const dx = hx - tx, dy = hy - ty;
-      const width = 0.042 / Math.max(0.01, Math.hypot(dx, dy));
-      const mx = hx - dx * 0.33, my = hy - dy * 0.33;
-      positions.set([tx, ty, tz, mx - dy * width, my + dx * width, hz,
-        hx, hy, hz, mx + dy * width, my - dx * width, hz], i * 12);
-    });
-    sparks.updateVerticesData(B.VertexBuffer.PositionKind, positions);
-    material.alpha = Math.min(1, (1.65 - age) * 1.8);
-  };
-}
-
-function crystal(B, scene, root) {
-  const gem = new B.TransformNode('floating crystal', scene);
-  gem.parent = root;
-  const vertices = [0, 2.45, 0, 0, -2.15, 0];
-  const indices = [];
-  const colors = [];
-  const palette = ['#98ffff', '#55cde8', '#9472fa', '#3e65d8', '#69e1df', '#848af9'];
-  // Flat triangular facets keep their distinct colors as the crystal turns.
-  const positions = [];
-  for (let i = 0; i < 6; i++) {
-    const arc = i * Math.PI / 3;
-    vertices.push(1.33 * Math.cos(arc), 0.4, 1.33 * Math.sin(arc));
-  }
-  for (let i = 0; i < 6; i++) {
-    const a = i + 2, b = (i + 1) % 6 + 2;
-    for (const [tip, face] of [[0, [0, b, a]], [1, [1, a, b]]]) {
-      const color = B.Color3.FromHexString(palette[i]).scale(tip ? 0.68 : 1);
-      for (const v of face) {
-        indices.push(positions.length / 3);
-        positions.push(...vertices.slice(v * 3, v * 3 + 3));
-        colors.push(color.r, color.g, color.b, 1);
-      }
-    }
-  }
-  const body = attach(new B.Mesh('cut crystal', scene), gem, paint(B, scene, 'opal', '#ffffff', 0.36));
-  const geometry = new B.VertexData();
-  geometry.positions = positions;
-  geometry.indices = indices;
-  geometry.colors = colors;
-  geometry.normals = [];
-  B.VertexData.ComputeNormals(positions, indices, geometry.normals);
-  geometry.applyToMesh(body);
-  body.enableEdgesRendering();
-  body.edgesWidth = 2.2;
-  body.edgesColor = new B.Color4(0.6, 1, 1, 1);
-  const halo = paint(B, scene, 'cyan projection', '#64f6fa');
-  const rings = [3.8, 4.4].map(diameter => {
-    const ring = attach(B.MeshBuilder.CreateTorus('projected ring', { diameter, thickness: 0.045, tessellation: 64 }, scene), root, halo);
-    ring.position.set(0, 0.1, -7);
-    return ring;
-  });
-  const bursts = [
-    summonBurst(B, scene, root, -2.9, 4.7, -7.8, 0.75, '#ffb34e'),
-    summonBurst(B, scene, root, 3.2, 5.2, -8, 1.05, '#ff85ce'),
-    summonBurst(B, scene, root, -0.5, 6.3, -8.5, 1.55, '#70eaff'),
-  ];
-  return t => {
-    const rise = 1 - (1 - Math.min(1, t / 1.6)) ** 3;
-    gem.scaling.setAll(0.03 + 0.97 * rise);
-    gem.position.set(0, 0.18 + 3.92 * rise + Math.sin(t * 1.6) * 0.27 * rise, -7);
-    for (const burst of bursts) burst(t);
-    gem.rotation.y = t * 0.85;
-    gem.rotation.z = Math.sin(t * 0.8) * 0.13;
-    rings.forEach((r, i) => r.scaling.setAll(1 + 0.08 * Math.sin(t * 2.3 + i * 2)));
-  };
-}
-
 function lasers(B, scene, root) {
-  const colors = ['#32e9ef', '#ed46cc', '#9773ff'];
-  const paints = colors.map(color => paint(B, scene, 'laser', color, 1));
-  const beams = [];
-  for (const side of [-1, 1]) {
-    for (let i = 0; i < 6; i++) {
-      const beam = attach(B.MeshBuilder.CreateCylinder('sweeping beam', {
-        height: 1, diameterTop: 0.12, diameterBottom: 0.035, tessellation: 6,
-      }, scene), root, paints[i % 3]);
-      beams.push({ beam, side, i, origin: new B.Vector3(side * 6.8, 4.6, -16) });
-    }
+  const lime = '#cfff3c', violet = '#bc3aff', amber = '#ffae1e';
+  const spectrum = ['#30ecff', '#fe309b', '#4673ff', '#6bff56', '#ffd540', '#ff4141'];
+  const palette = Object.fromEntries([...spectrum, lime, violet, amber].map(hex => [hex, B.Color3.FromHexString(hex)]));
+  const gradient = new B.DynamicTexture('spotlight falloff', 64, scene, false);
+  const ctx = gradient.getContext();
+  const pool = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+  pool.addColorStop(0, '#ffffff');
+  pool.addColorStop(0.35, '#aaaaaa');
+  pool.addColorStop(1, '#000000');
+  ctx.fillStyle = pool;
+  ctx.fillRect(0, 0, 64, 64);
+  gradient.getAlphaFromRGB = true;
+  gradient.update();
+
+  function beam(name, top, bottom, material) {
+    const mesh = attach(B.MeshBuilder.CreateCylinder(name, {
+      height: 1, diameterTop: top, diameterBottom: bottom, tessellation: 10,
+      cap: B.Mesh.NO_CAP,
+    }, scene), root, material);
+    mesh.rotationQuaternion = new B.Quaternion();
+    return mesh;
   }
-  const hoops = [0, 1, 2].map(i => {
-    const hoop = attach(B.MeshBuilder.CreateTorus('laser tunnel ring', {
-      diameter: 1, thickness: 0.012, tessellation: 64,
-    }, scene), root, paints[i]);
-    hoop.rotation.x = Math.PI / 2;
-    return hoop;
+  const direction = new B.Vector3();
+  function aim(mesh, origin, target) {
+    target.subtractToRef(origin, direction);
+    mesh.position.copyFrom(origin).addInPlace(direction.scale(0.5));
+    mesh.scaling.y = direction.length();
+    B.Quaternion.FromUnitVectorsToRef(B.Axis.Y, direction.normalize(), mesh.rotationQuaternion);
+  }
+
+  // Eight overhead heads on a circular truss project shafts and matching pools on the floor.
+  const heads = Array.from({ length: 8 }, (_, i) => {
+    const angle = Math.PI * i / 4;
+    const origin = new B.Vector3(4.6 * Math.cos(angle), 7.65, -8 + 3.3 * Math.sin(angle));
+    const light = paint(B, scene, 'shaft glow', '#ffffff');
+    light.disableLighting = true;
+    light.alphaMode = B.Engine.ALPHA_ADD;
+    light.alpha = 0.15;
+    const core = paint(B, scene, 'beam core', '#ffffff');
+    core.disableLighting = true;
+    const shaft = beam('overhead shaft', 0.75, 0.10, light);
+    const ray = beam('overhead core', 0.13, 0.05, core);
+    const lens = attach(B.MeshBuilder.CreateSphere('moving head lens', {diameter: 0.28, segments: 8}, scene), root, core);
+    lens.position.copyFrom(origin);
+    const footprint = paint(B, scene, 'floor wash', '#ffffff');
+    footprint.disableLighting = true;
+    footprint.opacityTexture = gradient;
+    footprint.emissiveTexture = gradient;
+    footprint.alphaMode = B.Engine.ALPHA_ADD;
+    footprint.alpha = 0.52;
+    const spot = attach(B.MeshBuilder.CreateGround('floor pool', {width: 2.8, height: 2.8}, scene), root, footprint);
+    return {angle, origin, shaft, ray, light, core, spot, footprint};
   });
+  const fanMaterials = spectrum.map(hex => paint(B, scene, 'scanner beam', hex));
+  const fans = Array.from({length: 28}, (_, i) => {
+    const side = i < 14 ? -1 : 1;
+    return {
+      side, spread: (i % 14) / 13 * 2 - 1,
+      origin: new B.Vector3(side * 6.7, 4.2, -15.6),
+      mesh: beam('scanning fan', 0.065, 0.018, fanMaterials[i % spectrum.length]),
+    };
+  });
+  const target = new B.Vector3();
   return t => {
-    const phase = Math.floor(t / 4), beat = t % 4;
-    for (const [index, { beam, side, i, origin }] of beams.entries()) {
-      const spread = (i - 2.5) / 2.5;
-      const a = index * Math.PI / 6 + t * 0.8;
-      let x, y, z;
-      origin.set(side * 6.8, 4.6, -16);
-      if (phase === 0) { // Twin fans unfurl from each side of the booth.
-        x = side * 4 + spread * (3 + 5 * Math.sin(beat * 0.75));
-        y = 4.2 + spread * 2 + Math.sin(t * 1.6);
-        z = -1;
-      } else if (phase === 1) { // Moving pairs weave an X lattice above the floor.
-        origin.y = 2.5 + i * 0.78;
-        x = -side * (5.8 + Math.sin(beat * 2));
-        y = 4.6 - spread * 2.3 + Math.sin(beat * 2 + i * 0.5);
-        z = -1 + spread;
-      } else if (phase === 2) { // Two offset circles of endpoints form a twisting tunnel.
-        origin.set(2.0 * Math.cos(a), 4.4 + 2.0 * Math.sin(a), -15);
-        x = 4.1 * Math.cos(a + 0.45);
-        y = 4.4 + 4.1 * Math.sin(a + 0.45);
-        z = -2;
-      } else { // A rotating crown converges, then opens into a wide finale.
-        x = (2 + 5 * beat / 4) * Math.cos(a);
-        y = 4.7 + 2.7 * Math.sin(a);
-        z = -3 + Math.cos(a) * 1.3;
+    const phase = Math.floor(t / 4);
+    for (const [i, head] of heads.entries()) {
+      const a = head.angle + t * 0.72;
+      const color = palette[phase === 0 ? (i % 2 ? lime : violet)
+        : phase === 2 ? amber : spectrum[(i + phase) % spectrum.length]];
+      for (const mat of [head.core, head.light, head.footprint]) mat.emissiveColor.copyFrom(color);
+      if (phase === 2) {
+        target.set(head.origin.x + 2.6 * Math.sin(t * 1.8), 0.08, head.origin.z + 3.3);
+      } else {
+        const radius = phase === 0 ? 5.7 : 7.3 + 1.6 * Math.sin(t * 1.5);
+        target.set(radius * Math.cos(a), 0.08, -6 + radius * Math.sin(a));
       }
-      const delta = new B.Vector3(x, y, z).subtract(origin);
-      beam.position.copyFrom(origin).addInPlace(delta.scale(0.5));
-      beam.scaling.y = delta.length();
-      beam.rotationQuaternion = B.Quaternion.FromUnitVectorsToRef(B.Axis.Y, delta.normalize(), beam.rotationQuaternion || new B.Quaternion());
-      beam.material = paints[(i + phase) % paints.length];
+      aim(head.shaft, head.origin, target);
+      aim(head.ray, head.origin, target);
+      head.spot.position.copyFrom(target);
     }
-    hoops.forEach((hoop, i) => {
-      hoop.setEnabled(phase === 2);
-      const progress = (beat * 0.45 + i / 3) % 1;
-      hoop.position.set(0, 4.4, -15 + 13 * progress);
-      hoop.scaling.setAll(4 + 4.2 * progress);
-    });
+    for (const {mesh, origin, side, spread} of fans) {
+      mesh.setEnabled(phase === 1 || phase === 3);
+      if (!mesh.isEnabled()) continue;
+      if (phase === 1) {
+        target.set(-side * 4 + spread * 10, 4.3 + 3.2 * spread * side + Math.sin(t * 1.8), -1.8);
+      } else {
+        const angle = t * 1.15 + spread * 1.5;
+        target.set(-side * 3 + 6.8 * Math.cos(angle), 4.2 + 3.1 * Math.sin(angle) * side, -1.3);
+      }
+      aim(mesh, origin, target);
+    }
   };
 }
 
@@ -334,12 +303,12 @@ export function eventPlayer(B, scene, now = Date.now) {
     root = current = animate = null;
   }
   function set(event) {
-    if (!event) { stop(); return; }
+    if (!event || !Object.hasOwn(effects, event.kind)) { stop(); return; }
     if (current?.id === event.id || now() >= event.start + effects[event.kind].seconds*1000) return;
     stop();
     current = event;
     root = new B.TransformNode('stage event', scene);
-    animate = {led: marquee, crystal, laser: lasers, phoenix}[event.kind](B, scene, root, event);
+    animate = {led: marquee, laser: lasers, phoenix}[event.kind](B, scene, root, event);
     tick();
   }
   function tick() {
