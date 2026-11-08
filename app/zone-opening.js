@@ -56,8 +56,24 @@ export class ZoneOpening {
       this.#transition('OPENING', now);
       return ++this.#generation;
     }
-    if (allowShrink && now - this.#since >= this.#timing.minOpenMs) this.#transition('DRAINING', now);
+    if (allowShrink && now - this.#since >= this.#timing.minOpenMs)
+      this.#transition('DRAINING', now);
     return null;
+  }
+
+  // An operator event can retain a prepared zone while it is still draining.
+  retainForEvent(now) {
+    if (this.#state !== 'DRAINING') return;
+    this.#checkTime(now);
+    this.#transition('OPEN', now);
+  }
+
+  finishDraining(now, { humans, ai, reservations }) {
+    if (this.#state !== 'DRAINING') return false;
+    this.#checkTime(now);
+    if (humans !== 0 || ai !== 0 || reservations !== 0) return false;
+    this.#transition('CLOSED', now);
+    return true;
   }
 
   finishOpening(attempt, ready, now) {
