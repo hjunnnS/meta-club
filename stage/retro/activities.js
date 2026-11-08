@@ -1,3 +1,4 @@
+import { dances, danceButtons, danceCamera, animateDance } from '/clubs/edm/free-dance.js';
 import { avatarFactory } from '/clubs/edm/avatar.js';
 import { musicPlayer } from '/clubs/edm/music.js';
 
@@ -132,6 +133,12 @@ export async function startDisco({ B, scene, cam, canvas, extras, eye, hint, nav
     else if (nearest) room.send('activity', nearest.key);
     canvas.focus();
   });
+  let free = false;
+  const viewDance = danceCamera(B, scene);
+  const selectDance = danceButtons(nav, (id) => {
+    room.send('free-dance', id);
+    canvas.focus();
+  });
   const audio = button('시험 음악', () => music.start());
   nav.append(track);
   const status = document.createElement('p');
@@ -159,9 +166,12 @@ export async function startDisco({ B, scene, cam, canvas, extras, eye, hint, nav
       m.root.position.set(a.x, a.y, a.z);
       m.root.rotation.y = a.yaw;
       if (a.id !== room.sessionId) continue;
+      free = dances.has(a.action);
+      selectDance(a.action, Boolean(a.seat));
       acting = a.action !== 'idle';
       m.root.setEnabled(acting);
-      if (acting) {
+      if (free) viewDance(a);
+      else if (acting) {
         observe.position.set(a.x + Math.sign(a.x) * 2, a.y + 2, a.z + 5.7);
         observe.setTarget(new B.Vector3(a.x * 0.72, a.y + 2.2, a.z));
         scene.activeCamera = observe;
@@ -175,6 +185,7 @@ export async function startDisco({ B, scene, cam, canvas, extras, eye, hint, nav
   });
   room.onLeave(() => {
     joined = false;
+    selectDance(null, true);
     music.reset();
     status.textContent = '연결 종료 · 로비에서 다시 입장하세요.';
     action.disabled = audio.disabled = true;
@@ -207,7 +218,7 @@ export async function startDisco({ B, scene, cam, canvas, extras, eye, hint, nav
       : nearest
         ? labels[nearest.key] + ' 시작'
         : '활동 표시로 이동';
-    if (!acting && performance.now() - lastSent >= 100) {
+    if ((!acting || free) && performance.now() - lastSent >= 100) {
       const p = { x: foot.x, y: foot.y, z: foot.z, yaw: cam.rotation.y };
       if (!lastPosition || Object.keys(p).some((k) => Math.abs(p[k] - lastPosition[k]) > 0.001)) {
         room.send('move', p);
@@ -219,6 +230,11 @@ export async function startDisco({ B, scene, cam, canvas, extras, eye, hint, nav
       beat = Math.sin(seconds * Math.PI * 4);
     animateBall(seconds);
     for (const m of models.values()) {
+      if (dances.has(m.actor.action)) {
+        animateDance(m, m.actor.action, (Date.now() + offset - epoch) / 1000);
+        continue;
+      }
+      m.near.position.x = 0;
       const dance = m.actor.action === 'disco',
         right = Math.floor(seconds * 2) % 4 < 2;
       m.near.position.set(dance ? 0.12 * beat : 0, dance ? 0.07 * Math.abs(beat) : 0, 0);

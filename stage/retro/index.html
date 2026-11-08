@@ -5,6 +5,7 @@
 *{box-sizing:border-box}body{margin:0;background:#1c2023;color:#fcf6e8;font:15px system-ui}canvas{display:block;width:100vw;height:100dvh;touch-action:none;outline:0}
 header,nav,.pin{position:fixed}header{top:18px;left:22px;pointer-events:none;text-shadow:0 1px 8px #111}h1{font-size:24px;margin:0}p{margin:4px 0;color:#dfd9c9}
 nav{bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:6px;padding:6px;background:#202426ed;border-radius:8px;max-width:95vw;overflow:auto}button{white-space:nowrap;background:transparent;color:inherit;border:0;padding:8px 12px;font:inherit;cursor:pointer}button[aria-pressed=true]{background:#ffbd8f;color:#231b12;border-radius:4px}.pin{transform:translate(-50%,-100%);background:#22282be8;border-bottom:2px solid #ffbd8f;padding:3px 7px;border-radius:3px;font-size:13px;pointer-events:none}
+button[data-dance][aria-pressed="true"]{font-weight:700;box-shadow:inset 0 -3px currentColor}
 </style>
 <canvas tabindex="0" aria-label="레트로 디스코 3D 검수 맵"></canvas>
 <header><h1>레트로 디스코</h1><p id="hint">검수 맵을 여는 중…</p></header>
@@ -56,7 +57,7 @@ async function openMap(){
  canvas.onkeydown=e=>{if(/^Key[WASD]$|^Arrow(Up|Down|Left|Right)$/.test(e.code)){e.preventDefault();keys.add(e.code);}};
  window.addEventListener('keyup',e=>keys.delete(e.code));canvas.onblur=()=>keys.clear();window.addEventListener('blur',()=>keys.clear());
  scene.onBeforeRenderObservable.add(()=>{
-   if(scene.activeCamera!==cam)return;
+   if(scene.activeCamera!==cam && scene.activeCamera.name!=='free dance')return;
    const axis=(a,b)=>Number(keys.has(a)||keys.has(b));
    const f=axis('KeyW','ArrowUp')-axis('KeyS','ArrowDown'),r=axis('KeyD','ArrowRight')-axis('KeyA','ArrowLeft');
    const heading=cam.getForwardRay().direction;

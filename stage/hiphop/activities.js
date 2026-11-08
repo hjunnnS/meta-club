@@ -1,3 +1,4 @@
+import { dances, danceButtons, danceCamera, animateDance } from '/clubs/edm/free-dance.js';
 import { avatarFactory } from '/clubs/edm/avatar.js';
 import { musicPlayer } from '/clubs/edm/music.js';
 
@@ -71,6 +72,12 @@ export async function startActivities({ B, scene, cam, canvas, engine, extras, e
     link.click();
   });
   photo.hidden = true;
+  let free = false;
+  const viewDance = danceCamera(B, scene);
+  const selectDance = danceButtons(nav, (id) => {
+    room.send('free-dance', id);
+    canvas.focus();
+  });
   const audio = button('시험 음악', () => music.start());
   nav.append(track);
   const status = document.createElement('p');
@@ -97,9 +104,12 @@ export async function startActivities({ B, scene, cam, canvas, engine, extras, e
       m.root.position.set(a.x, a.y, a.z);
       m.root.rotation.y = a.yaw;
       if (a.id !== room.sessionId) continue;
+      free = dances.has(a.action);
+      selectDance(a.action, Boolean(a.seat));
       acting = a.action !== 'idle';
       m.root.setEnabled(acting);
-      if (acting) {
+      if (free) viewDance(a);
+      else if (acting) {
         observe.position.set(a.x + 2.1, a.y + 1.65, a.z + 2.3);
         observe.setTarget(new B.Vector3(a.x, a.y + 0.95, a.z));
         scene.activeCamera = observe;
@@ -114,6 +124,7 @@ export async function startActivities({ B, scene, cam, canvas, engine, extras, e
   });
   room.onLeave(() => {
     joined = false;
+    selectDance(null, true);
     music.reset();
     status.textContent = '연결 종료 · 로비에서 다시 입장하세요.';
     action.disabled = audio.disabled = true;
@@ -149,7 +160,7 @@ export async function startActivities({ B, scene, cam, canvas, engine, extras, e
       : nearest
         ? labels[nearest.key] + ' 시작'
         : '활동 표시로 이동';
-    if (!acting && performance.now() - lastSent >= 100) {
+    if ((!acting || free) && performance.now() - lastSent >= 100) {
       const p = { x: foot.x, y: foot.y, z: foot.z, yaw: cam.rotation.y };
       if (!lastPosition || Object.keys(p).some((k) => Math.abs(p[k] - lastPosition[k]) > 0.001)) {
         room.send('move', p);
@@ -159,6 +170,11 @@ export async function startActivities({ B, scene, cam, canvas, engine, extras, e
     }
     const beat = Math.sin((Date.now() + offset - epoch) * 0.012566);
     for (const m of models.values()) {
+      if (dances.has(m.actor.action)) {
+        animateDance(m, m.actor.action, (Date.now() + offset - epoch) / 1000);
+        continue;
+      }
+      m.near.position.x = 0;
       const dance = m.actor.action === 'dance',
         pose = m.actor.action === 'pose';
       m.near.position.y = dance ? 0.085 * Math.abs(beat) : 0;

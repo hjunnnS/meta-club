@@ -1,4 +1,5 @@
 import { socialTables } from './tables.js';
+import { dances, danceButtons, danceCamera, animateDance } from '/clubs/edm/free-dance.js';
 import { avatarFactory } from '/clubs/edm/avatar.js';
 import { musicPlayer } from '/clubs/edm/music.js';
 
@@ -92,6 +93,12 @@ export async function startTables({ B, scene, cam, canvas, extras, eye, hint, na
     else if (nearest) room.send('sit', nearest.id);
     canvas.focus();
   });
+  let free = false;
+  const viewDance = danceCamera(B, scene);
+  const selectDance = danceButtons(nav, (id) => {
+    room.send('free-dance', id);
+    canvas.focus();
+  });
   const audio = button('시험 음악', () => music.start());
   nav.append(track);
   const status = document.createElement('p'),
@@ -121,7 +128,13 @@ export async function startTables({ B, scene, cam, canvas, extras, eye, hint, na
     log.scrollTop = log.scrollHeight;
   });
   room.onMessage('notice', (m) => (notice.textContent = m));
-  room.onMessage('clock', (m) => music.clock(m));
+  let clockOffset = 0,
+    epoch = Date.now();
+  room.onMessage('clock', (m) => {
+    epoch = m.epoch;
+    clockOffset = m.now - (Date.now() + m.sent) / 2;
+    music.clock(m);
+  });
   room.onMessage('place', (p) => {
     cam.position.set(p.x, p.y + eye, p.z);
     lastPosition = undefined;
@@ -135,16 +148,22 @@ export async function startTables({ B, scene, cam, canvas, extras, eye, hint, na
       present.add(a.id);
       const m = models.get(a.id) ?? make(a);
       models.set(a.id, m);
+      m.actor = a;
       m.root.position.set(a.x, a.y, a.z);
       m.root.rotation.y = a.yaw;
       m.label.scaling.setAll(0.65);
+      m.near.position.x = 0;
+      m.torso.rotation.z = 0;
       m.near.position.y = a.seat ? -0.31 : 0;
       m.limbs.forEach((joint, i) => {
+        joint.rotation.z = 0;
         joint.rotation.x = a.seat ? (i % 2 ? -1.36 : -0.35) : 0;
       });
       if (a.id !== room.sessionId) continue;
+      free = dances.has(a.action);
+      selectDance(a.action, Boolean(a.seat));
       acting = Boolean(a.seat);
-      m.root.setEnabled(acting);
+      m.root.setEnabled(acting || free);
       if (currentTable !== a.table) {
         log.replaceChildren();
         input.value = '';
@@ -161,7 +180,8 @@ export async function startTables({ B, scene, cam, canvas, extras, eye, hint, na
         observe.setTarget(new B.Vector3(x, y + 0.9, z));
         scene.activeCamera = observe;
         form.querySelector('strong').textContent = names[a.table] + ' 테이블 대화';
-      } else scene.activeCamera = cam;
+      } else if (free) viewDance(a);
+      else scene.activeCamera = cam;
     }
     for (const [id, m] of models)
       if (!present.has(id)) {
@@ -171,6 +191,7 @@ export async function startTables({ B, scene, cam, canvas, extras, eye, hint, na
   });
   room.onLeave(() => {
     joined = false;
+    selectDance(null, true);
     music.reset();
     action.disabled = audio.disabled = true;
     form.hidden = true;
@@ -197,6 +218,9 @@ export async function startTables({ B, scene, cam, canvas, extras, eye, hint, na
     if (!joined) return;
     const foot = new B.Vector3(cam.position.x, cam.position.y - eye, cam.position.z);
 
+    for (const m of models.values())
+      if (dances.has(m.actor.action))
+        animateDance(m, m.actor.action, (Date.now() + clockOffset - epoch) / 1000);
     nearest = seats
       .filter((s) => !occupied.has(s.id))
       .map((s) => ({ s, d: Math.hypot(foot.x - s.x, foot.y - s.y, foot.z - s.z) }))
@@ -209,7 +233,7 @@ export async function startTables({ B, scene, cam, canvas, extras, eye, hint, na
       : nearest
         ? names[nearest.table] + ' · 빈 자리'
         : 'WASD 이동 · 테이블 가까이에서 착석';
-    if (!acting && performance.now() - lastSent >= 100) {
+    if ((!acting || free) && performance.now() - lastSent >= 100) {
       const p = { x: foot.x, y: foot.y, z: foot.z, yaw: cam.rotation.y };
       if (!lastPosition || Object.keys(p).some((k) => Math.abs(p[k] - lastPosition[k]) > 0.001)) {
         room.send('move', p);

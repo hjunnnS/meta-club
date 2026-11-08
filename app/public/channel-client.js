@@ -1,3 +1,4 @@
+import { dances, danceButtons } from './free-dance.js';
 import { initShop } from './shop.js';
 import { musicPlayer } from './music.js';
 const el = (id) => document.getElementById(id),
@@ -53,7 +54,9 @@ function display(data) {
     el('zones').textContent =
       '사이드존 ' + labels[data.zones[0]] + ' · 발코니 ' + labels[data.zones[1]];
   }
-  if (data.actors.some((a) => a.id === room.sessionId && a.action === 'dance')) guide('dance');
+  const self = data.actors.find((a) => a.id === room.sessionId);
+  selectDance(self?.action, self?.seat != null);
+  if (self?.action === 'dance' || dances.has(self?.action)) guide('dance');
   const names = data.actors.filter((a) => !a.ai && a.id !== room.sessionId);
   const key = JSON.stringify(names.map((a) => [a.id, a.nickname]));
   if (key !== rosterKey) {
@@ -246,6 +249,10 @@ el('music').onclick = () => {
 };
 el('quality').onchange = (e) => frame('quality', e.target.value);
 el('seat').onclick = () => room?.send('seat');
+const selectDance = danceButtons(el('dance-options'), (action) => {
+  room?.send('action', action);
+  map.contentDocument?.querySelector('canvas')?.focus();
+});
 for (const b of document.querySelectorAll('[data-action]'))
   b.onclick = () => room?.send('action', b.dataset.action);
 el('chat').onsubmit = (e) => {
