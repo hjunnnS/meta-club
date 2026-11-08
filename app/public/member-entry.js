@@ -30,6 +30,34 @@ export function offerReentry(nav, status, message = '클럽 연결이 끊겼습�
   };
 }
 
+function showActivityGuide(room, memberId) {
+  const guide = document.getElementById('activity-guide');
+  if (!guide) return;
+  const css = document.createElement('link');
+  css.rel = 'stylesheet';
+  css.href = './activity-guide.css';
+  document.head.append(css);
+
+  guide.open = true;
+  try {
+    const key = JSON.stringify(['club-activity-guide', memberId, room.name]);
+    guide.open = localStorage.getItem(key) !== 'seen';
+    if (guide.open) localStorage.setItem(key, 'seen');
+  } catch {
+    // The guide also works when the browser disables persistent storage.
+  }
+  guide.hidden = false;
+  const labels = { OPEN: '열림', CLOSED: '닫힘', OPENING: '준비 중', DRAINING: '퇴장 대기' };
+  const tiers = guide.querySelectorAll('[data-tier]');
+  room.onMessage('snapshot', ({ zones }) => {
+    for (const element of tiers) {
+      const state = labels[zones[Number(element.dataset.tier) - 1]] ?? '상태 확인 중';
+      if (element.textContent !== state) element.textContent = state;
+    }
+  });
+  room.onLeave(() => { guide.hidden = true; });
+}
+
 export async function enterClub(nav, status) {
   try {
     const sdk = document.createElement('script');
@@ -53,7 +81,10 @@ export async function enterClub(nav, status) {
       throw Error();
     }
     const client = new Colyseus.Client('wss://' + location.host);
-    return await client.consumeSeatReservation(await admission.json());
+    const { memberId, ...seat } = await admission.json();
+    const room = await client.consumeSeatReservation(seat);
+    showActivityGuide(room, memberId);
+    return room;
   } catch {
     offerReentry(nav, status, '채널에 연결하지 못했습니다. 잠시 후 다시 입장해 주세요.');
     return null;

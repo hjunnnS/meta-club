@@ -11,6 +11,11 @@ button[data-dance][aria-pressed="true"]{font-weight:700;box-shadow:inset 0 -3px 
 <canvas tabindex="0" aria-label="힙합 골목 3D 검수 맵"></canvas>
 <header><h1>힙합 골목</h1><p id="hint">검수 맵을 여는 중…</p></header>
 <a id="lobby-return" href="/lobby" hidden>로비로 돌아가기</a>
+<details id="activity-guide" hidden>
+  <summary>활동 안내</summary>
+  <p><strong>메인 홀 · 자유 춤</strong><br>입구에서 골목을 따라 직진하세요. 아래 ‘그루브’ 등 춤 버튼을 누르면 바로 춤추고, 중앙 바닥 표시에서는 ‘스트리트 댄스 시작’을 누를 수 있습니다.</p>
+  <p><strong>루프탑 포토존 · <span data-tier="2">상태 확인 중</span></strong><br>열리면 메인 홀 왼쪽 뒤 경사로를 올라가세요. 포토존 표시에서 ‘루프탑 포토존 시작’을 누른 뒤 ‘사진 저장’을 선택하세요.</p>
+</details>
 <div id="pins"></div><nav aria-label="검수 시점"></nav>
 <script src="../../dance/node_modules/babylonjs/babylon.js"></script>
 <script src="../../dance/node_modules/babylonjs-loaders/babylonjs.loaders.min.js"></script>
