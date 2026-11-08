@@ -240,6 +240,7 @@ export async function startChannels(app, { origin, secret, port }) {
       app.get(path + '/', serveFile('../stage/' + club + '/index.html'));
       for (const file of ['index.html', club + '-empty.glb', 'activities.js', ...files])
         app.get(paths.map(path => path + '/' + file), serveFile('../stage/' + club + '/' + file));
+      app.get(paths.map(path => path + '/member-entry.js'), serveFile('./public/member-entry.js'));
       app.post(paths.map(path => path + '/admission'), async (_req, res) => {
         const session = res.locals.session;
         try {
@@ -248,8 +249,10 @@ export async function startChannels(app, { origin, secret, port }) {
           const seat = await ClubRoom.reserve(identity, expires);
           const { name, roomId, processId } = seat.room;
           res.json({ sessionId: seat.sessionId, room: { name, roomId, processId } });
-        } catch {
-          res.sendStatus(409);
+        } catch (error) {
+          res.status(409).json({
+            error: error.message === 'already_joined' ? 'already_joined' : 'channel_unavailable',
+          });
         }
       });
     }

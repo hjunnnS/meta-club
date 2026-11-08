@@ -1,21 +1,12 @@
+import { enterClub, offerReentry } from './member-entry.js';
 import { socialTables } from './tables.js';
 import { dances, danceButtons, danceCamera, animateDance } from '/clubs/edm/free-dance.js';
 import { avatarFactory } from '/clubs/edm/avatar.js';
 import { musicPlayer } from '/clubs/edm/music.js';
 
 export async function startTables({ B, scene, cam, canvas, extras, eye, hint, nav }) {
-  const sdk = document.createElement('script');
-  sdk.src = '/clubs/edm/sdk.js';
-  await new Promise((resolve, reject) => {
-    sdk.onload = resolve;
-    sdk.onerror = reject;
-    document.head.append(sdk);
-  });
-  const admission = await fetch('./admission', { method: 'POST' });
-  if (!admission.ok) throw Error('소셜 라운지 채널에 입장하지 못했습니다. 로비에서 다시 입장해 주세요.');
-  const room = await new Colyseus.Client('wss://' + location.host).consumeSeatReservation(
-    await admission.json(),
-  );
+  const room = await enterClub(nav, hint);
+  if (!room) return;
   const make = avatarFactory(B, scene),
     models = new Map();
 
@@ -195,7 +186,7 @@ export async function startTables({ B, scene, cam, canvas, extras, eye, hint, na
     music.reset();
     action.disabled = audio.disabled = true;
     form.hidden = true;
-    status.textContent = '연결 종료 · 로비에서 다시 입장하세요.';
+    offerReentry(nav, status);
   });
   room.send('snapshot');
   room.send('clock', Date.now());
