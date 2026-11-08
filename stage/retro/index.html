@@ -6,13 +6,17 @@
 header,nav,.pin{position:fixed}header{top:18px;left:22px;pointer-events:none;text-shadow:0 1px 8px #111}h1{font-size:24px;margin:0}p{margin:4px 0;color:#dfd9c9}
 nav{bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:6px;padding:6px;background:#202426ed;border-radius:8px;max-width:95vw;overflow:auto}button{white-space:nowrap;background:transparent;color:inherit;border:0;padding:8px 12px;font:inherit;cursor:pointer}button[aria-pressed=true]{background:#ffbd8f;color:#231b12;border-radius:4px}.pin{transform:translate(-50%,-100%);background:#22282be8;border-bottom:2px solid #ffbd8f;padding:3px 7px;border-radius:3px;font-size:13px;pointer-events:none}
 button[data-dance][aria-pressed="true"]{font-weight:700;box-shadow:inset 0 -3px currentColor}
+#lobby-return{position:fixed;top:16px;right:18px;z-index:2;background:#201f25eb;color:#fff;padding:8px 12px;border-radius:6px}
 </style>
 <canvas tabindex="0" aria-label="레트로 디스코 3D 검수 맵"></canvas>
 <header><h1>레트로 디스코</h1><p id="hint">검수 맵을 여는 중…</p></header>
+<a id="lobby-return" href="/lobby" hidden>로비로 돌아가기</a>
 <div id="pins"></div><nav aria-label="검수 시점"></nav>
 <script src="../../dance/node_modules/babylonjs/babylon.js"></script>
 <script src="../../dance/node_modules/babylonjs-loaders/babylonjs.loaders.min.js"></script>
 <script>
+const reviewRoom = location.pathname === '/review/retro/index.html';
+document.querySelector('#lobby-return').hidden = !reviewRoom;
 async function openMap(){
  const B=BABYLON, canvas=document.querySelector('canvas'),engine=new B.Engine(canvas,true,{preserveDrawingBuffer:true}),scene=new B.Scene(engine);
  scene.useRightHandedSystem=true;scene.clearColor=new B.Color4(.105,.065,.105,1);
@@ -66,7 +70,7 @@ async function openMap(){
    const v=new B.Vector3(heading.x*f-heading.z*r,0,heading.z*f+heading.x*r).normalize().scale(3*Math.min(50,engine.getDeltaTime())/1000);
    step(v.x,v.z);
  });
- if(location.pathname==='/review/retro/index.html'){
+ if(reviewRoom){
    choose('입구');nav.replaceChildren();document.querySelector('#pins').hidden=true;
    const {startDisco}=await import('./activities.js');
    await startDisco({B,scene,cam,canvas,extras,eye,hint,nav});
