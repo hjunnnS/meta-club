@@ -12,6 +12,11 @@ button[data-dance][aria-pressed="true"]{font-weight:700;box-shadow:inset 0 -3px 
 <canvas tabindex="0" aria-label="소셜 라운지 3D 검수 맵"></canvas>
 <header><h1>소셜 라운지</h1><p id="hint">검수 맵을 여는 중…</p></header>
 <a id="lobby-return" href="/lobby" hidden>로비로 돌아가기</a>
+<details id="activity-guide" hidden>
+  <summary>활동 안내</summary>
+  <p><strong>메인 라운지 · 테이블 모임</strong><br>입구에서 정면의 메인 라운지로 가세요. 빈 의자 곁에서 ‘가까운 자리에 앉기’를 누르면 같은 테이블 사람들과 대화할 수 있습니다. 다른 자리로 가려면 ‘일어서기’를 누르세요.</p>
+  <p><strong>가든 라운지 · <span data-tier="1">상태 확인 중</span></strong><br>정원이 열리면 메인 라운지 왼쪽 연결로를 따라가세요. 정원 테이블에서도 빈 의자를 골라 앉을 수 있습니다.</p>
+</details>
 <div id="pins"></div><nav aria-label="검수 시점"></nav>
 <script src="../../dance/node_modules/babylonjs/babylon.js"></script>
 <script src="../../dance/node_modules/babylonjs-loaders/babylonjs.loaders.min.js"></script>

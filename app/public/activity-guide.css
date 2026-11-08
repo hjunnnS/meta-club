@@ -1,0 +1,16 @@
+#activity-guide {
+  position: fixed;
+  z-index: 1;
+  top: 64px;
+  right: 18px;
+  max-width: min(21rem, 85vw);
+  max-height: 60vh;
+  overflow: auto;
+  padding: 8px 12px;
+  border: 1px solid #ffffff40;
+  border-radius: 6px;
+  background: #201f25ef;
+  color: #fff;
+}
+#activity-guide summary { cursor: pointer; font-weight: 650; }
+#activity-guide p { margin: 10px 0 2px; line-height: 1.5; color: inherit; }
