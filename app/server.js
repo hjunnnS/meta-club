@@ -2,6 +2,7 @@ import express from 'express';
 import { ExpressAuth } from '@auth/express';
 import { isOperator, requireOperator } from './operator.js';
 import { readSession } from './session.js';
+import { startChannels } from './channels.js';
 import { auth, origin } from './auth.js';
 
 const app = express();
@@ -37,9 +38,9 @@ app.get('/', (_req, res) => {
   const session = res.locals.session;
   if (session?.user?.id) {
     const operatorLink = isOperator(session) ? '<p><a href="/operator">운영자 공간</a></p>' : '';
-    return res.send(page('메타 클럽', '<p>로그인되었습니다.</p>' + operatorLink + '<a href="/auth/signout">로그아웃</a>'));
+    return res.send(page('메타 클럽', '<p>로그인되었습니다.</p><p><a href="/clubs/edm">EDM 클럽 입장</a></p>' + operatorLink + '<a href="/auth/signout">로그아웃</a>'));
   }
-  res.send(page('메타 클럽', '<a href="/auth/signin?callbackUrl=%2F">Google 또는 Apple로 로그인</a>'));
+  res.send(page('메타 클럽', '<p><a href="/clubs/edm">EDM 클럽 입장</a></p><a href="/auth/signin?callbackUrl=%2F">Google 또는 Apple로 로그인</a>'));
 });
 
 // The lobby and channel admission implementations can share this server policy.
@@ -66,4 +67,4 @@ app.get('/operator', (_req, res) => {
 });
 app.get('/api/operator', (_req, res) => res.json({ role: 'operator' }));
 
-app.listen(Number(process.env.PORT || 3000), '127.0.0.1');
+await startChannels(app, { origin, secret: auth.secret, port: Number(process.env.PORT || 3000) });

@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EDM 클럽</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#100e18;color:#f4edff;font:16px system-ui}
+header{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;padding:.75rem 1rem}
+h1{margin:0;font-size:1.15rem}a{color:#dbcaff}button{font:inherit}
+iframe{display:block;width:100%;height:calc(100dvh - 4rem);border:0}[hidden]{display:none}
+</style>
+<header><h1>EDM 클럽</h1><output aria-live="polite">채널 배정 중…</output><button hidden>다시 입장</button><a href="/">나가기</a></header>
+<iframe title="EDM 클럽 공간" hidden></iframe>
+<script src="/clubs/edm/sdk.js"></script><script type="module" src="/clubs/edm/client.js"></script>
+</html>
