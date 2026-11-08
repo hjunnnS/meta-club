@@ -97,13 +97,7 @@ export async function startTables({ B, scene, cam, canvas, extras, eye, hint, na
     notice = document.createElement('p');
   hint.after(status, notice);
   room.onMessage('notice', (m) => (notice.textContent = m));
-  let clockOffset = 0,
-    epoch = Date.now();
-  room.onMessage('clock', (m) => {
-    epoch = m.epoch;
-    clockOffset = m.now - (Date.now() + m.sent) / 2;
-    music.clock(m);
-  });
+  room.onMessage('clock', (m) => music.clock(m));
   room.onMessage('place', (p) => {
     cam.position.set(p.x, p.y + eye, p.z);
     lastPosition = undefined;
@@ -121,6 +115,7 @@ export async function startTables({ B, scene, cam, canvas, extras, eye, hint, na
       m.root.position.set(a.x, a.y, a.z);
       m.root.rotation.y = a.yaw;
       m.label.scaling.setAll(0.65);
+      m.near.rotation.setAll(0);
       m.near.position.x = 0;
       m.torso.rotation.z = 0;
       m.near.position.y = a.seat ? -0.31 : 0;
@@ -184,9 +179,10 @@ export async function startTables({ B, scene, cam, canvas, extras, eye, hint, na
     if (!joined) return;
     const foot = new B.Vector3(cam.position.x, cam.position.y - eye, cam.position.z);
 
+    const danceBeat = music.beat();
     for (const m of models.values())
       if (dances.has(m.actor.action))
-        animateDance(m, m.actor.action, (Date.now() + clockOffset - epoch) / 1000);
+        animateDance(m, m.actor.action, danceBeat);
     nearest = seats
       .filter((s) => !occupied.has(s.id))
       .map((s) => ({ s, d: Math.hypot(foot.x - s.x, foot.y - s.y, foot.z - s.z) }))

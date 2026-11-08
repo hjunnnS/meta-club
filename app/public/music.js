@@ -1,4 +1,23 @@
 // The channel epoch drives the playlist for late entry, tab return and track changes.
+export function playlistPosition(tracks, epoch, now) {
+  const valid = tracks.filter((t) => t.until === null || now < Date.parse(t.until));
+  const duration = valid.reduce((total, t) => total + t.duration, 0);
+  if (!duration) return null;
+  const age = Math.max(0, (now - epoch) / 1000);
+  let time = age % duration;
+  for (const track of valid) {
+    if (time < track.duration) return { track, time, cycle: Math.floor(age / duration) };
+    time -= track.duration;
+  }
+  return null;
+}
+
+export function trackBeat(position, fallbackSeconds) {
+  if (!position) return fallbackSeconds * 2;
+  const {track, time} = position;
+  return (time - (track.firstBeat || 0)) * (track.bpm || 120) / 60;
+}
+
 export function musicPlayer(notice, playing, failed) {
   let ctx,
     source,
@@ -40,16 +59,7 @@ export function musicPlayer(notice, playing, failed) {
   }
   function target() {
     const now = Date.now() + clockOffset;
-    const valid = tracks.filter((t) => t.until === null || now < Date.parse(t.until));
-    const duration = valid.reduce((total, t) => total + t.duration, 0);
-    if (!duration) return null;
-    const age = Math.max(0, (now - epoch) / 1000);
-    let time = age % duration;
-    for (const track of valid) {
-      if (time < track.duration) return { track, time, cycle: Math.floor(age / duration) };
-      time -= track.duration;
-    }
-    return null;
+    return playlistPosition(tracks, epoch, now);
   }
   async function sync() {
     if (!enabled || !epoch) return;
@@ -145,6 +155,7 @@ export function musicPlayer(notice, playing, failed) {
       sync();
     },
     tick: sync,
+    beat: () => trackBeat(target(), (Date.now() + clockOffset - epoch) / 1000),
     reset() {
       stop();
       epoch = 0;

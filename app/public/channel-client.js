@@ -53,7 +53,15 @@ function display(data) {
       '사이드존 ' + labels[data.zones[0]] + ' · 발코니 ' + labels[data.zones[1]];
   }
   const self = data.actors.find((a) => a.id === room.sessionId);
-  selectDance(self?.action, self?.seat != null);
+  el('wand').textContent = self?.wand ? '무드봉 내리기' : '무드봉 들기';
+  el('wand').setAttribute('aria-pressed', String(Boolean(self?.wand)));
+  const riding = self?.trainSlot != null;
+  el('train-start').hidden = Boolean(data.trainLeader);
+  el('train-join').hidden = !data.trainLeader || riding;
+  el('train-leave').hidden = !riding;
+  el('train-leave').textContent = data.trainLeader === self?.id ? '기차 종료' : '기차 내리기';
+  el('seat').disabled = riding;
+  selectDance(self?.action, self?.seat != null || riding);
   if (self?.action === 'dance' || dances.has(self?.action)) guide('dance');
   if (ready) {
     frame('actors', { ...data, self: room.sessionId });
@@ -147,7 +155,7 @@ async function enter(channelId) {
     next.onMessage('clock', (m) => {
       if (room === next) {
         music.clock(m);
-        if (ready) frame('clock', { offset: m.now - (Date.now() + m.sent) / 2, epoch: m.epoch });
+        if (ready) frame('clock', { offset: m.now - (Date.now() + m.sent) / 2, epoch: m.epoch, tracks: m.tracks });
       }
     });
     next.onLeave((code) => {
@@ -185,6 +193,7 @@ window.addEventListener('message', (event) => {
     if (snapshot) display(snapshot);
     frame('fast-flash', el('fast-flash').checked);
     frame('quality', el('quality').value);
+    frame('other-wands', el('other-wands').checked);
   }
   if (kind === 'move' && ready) {
     room.send('move', data);
@@ -225,6 +234,10 @@ el('music').onclick = () => {
 };
 el('fast-flash').onchange = e => frame('fast-flash', e.target.checked);
 el('quality').onchange = (e) => frame('quality', e.target.value);
+for (const action of ['start','join','leave'])
+  el('train-' + action).onclick = () => room?.send('train', action);
+el('wand').onclick = () => room?.send('wand', el('wand').getAttribute('aria-pressed') !== 'true');
+el('other-wands').onchange = e => frame('other-wands', e.target.checked);
 el('seat').onclick = () => room?.send('seat');
 const selectDance = danceButtons(el('dance-options'), (action) => {
   room?.send('action', action);

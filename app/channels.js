@@ -176,6 +176,7 @@ export async function startChannels(app, { origin, secret, port }) {
   });
   app.get('/clubs/edm/client.js', serveFile('./public/channel-client.js'));
   app.get('/clubs/edm/free-dance.js', serveFile('./public/free-dance.js'));
+  app.get('/clubs/edm/rhythm-floor.js', serveFile('./public/rhythm-floor.js'));
   app.get('/clubs/edm/avatar.js', serveFile('./public/avatar.js'));
   app.get('/clubs/edm/sdk.js', serveFile('./node_modules/colyseus.js/dist/colyseus.js'));
   app.get('/clubs/edm/music.js', serveFile('./public/music.js'));

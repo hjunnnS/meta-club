@@ -1,3 +1,4 @@
+import { DanceTrain, onTrainFloor } from './dance-train.js';
 import { effects } from '../stage/festival/events.js';
 import { localTest } from './local-test.js';
 import { ManagedChannelZones } from './managed-channel-zones.js';
@@ -37,6 +38,7 @@ export class EdmRoom extends Room {
     this.maxClients = capacity;
     this.setSeatReservationTime(seatSeconds);
     this.members = new Map();
+    this.train = new DanceTrain();
     this.zones = new ManagedChannelZones();
     this.preparing = [];
     this.eventTier = 0;
@@ -77,6 +79,30 @@ export class EdmRoom extends Room {
         this.dirty = true;
       });
     }
+    this.onMessage('train', (client, command) => {
+      const actor = this.member(client);
+      if (!actor || !this.allowActivity(client)) return;
+      if (command === 'leave') return this.leaveTrain(actor.id);
+      if (!['start', 'join'].includes(command)) return;
+      if (!this.train.board(actor, command))
+        return this.notice(client, '기차 상태를 확인하세요. 착석 중에는 먼저 일어서 주세요.');
+      const next = this.train.pose(actor.id);
+      if (!this.positionMember(actor.id, actor, next)) {
+        this.train.leave(actor.id);
+        return this.notice(client, '열린 동선에서만 기차에 참여할 수 있습니다.');
+      }
+      Object.assign(actor, next);
+      client.send('place', actor);
+      this.notice(client, command === 'start' ? '중앙 플로어에서 WASD로 기차를 이끄세요.' : '댄스 기차에 합류했습니다.');
+      this.dirty = true;
+    });
+    this.onMessage('wand', (client, enabled) => {
+      const actor = this.member(client);
+      if (actor && typeof enabled === 'boolean' && this.allowActivity(client)) {
+        actor.wand = enabled;
+        this.dirty = true;
+      }
+    });
     this.onMessage('occupancy', (c) => c.send('occupancy', this.population()));
     this.onMessage('snapshot', (c) => c.send('snapshot', this.snapshot()));
     this.onMessage('clock', (c, sent) => {
@@ -86,14 +112,14 @@ export class EdmRoom extends Room {
     this.onMessage('move', (c, p) => this.move(c, p));
     this.onMessage('action', (c, a) => {
       const m = this.member(c);
-      if (!m || !this.allowActivity(c) || !emotions.has(a) || m.seat !== null) return;
+      if (!m || !this.allowActivity(c) || !emotions.has(a) || m.seat !== null || this.train.riders.has(m.id)) return;
       m.action = a;
       this.dirty = true;
       if (a === 'wave' || a === 'dance') this.react(m, a, true);
     });
     this.onMessage('seat', (c) => {
       const m = this.member(c);
-      if (!m || !this.allowActivity(c)) return;
+      if (!m || !this.allowActivity(c) || this.train.riders.has(m.id)) return;
       if (m.seat !== null) {
         if (!this.positionMember(c.sessionId, m, c.userData.preSeat)) return;
         Object.assign(m, c.userData.preSeat);
@@ -124,6 +150,19 @@ export class EdmRoom extends Room {
       for (const ai of this.ai.slice(3, 5)) if (Date.now() > (ai.until || 0)) ai.action = 'dance';
       this.dirty = true;
     }, 300);
+  }
+  leaveTrain(id) {
+    for (const rider of this.train.leave(id)) {
+      const actor = this.members.get(rider);
+      actor.trainSlot = null;
+      actor.action = 'idle';
+      const client = this.clients.find(c => c.sessionId === rider);
+      if (client) {
+        client.userData.lastMove = Date.now();
+        client.send('place', actor);
+      }
+    }
+    this.dirty = true;
   }
   zoneStates() {
     return [this.zones.state(1), this.zones.state(2)];
@@ -175,6 +214,7 @@ export class EdmRoom extends Room {
           z: side ? 6 : 1,
         });
       }
+      actor.wand = i === 3 || i === 4;
       before.delete(actor.id);
       const { tier, group } = edmArea(actor);
       if (!this.zones.move('ai', actor.id, this.zones.location('ai', actor.id), tier, group)) {
@@ -215,6 +255,7 @@ export class EdmRoom extends Room {
     if (event && Date.now() >= event.start + effects[event.kind].seconds * 1000) this.stageEvent = null;
     return {
       ...(localTest && { stageEvent: this.stageEvent ?? null }),
+      trainLeader: this.train.leader,
       actors: [...this.members.values(), ...this.ai],
       epoch: this.epoch,
       zones: this.zoneStates(),
@@ -222,7 +263,7 @@ export class EdmRoom extends Room {
   }
   move(c, p) {
     const m = this.member(c);
-    if (!m || m.seat !== null || !p || !['x', 'y', 'z', 'yaw'].every((k) => Number.isFinite(p[k])))
+    if (!m || m.seat !== null || m.trainSlot > 0 || !p || !['x', 'y', 'z', 'yaw'].every((k) => Number.isFinite(p[k])))
       return;
     const elapsed = (Date.now() - c.userData.lastMove) / 1000;
     if (elapsed < 0.045) return;
@@ -237,13 +278,22 @@ export class EdmRoom extends Room {
       c.send('place', m);
       return;
     }
-    if (!this.positionMember(c.sessionId, m, p)) {
+    if ((m.trainSlot === 0 && !onTrainFloor(p)) || !this.positionMember(c.sessionId, m, p)) {
       c.send('place', m);
       return;
     }
     const walking = Math.hypot(p.x - m.x, p.z - m.z) > 0.025;
     Object.assign(m, { x: p.x, y: p.y, z: p.z, yaw: p.yaw });
-    if (walking) {
+    if (m.trainSlot === 0) {
+      this.train.step(p);
+      for (const id of this.train.riders.keys()) {
+        if (id === m.id) continue;
+        const rider = this.members.get(id);
+        const next = this.train.pose(id);
+        if (this.positionMember(id, rider, next)) Object.assign(rider, next);
+        else this.leaveTrain(id);
+      }
+    } else if (walking) {
       m.action = 'walk';
       this.react(m, 'wave');
     } else if (m.action === 'walk') m.action = 'idle';
@@ -290,6 +340,7 @@ export class EdmRoom extends Room {
     if (!client.userData) return;
     const m = this.member(client);
     if (!m) return;
+    this.leaveTrain(client.sessionId);
     client.userData.expiry?.clear();
     const { identity } = client.userData;
     this.zones.move(

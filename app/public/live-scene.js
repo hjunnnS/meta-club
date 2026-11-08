@@ -1,4 +1,6 @@
-import { eventPlayer, ledScreen } from '/stage/festival/events.js';
+import { rhythmFloor } from './rhythm-floor.js';
+import { playlistPosition, trackBeat } from './music.js';
+import { eventPlayer, ledScreen, houseScreen } from '/stage/festival/events.js';
 import { permittedPath } from './edm-layout.js';
 import { dances, danceCamera, animateDance } from './free-dance.js';
 import { avatarFactory, playerView } from './avatar.js';
@@ -18,7 +20,10 @@ export function startLiveScene({
     make = avatarFactory(B, scene, glow);
   let epoch = Date.now(),
     offset = 0;
-  let fastFlash = false;
+  const renderFloor = rhythmFloor(B, scene);
+  let tracks = [];
+  let fastFlash = false, otherWands = true;
+  const updateBoard = houseScreen(B, scene);
   const stageEvents = eventPlayer(B, scene, () => Date.now() + offset, () => fastFlash);
   const view = playerView(B, scene, cam, canvas, eyeHeight, document.body);
   const viewDance = danceCamera(B, scene);
@@ -29,7 +34,7 @@ export function startLiveScene({
     tally = 0,
     frames = 0,
     moveBefore = null,
-    activeSeat = null;
+    activeSeat = null, riding = false;
   function quality(value) {
     low = value;
     glow.isEnabled = !low;
@@ -57,7 +62,9 @@ export function startLiveScene({
       }
       model.actor = a;
       if (a.id === self) {
-        const activity = dances.has(a.action) ? viewDance(a) : null;
+        riding = a.trainSlot > 0;
+        if (riding) place(a);
+        const activity = a.trainSlot == null && dances.has(a.action) ? viewDance(a) : null;
         view.actor(model, activity, a.seat != null);
       }
       remaining.delete(a.id);
@@ -87,8 +94,10 @@ export function startLiveScene({
     const { kind, data } = e.data || {};
     if (kind === 'clock') {
       epoch = data.epoch;
+      tracks = data.tracks || [];
       offset = data.offset;
     }
+    if (kind === 'other-wands') otherWands = data;
     if (kind === 'fast-flash') fastFlash = data === true;
     if (kind === 'led-preview') showPreview(data);
     if (kind === 'actors') onSnapshot(data);
@@ -161,9 +170,14 @@ export function startLiveScene({
     const now = performance.now(),
       dt = engine.getDeltaTime(),
       t = (Date.now() + offset - epoch) / 1000;
-    // The 120 BPM test loop and all clients share the room epoch. Smooth washes
+    // The track beat and all clients share the room epoch. Smooth washes
     // follow a four-beat phrase; the floor strips and dancers keep the same phase.
-    const phase = t * Math.PI * 4,
+    const playback = playlistPosition(tracks, epoch, Date.now() + offset);
+    const beats = trackBeat(playback, t);
+    const celebrating = stageEvents.kind === 'led';
+    renderFloor(beats, celebrating);
+    updateBoard(playback?.track.title || '음악 대기 중', beats, !preview && !celebrating);
+    const phase = beats * Math.PI * 2,
       beatWave = Math.sin(phase);
     washes.forEach(({ light, base }, i) => {
       light.intensity = base * (dancers ? 1 + 0.38 * Math.sin(phase / 4 + (i * Math.PI) / 2) : 1);
@@ -175,6 +189,7 @@ export function startLiveScene({
       ai = 0,
       visibleAI = 0;
     const planes = B.Frustum.GetPlanes(scene.getTransformMatrix());
+    const ownSlot = models.get(own)?.actor.trainSlot;
     for (const m of models.values()) {
       const a = m.actor,
         target = new B.Vector3(a.x, a.y, a.z);
@@ -182,17 +197,20 @@ export function startLiveScene({
         m.root.position = B.Vector3.Lerp(m.root.position, target, Math.min(1, dt / 90));
         m.root.rotation.y = a.yaw;
       }
-      const close =
-        B.Vector3.DistanceSquared(scene.activeCamera.position, target) < (low ? 8 : 21) ** 2;
+      const adjacentRider = ownSlot != null && a.trainSlot != null && Math.abs(a.trainSlot - ownSlot) <= 1;
+      const detailRadius = low ? (adjacentRider ? 12 : 8) : 21;
+      const close = B.Vector3.DistanceSquared(scene.activeCamera.position, target) < detailRadius ** 2;
       m.near.setEnabled(close);
       m.far.setEnabled(!close);
+      m.showWand(Boolean(a.wand && (a.id === own || otherWands)), close);
       if (a.ai) {
         ai++;
         if ((close ? m.torso : m.far).isInFrustum(planes)) visibleAI++;
       }
-      if (dances.has(a.action)) {
+      const dance = a.action === 'dance' ? 'groove' : a.action;
+      if (dances.has(dance)) {
         if (close) {
-          animateDance(m, a.action, t);
+          animateDance(m, dance, beats);
           detailed++;
         } else {
           const sway = Math.sin(phase / 2);
@@ -202,6 +220,7 @@ export function startLiveScene({
         }
         continue;
       }
+      m.near.rotation.setAll(0);
       m.near.position.x = 0;
       m.far.position.x = 0;
       const beat = a.action === 'dance' ? beatWave : Math.sin(t * (a.action === 'walk' ? 8 : 6));
@@ -232,7 +251,7 @@ export function startLiveScene({
           : 0;
       });
     }
-    if (own && now - lastSent > 100 && activeSeat === null) {
+    if (own && now - lastSent > 100 && activeSeat === null && !riding) {
       const pos = {
         x: cam.position.x,
         y: cam.position.y - eyeHeight,

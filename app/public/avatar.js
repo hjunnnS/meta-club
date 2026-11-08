@@ -11,6 +11,13 @@ export function avatarFactory(B, scene, glow) {
   face.diffuseColor = new B.Color3(0.87, 0.66, 0.49);
   const leg = new B.StandardMaterial('denim', scene);
   leg.diffuseColor = new B.Color3(0.095, 0.09, 0.15);
+  const wandMaterial = new B.StandardMaterial('turquoise light stick', scene);
+  wandMaterial.disableLighting = true;
+  wandMaterial.emissiveColor = B.Color3.FromHexString('#67fff2');
+  const trailMaterial = new B.StandardMaterial('light stick afterglow', scene);
+  trailMaterial.emissiveColor = wandMaterial.emissiveColor;
+  trailMaterial.disableLighting = true;
+  trailMaterial.alpha = 0.23;
   return function make(actor) {
     const root = new B.TransformNode(actor.id, scene);
     const near = new B.TransformNode('detail', scene);
@@ -78,7 +85,34 @@ export function avatarFactory(B, scene, glow) {
     label.material = mat;
     root.position.set(actor.x, actor.y, actor.z);
     root.rotation.y = actor.yaw;
+    let wand, tip, trail;
+    function showWand(visible, detailed) {
+      if (!visible && !wand) return;
+      if (!wand) {
+        wand = B.MeshBuilder.CreateCylinder('mood wand', { height: 0.54, diameter: 0.065, tessellation: 8 }, scene);
+        wand.material = wandMaterial;
+        wand.isPickable = false;
+        tip = new B.TransformNode('wand tip', scene);
+        tip.parent = wand;
+        tip.position.y = -0.27;
+      }
+      wand.parent = detailed ? limbs[2] : root;
+      wand.position.set(detailed ? -0.117 : 0.38, detailed ? -0.753 : 1.28, detailed ? 0 : 0.12);
+      wand.rotation.z = detailed ? -0.45 : -0.85;
+      wand.setEnabled(visible);
+      const drawTrail = visible && detailed && root.isEnabled();
+      if (drawTrail && !trail) {
+        tip.computeWorldMatrix(true);
+        trail = new B.TrailMesh('wand sweep', tip, scene, { diameter: 0.055, length: 5, sections: 3 });
+        trail.material = trailMaterial;
+        trail.isPickable = false;
+      } else if (!drawTrail && trail) {
+        trail.dispose();
+        trail = null;
+      }
+    }
     return {
+      showWand,
       root,
       near,
       far,
@@ -88,6 +122,7 @@ export function avatarFactory(B, scene, glow) {
       label,
       dispose() {
         glow?.removeExcludedMesh(label);
+        trail?.dispose();
         root.dispose();
         mat.dispose();
         tex.dispose();

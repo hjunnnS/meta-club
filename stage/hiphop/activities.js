@@ -164,11 +164,13 @@ export async function startActivities({ B, scene, cam, canvas, engine, extras, e
       }
     }
     const beat = Math.sin((Date.now() + offset - epoch) * 0.012566);
+    const danceBeat = music.beat();
     for (const m of models.values()) {
       if (dances.has(m.actor.action)) {
-        animateDance(m, m.actor.action, (Date.now() + offset - epoch) / 1000);
+        animateDance(m, m.actor.action, danceBeat);
         continue;
       }
+      m.near.rotation.setAll(0);
       m.near.position.x = 0;
       const dance = m.actor.action === 'dance',
         pose = m.actor.action === 'pose';

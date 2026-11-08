@@ -36,6 +36,7 @@ const testLoop = {
   id: 'g0-loop',
   title: 'EDM 시험 루프',
   duration: 12,
+  bpm: 120,
   until: null,
   url: '/media/edm/g0-loop',
 };
@@ -43,10 +44,12 @@ export function playlist(now = Date.now()) {
   if (localTest) return [testLoop];
   return records
     .filter((r) => permitted(r, now))
-    .map(({ id, title, duration, until }) => ({
+    .map(({ id, title, duration, until, bpm, firstBeat }) => ({
       id,
       title,
       duration,
+      bpm: Number.isFinite(bpm) && bpm > 0 ? bpm : 120,
+      firstBeat: Number.isFinite(firstBeat) ? firstBeat : 0,
       until,
       url: '/media/edm/' + encodeURIComponent(id),
     }));
