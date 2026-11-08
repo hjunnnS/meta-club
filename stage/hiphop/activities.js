@@ -1,6 +1,6 @@
 import { enterClub, offerReentry } from './member-entry.js';
 import { dances, danceButtons, danceCamera, animateDance } from '/clubs/edm/free-dance.js';
-import { avatarFactory } from '/clubs/edm/avatar.js';
+import { avatarFactory, playerView } from '/clubs/edm/avatar.js';
 import { musicPlayer } from '/clubs/edm/music.js';
 
 export async function startActivities({ B, scene, cam, canvas, engine, extras, eye, hint, nav }) {
@@ -64,6 +64,7 @@ export async function startActivities({ B, scene, cam, canvas, engine, extras, e
   });
   photo.hidden = true;
   let free = false;
+  const view = playerView(B, scene, cam, canvas, eye, nav);
   const viewDance = danceCamera(B, scene);
   const selectDance = danceButtons(nav, (id) => {
     room.send('free-dance', id);
@@ -99,13 +100,12 @@ export async function startActivities({ B, scene, cam, canvas, engine, extras, e
       free = dances.has(a.action);
       selectDance(a.action, Boolean(a.seat));
       acting = a.action !== 'idle';
-      m.root.setEnabled(acting);
-      if (free) viewDance(a);
+
+      if (free) view.actor(m, viewDance(a));
       else if (acting) {
         observe.position.set(a.x + 2.1, a.y + 1.65, a.z + 2.3);
-        observe.setTarget(new B.Vector3(a.x, a.y + 0.95, a.z));
-        scene.activeCamera = observe;
-      } else scene.activeCamera = cam;
+        view.actor(m, { camera: observe, target: new B.Vector3(a.x, a.y + 0.95, a.z) }, true);
+      } else view.actor(m);
       photo.hidden = a.action !== 'pose';
     }
     for (const [id, m] of models)

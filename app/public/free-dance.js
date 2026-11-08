@@ -31,8 +31,7 @@ export function danceCamera(B, scene) {
     const dx = Math.sin(actor.yaw),
       dz = Math.cos(actor.yaw);
     cam.position.set(actor.x + 3 * dx, actor.y + 1.65, actor.z + 3 * dz);
-    cam.setTarget(new B.Vector3(actor.x, actor.y + 0.95, actor.z));
-    scene.activeCamera = cam;
+    return { camera: cam, target: new B.Vector3(actor.x, actor.y + 0.95, actor.z) };
   };
 }
 
