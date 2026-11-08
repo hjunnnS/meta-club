@@ -16,8 +16,9 @@ button[data-dance][aria-pressed="true"]{font-weight:700;box-shadow:inset 0 -3px 
 <script src="../../dance/node_modules/babylonjs/babylon.js"></script>
 <script src="../../dance/node_modules/babylonjs-loaders/babylonjs.loaders.min.js"></script>
 <script>
-const reviewRoom = location.pathname === '/review/social/index.html';
-document.querySelector('#lobby-return').hidden = !reviewRoom;
+const clubRoom = ['/clubs/social/', '/clubs/social/index.html', '/review/social/index.html'].includes(location.pathname);
+if (clubRoom) document.title = '소셜 라운지';
+document.querySelector('#lobby-return').hidden = !clubRoom;
 async function openMap(){
  const B=BABYLON, canvas=document.querySelector('canvas'),engine=new B.Engine(canvas,true,{preserveDrawingBuffer:true}),scene=new B.Scene(engine);
  scene.useRightHandedSystem=true;scene.clearColor=new B.Color4(.09,.155,.16,1);
@@ -71,7 +72,7 @@ async function openMap(){
    const v=new B.Vector3(heading.x*f-heading.z*r,0,heading.z*f+heading.x*r).normalize().scale(3*Math.min(50,engine.getDeltaTime())/1000);
    step(v.x,v.z);
  });
- if(reviewRoom){
+ if(clubRoom){
    choose('입구');nav.replaceChildren();document.querySelector('#pins').hidden=true;
    const {startTables}=await import('./activities.js');
    await startTables({B,scene,cam,canvas,extras,eye,hint,nav});

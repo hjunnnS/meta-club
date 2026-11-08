@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { ReviewRoom } from './review-room.js';
+import { memberChannelRoom } from './member-channel-room.js';
 import { socialTables } from '../stage/social/tables.js';
 import { blocked, muted } from './store.js';
 import { blockedMessage } from './message-filter.js';
@@ -10,7 +10,7 @@ const seats = new Map(socialTables(extras).flatMap((t) => t.seats.map((s) => [s.
 const tiers = { entry: 0, main: 0, cafe: 0, garden: 1, booths: 1, vip: 2, roof: 2 };
 const [x, y, z] = extras.anchors['입구'];
 export const socialRooms = new Map();
-export class SocialRoom extends ReviewRoom {
+export class SocialRoom extends memberChannelRoom('social') {
   registry = socialRooms;
   entry = { x, y, z };
   area({ x, y, z }) {
