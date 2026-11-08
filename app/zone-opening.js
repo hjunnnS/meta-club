@@ -38,7 +38,7 @@ export class ZoneOpening {
   }
 
   // Returns an opening attempt number only once, or null if no preparation is needed.
-  observe(snapshot, now) {
+  observe(snapshot, now, { allowOpen = true, allowShrink = true } = {}) {
     this.#checkTime(now);
     if (this.#state !== 'CLOSED' && this.#state !== 'OPEN') return null;
     const demand = this.#demand(snapshot);
@@ -52,10 +52,11 @@ export class ZoneOpening {
     const delay = opening ? this.#timing.openDelayMs : this.#timing.shrinkDelayMs;
     if (now - this.#candidateSince < delay) return null;
     if (opening) {
+      if (!allowOpen) return null;
       this.#transition('OPENING', now);
       return ++this.#generation;
     }
-    if (now - this.#since >= this.#timing.minOpenMs) this.#transition('DRAINING', now);
+    if (allowShrink && now - this.#since >= this.#timing.minOpenMs) this.#transition('DRAINING', now);
     return null;
   }
 
