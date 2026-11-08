@@ -58,6 +58,7 @@ function reserve(identity, channelId, expires) {
 
 export async function startChannels(app, { origin, secret, port }) {
   const hiphop = localTest ? await import('./hiphop-room.js') : null;
+  const social = localTest ? await import('./social-room.js') : null;
   const serveFile = (relative) => (_req, res) =>
     res.sendFile(fileURLToPath(new URL(relative, import.meta.url)));
   app.use(express.json({ limit: '8kb' }));
@@ -74,7 +75,10 @@ export async function startChannels(app, { origin, secret, port }) {
   app.post('/api/operator/channels/:id/event-tier', (req, res) => {
     const tier = req.body?.tier;
     if (![0, 1, 2].includes(tier)) return res.sendStatus(400);
-    const room = rooms.get(req.params.id) ?? hiphop?.hiphopRooms.get(req.params.id);
+    const room =
+      rooms.get(req.params.id) ??
+      hiphop?.hiphopRooms.get(req.params.id) ??
+      social?.socialRooms.get(req.params.id);
     if (!room) return res.sendStatus(404);
     room.eventTier = tier;
     res.sendStatus(204);
@@ -97,8 +101,8 @@ export async function startChannels(app, { origin, secret, port }) {
         ...['힙합', '소셜 라운지', '레트로 디스코'].map((name) => ({
           name,
           review:
-            localTest && name === '힙합' && res.locals.session.user
-              ? '/review/hiphop/index.html'
+            localTest && ['힙합', '소셜 라운지'].includes(name) && res.locals.session.user
+              ? '/review/' + (name === '힙합' ? 'hiphop' : 'social') + '/index.html'
               : undefined,
           open: false,
           channels: [],
@@ -194,27 +198,31 @@ export async function startChannels(app, { origin, secret, port }) {
   await matchMaker.setup();
   matchMaker.defineRoomType('edm', EdmRoom);
   if (localTest) {
-    const { HipHopRoom } = hiphop;
-    HipHopRoom.verifyIdentity = EdmRoom.verifyIdentity;
-    matchMaker.defineRoomType('hiphop-review', HipHopRoom);
-    app.use('/review/hiphop', (_req, res, next) =>
-      res.locals.session.user ? next() : res.sendStatus(401),
-    );
-    for (const file of ['index.html', 'hiphop-empty.glb', 'activities.js'])
-      app.get('/review/hiphop/' + file, serveFile('../stage/hiphop/' + file));
-    app.post('/review/hiphop/admission', async (_req, res) => {
-      const session = res.locals.session;
-      try {
-        const seat = await matchMaker.joinOrCreate('hiphop-review', {
-          identity: session.user.id,
-          expires: Date.parse(session.expires),
-        });
-        const { name, roomId, processId } = seat.room;
-        res.json({ sessionId: seat.sessionId, room: { name, roomId, processId } });
-      } catch {
-        res.sendStatus(409);
-      }
-    });
+    for (const [club, ClubRoom, files] of [
+      ['hiphop', hiphop.HipHopRoom, []],
+      ['social', social.SocialRoom, ['tables.js']],
+    ]) {
+      ClubRoom.verifyIdentity = EdmRoom.verifyIdentity;
+      matchMaker.defineRoomType(club + '-review', ClubRoom);
+      app.use('/review/' + club, (_req, res, next) =>
+        res.locals.session.user ? next() : res.sendStatus(401),
+      );
+      for (const file of ['index.html', club + '-empty.glb', 'activities.js', ...files])
+        app.get('/review/' + club + '/' + file, serveFile('../stage/' + club + '/' + file));
+      app.post('/review/' + club + '/admission', async (_req, res) => {
+        const session = res.locals.session;
+        try {
+          const seat = await matchMaker.joinOrCreate(club + '-review', {
+            identity: session.user.id,
+            expires: Date.parse(session.expires),
+          });
+          const { name, roomId, processId } = seat.room;
+          res.json({ sessionId: seat.sessionId, room: { name, roomId, processId } });
+        } catch {
+          res.sendStatus(409);
+        }
+      });
+    }
   }
   await matchMaker.accept();
   transport.listen(port, '127.0.0.1');
