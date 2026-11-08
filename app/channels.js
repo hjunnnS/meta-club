@@ -204,7 +204,7 @@ export async function startChannels(app, { origin, secret, port }) {
     for (const [club, ClubRoom, files] of [
       ['hiphop', hiphop.HipHopRoom, ['interior.js']],
       ['social', social.SocialRoom, ['tables.js', 'interior.js']],
-      ['retro', retro.RetroRoom, []],
+      ['retro', retro.RetroRoom, ['interior.js']],
     ]) {
       ClubRoom.verifyIdentity = EdmRoom.verifyIdentity;
       matchMaker.defineRoomType(club + '-review', ClubRoom);
