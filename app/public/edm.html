@@ -1,15 +1,139 @@
 <!doctype html>
 <html lang="ko">
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>EDM 클럽</title>
-<style>
-*{box-sizing:border-box}body{margin:0;background:#100e18;color:#f4edff;font:16px system-ui}
-header{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;padding:.75rem 1rem}
-h1{margin:0;font-size:1.15rem}a{color:#dbcaff}button{font:inherit}
-iframe{display:block;width:100%;height:calc(100dvh - 4rem);border:0}[hidden]{display:none}
-</style>
-<header><h1>EDM 클럽</h1><output aria-live="polite">채널 배정 중…</output><button hidden>다시 입장</button><a href="/">나가기</a></header>
-<iframe title="EDM 클럽 공간" hidden></iframe>
-<script src="/clubs/edm/sdk.js"></script><script type="module" src="/clubs/edm/client.js"></script>
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1,interactive-widget=resizes-content"
+  /><title>EDM 클럽</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      background: #100e18;
+      color: #f4edff;
+      font: 15px system-ui;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+    header,
+    nav,
+    form,
+    aside {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      padding: 0.4rem 0.7rem;
+    }
+    header h1 {
+      font-size: 1.05rem;
+      margin: 0 auto 0 0;
+    }
+    a {
+      color: #dbcaff;
+    }
+    button,
+    select,
+    input {
+      font: inherit;
+    }
+    button,
+    select {
+      background: #322840;
+      color: white;
+      border: 1px solid #60566f;
+      border-radius: 5px;
+      padding: 0.22rem 0.5rem;
+    }
+    main {
+      position: relative;
+      flex: 1;
+      min-height: 6rem;
+    }
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+    #guide {
+      position: absolute;
+      top: 0.5rem;
+      left: 0.5rem;
+      max-width: 85%;
+      background: #21192bee;
+      padding: 0.6rem;
+      border-radius: 0.5rem;
+    }
+    #log {
+      max-height: 5rem;
+      overflow: auto;
+      margin: 0;
+      padding: 0 1rem;
+      list-style: none;
+    }
+    form input {
+      flex: 1;
+      min-width: 8rem;
+    }
+    #orientation {
+      display: none;
+    }
+    @media (orientation: portrait) and (pointer: coarse) {
+      #orientation {
+        display: block;
+        text-align: center;
+        background: #332445;
+      }
+    }
+    [hidden] {
+      display: none !important;
+    }
+  </style>
+  <header>
+    <h1>EDM 클럽</h1>
+    <output id="population">채널 배정 중…</output><button id="retry" hidden>다시 입장</button
+    ><a href="/lobby">로비로 나가기</a>
+  </header>
+  <div id="orientation">가로로 돌리면 공간을 넓게 볼 수 있습니다.</div>
+  <main>
+    <iframe title="EDM 클럽 공간" hidden></iframe>
+    <div id="guide" hidden>
+      음악 시작을 누른 뒤 WASD·드래그 또는 이동 패드로 공간을 둘러보세요. 춤과 채팅을 해 보고 위의
+      로비 링크로 퇴장하세요. <button id="dismiss">닫기</button>
+    </div>
+  </main>
+  <nav>
+    <button id="music">음악 시작</button><output id="track"></output
+    ><button data-action="dance">춤</button><button data-action="wave">인사</button
+    ><button data-action="idle">멈춤</button><button id="seat">앉기 / 일어나기</button
+    ><label
+      >화질
+      <select id="quality">
+        <option value="auto">자동</option>
+        <option value="high">높음</option>
+        <option value="low">낮음</option>
+      </select></label
+    ><output id="info"></output>
+  </nav>
+  <aside>
+    <label
+      >채널
+      <select id="channels"></select></label
+    ><button id="switch">이동</button
+    ><label
+      >사용자
+      <select id="people"></select></label
+    ><button id="block">차단</button><button id="report">신고</button
+    ><output id="notice" aria-live="polite"></output>
+  </aside>
+  <ul id="log" aria-live="polite"></ul>
+  <form id="chat">
+    <input aria-label="채널 메시지" maxlength="320" placeholder="채널 메시지" /><button>
+      보내기
+    </button>
+  </form>
+  <script src="/clubs/edm/sdk.js"></script>
+  <script type="module" src="/clubs/edm/client.js"></script>
 </html>

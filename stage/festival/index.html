@@ -50,6 +50,7 @@ async function open(){
  walker.ellipsoidOffset=new B.Vector3(0,walker.ellipsoid.y,0);
  walker.isPickable=false;
  let walking=false;
+ let joystick={x:0,y:0}, seated=false;
  const down=new B.Vector3(0,-1,0);
  function groundAt(x,z,foot){
    const hit=scene.pickWithRay(new B.Ray(new B.Vector3(x,foot+.22,z),down,.46),m=>floors.has(m));
@@ -66,7 +67,7 @@ async function open(){
  walk.onclick=()=>walkMode(!walking);
  window.addEventListener('keydown',event=>{
    if(!walking||event.altKey||event.ctrlKey||event.metaKey)return;
-   if(event.code==='Escape'){walkMode(false);walk.focus();return;}
+   if(event.code==='Escape'&&!tour.hidden){walkMode(false);walk.focus();return;}
    if(document.activeElement!==canvas||!movementKeys.has(event.code))return;
    event.preventDefault();keys.add(event.code);
  });
@@ -75,8 +76,8 @@ async function open(){
  canvas.addEventListener('blur',()=>keys.clear());
  function walkFrame(){
    const pressed=(a,b)=>Number(keys.has(a)||keys.has(b));
-   const forward=pressed('KeyW','ArrowUp')-pressed('KeyS','ArrowDown');
-   const side=pressed('KeyD','ArrowRight')-pressed('KeyA','ArrowLeft');
+   const forward=pressed('KeyW','ArrowUp')-pressed('KeyS','ArrowDown')+joystick.y;
+   const side=pressed('KeyD','ArrowRight')-pressed('KeyA','ArrowLeft')+joystick.x;
    if(!forward&&!side)return;
    const look=cam.getForwardRay().direction;
    const heading=new B.Vector3(look.x,0,look.z).normalize();
@@ -149,7 +150,7 @@ async function open(){
  };
  select('입구');await scene.whenReadyAsync();
  engine.runRenderLoop(()=>{
-   if(walking)walkFrame();
+   if(walking&&!seated)walkFrame();
    if(playing){
      distance=Math.min(end,distance+Math.min(engine.getDeltaTime(),100)*.003);
      if(distance>=end){playing=false;markView('발코니');}
@@ -158,6 +159,20 @@ async function open(){
    scene.render();
  });
  window.addEventListener('resize',()=>engine.resize());status.hidden=true;tour.hidden=false;window.setView=select;
+ if(location.search==='?live' && window.parent!==window && location.protocol!=='file:'){
+   const {startLiveScene}=await import('/clubs/edm/scene.js');
+   nav.hidden=true;nav.style.display='none';tour.hidden=true;
+   walkMode(true);
+   cam.detachControl();
+   startLiveScene({B,cam,scene,engine,canvas,glow,eyeHeight,
+     joystick:(x,y)=>{joystick={x,y};},
+     place(actor){
+       seated=actor.seat!==null;
+       cam.position.set(actor.x,actor.y+eyeHeight-(seated?.35:0),actor.z);
+       walker.position.set(actor.x,actor.y+walker.ellipsoid.y+.12,actor.z);
+       cam.rotation.y=actor.yaw;cam.cameraRotation.set(0,0);
+     }});
+ }
 }
 open().catch(e=>{status.textContent='장면을 열 수 없습니다. '+e;console.error(e)});
 </script></html>
