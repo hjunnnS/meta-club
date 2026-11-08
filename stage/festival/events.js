@@ -105,6 +105,7 @@ function marquee(B, scene, root, event) {
   screen.parent = root;
   const texture = screen.material.emissiveTexture;
   const ctx = texture.getContext();
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   let lastFrame = -1;
   return t => {
     const frame = Math.floor(t * 16);
@@ -137,7 +138,8 @@ function marquee(B, scene, root, event) {
       ctx.closePath();
       ctx.fill();
     }
-    ctx.drawImage(overlay, 0, 0);
+    // Leave the animated wall visible during the short beat between text cues.
+    if (reducedMotion.matches || t % 2 < 1.75) ctx.drawImage(overlay, 0, 0);
     texture.update();
   };
 }
@@ -206,7 +208,12 @@ function lasers(B, scene, root) {
     };
   });
   const target = new B.Vector3();
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   return t => {
+    // A short shutter on each beat; only the show rig goes dark.
+    const lightsOn = reducedMotion.matches || t % 0.8 < 0.64;
+    root.setEnabled(lightsOn);
+    if (!lightsOn) return;
     const phase = Math.floor(t / 4);
     for (const [i, head] of heads.entries()) {
       const a = head.angle + t * 0.72;
