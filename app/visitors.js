@@ -62,3 +62,21 @@ export function background(slot, seconds) {
     action,
   };
 }
+
+// Fixed gathering places, in metres in the reviewed EDM map. Entries are added
+// one per group per round so smaller crowds still occupy different areas.
+// The centre aisle, DJ ramp, stool row and sofa entrances stay clear.
+const groups = [
+  { y: .018, spots: [[-4.9, -4.6, -.8], [-3.2, -4.1, .4], [-4.4, -2.8, .1]] },
+  { y: .018, spots: [[4.0, -3.4, .7], [5.7, -2.8, .2], [4.4, -1.5, -.4]] },
+  { y: 0, spots: [[-14.8, 19.6, -.5], [-13.1, 19.5, .5]] }, // bar, beyond the stools
+  { y: 0, spots: [[-8.8, 12.5, -.9], [-7.1, 13.2, .6]] }, // bar approach
+  { y: 0, spots: [[10.4, 12.1, -.7], [12.1, 12.0, .2], [13.7, 12.5, .9]] }, // in front of the lounge
+  { y: 0, spots: [[5.2, 10.7, -.4], [6.0, 12.2, .8]] }, // beside the lounge approach
+];
+export const extraGuestPlaces = [0, 1, 2].flatMap(index =>
+  groups.filter(group => index < group.spots.length).map(({y, spots}) => {
+    const [x, z, yaw] = spots[index];
+    return {x, y, z, yaw};
+  })
+);

@@ -4,7 +4,7 @@ import { localTest } from './local-test.js';
 import { ManagedChannelZones } from './managed-channel-zones.js';
 import { edmArea, permittedPath } from './edm-layout.js';
 import { blockedMessage } from './message-filter.js';
-import { background } from './visitors.js';
+import { background, extraGuestPlaces } from './visitors.js';
 import { playlist } from './music.js';
 import { Room } from '@colyseus/core';
 import { profile } from './store.js';
@@ -193,19 +193,15 @@ export class EdmRoom extends Room {
     const before = new Set(this.ai.map((a) => a.id));
     const elapsed = (Date.now() - this.epoch) / 1000;
     for (let i = 0; i < 3; i++) this.ai[i] = background(i, elapsed);
-    const extra = Math.min(15, extraVisitors, capacity - this.members.size);
+    const extra = Math.min(extraGuestPlaces.length, extraVisitors, capacity - this.members.size);
     this.ai.length = 5 + extra;
     for (let i = 0; i < extra; i++) {
       if (this.ai[5 + i]) continue;
-      // Two staggered rings leave the middle open and keep every dancer on the base floor.
-      const inner = i < 6;
-      const angle = inner ? i * Math.PI / 3 : (i - 6 + 0.45) * 2 * Math.PI / 9;
-      const radius = inner ? 2.6 : 6.2;
       this.ai[5 + i] = {
         id: 'floor-dancer-' + i, ai: true, nickname: 'AI 손님 ' + (6 + i),
         avatar: ['teal', 'rose', 'gold', 'indigo'][i % 4],
-        x: radius * Math.cos(angle), y: 0.018, z: radius * Math.sin(angle) - 1,
-        yaw: angle * 0.35, action: ['groove', 'side-step', 'disco-point'][i % 3],
+        ...extraGuestPlaces[i],
+        action: ['groove', 'side-step', 'disco-point'][i % 3],
       };
     }
     // Two reactive dancers use the reviewed side floors once available.
