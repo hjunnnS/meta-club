@@ -19,7 +19,7 @@ export const connected = new Map(),
 const extraVisitors = Number(process.env.CLUB_AI_EXTRA_WHEN_EMPTY || 15);
 if (!Number.isInteger(extraVisitors) || extraVisitors < 0 || extraVisitors > capacity)
   throw Error('CLUB_AI_EXTRA_WHEN_EMPTY must be an integer from 0 to ' + capacity);
-const floorEntry = { x: -1.8, y: 0.018, z: 6.4, yaw: 0 };
+const floorEntry = { x: -1.8, y: 0.018, z: 6.4, yaw: -1.0 };
 const seats = [-17.6, -15.65, -13.7, -11.75, -9.8].map((x) => ({ x, y: 0, z: 17.95, yaw: 0 }));
 for (const x of [11.1, 16.9])
   for (const z of [14, 18.65]) seats.push({ x, y: 0, z, yaw: z > 16 ? 0 : Math.PI });

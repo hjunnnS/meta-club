@@ -58,9 +58,6 @@
     }
     #guide { background: #21192b; padding: .55rem .8rem; }
     #guide p { margin: .25rem 0 0; }
-    #first-actions { display: flex; flex-wrap: wrap; align-items: start; gap: .5rem 1.1rem; }
-    #first-actions .step { display: none; font-size: .85rem; color: #dfc9ff; margin-bottom: .25rem; }
-    body:has(#guide:not([hidden])) #first-actions .step { display: block; }
     #train-hint { font-size: .85rem; }
     #orientation {
       display: none;
@@ -109,7 +106,14 @@
     #guide p { display: inline; margin-left: .5rem; }
     nav button, header button { border: 1px solid #514360; border-radius: 1rem; padding: .34rem .75rem; cursor: pointer; }
     #music { background: #b9f4e7; color: #101920; font-weight: 700; }
-    #first-actions { align-items: end; }
+    #guide { position: absolute; left: .75rem; bottom: .75rem; max-width: min(32rem, 90%); border-radius: .5rem; }
+    footer, #first-actions { display: flex; align-items: center; gap: .55rem; }
+    footer { position: relative; justify-content: space-between; background: #110d20; padding: .25rem .75rem; }
+    footer > nav { min-width: 0; overflow-x: auto; flex-wrap: nowrap; padding: .2rem 0; }
+    #first-actions, footer summary { white-space: nowrap; }
+    #track:not(:empty) { display:inline-block; max-width: 13ch; overflow:hidden; text-overflow:ellipsis; vertical-align:middle; }
+    .extra-panel { position: absolute; z-index: 2; right: .75rem; bottom: 100%; background:#21192b; max-height:60vh; overflow:auto; width:min(34rem,95vw); }
+    details:not([open]) > .extra-panel { display:none; }
     .extras > summary { margin: .35rem clamp(.6rem, 2vw, 1.6rem); cursor: pointer; color: #d3bfdc; }
     #notice:not(:empty) { padding: .3rem 1rem; }
   button[data-dance][aria-pressed="true"]{font-weight:700;box-shadow:inset 0 -3px currentColor}
@@ -123,25 +127,26 @@
   <div id="orientation">가로로 돌리면 공간을 넓게 볼 수 있습니다.</div>
   <main>
     <iframe title="EDM 클럽 공간" hidden></iframe>
-  </main>
   <section id="guide" aria-label="EDM 첫 방문 안내" hidden>
     <strong>EDM에서 처음 놀기</strong> <button id="dismiss">안내 닫기</button>
-    <p>아래 버튼으로 바로 시작하세요. WASD로 걷고 마우스를 드래그해 둘러볼 수 있습니다.</p>
+    <p>음악을 켜고 춤을 고르세요. 무드봉을 들거나 운행 중인 기차에 합류할 수 있습니다. WASD로 걷고 드래그로 둘러보세요.</p>
+    <p id="train-hint" aria-live="polite"></p>
     <p id="guide-guest" hidden>춤·무드봉·기차는 <a href="/auth/signin?callbackUrl=%2Fclubs%2Fedm">회원 로그인</a> 후 이용할 수 있습니다.</p>
   </section>
+  </main>
+  <footer>
   <nav aria-label="EDM 활동">
     <div id="first-actions">
-      <div><span class="step">1. 음악 켜기</span><button id="music">음악 시작</button> <output id="track"></output></div>
-      <div><span class="step">2. 춤 하나 고르기</span><span id="dance-options"></span></div>
-      <div><span class="step">3. 춤추며 흔들기</span><button id="wand" aria-pressed="false">무드봉 들기</button></div>
-      <div><span class="step">4. 중앙 플로어 기차 타기</span>
+      <div><button id="music">음악 시작</button> <output id="track"></output></div>
+      <div><span id="dance-options"></span></div>
+      <div><button id="wand" aria-pressed="false">무드봉 들기</button></div>
+      <div>
         <button id="train-start" hidden>중앙 플로어 기차 출발</button>
         <button id="train-join" hidden>기차 합류</button><button id="train-leave" hidden>기차 내리기</button>
-        <span class="step" id="train-hint" aria-live="polite"></span>
       </div>
     </div>
   </nav>
-  <details class="extras"><summary>클럽 설정 및 추가 활동</summary><nav aria-label="추가 활동">
+  <details class="extras"><summary>더 보기</summary><div class="extra-panel"><nav aria-label="추가 활동">
     <output id="zones"></output><button id="shop-open" hidden>EDM 상품</button>
     <button id="shop-stop" hidden>미리보기 종료</button>
     <button data-action="wave">인사</button><button data-action="idle">멈춤</button>
@@ -169,7 +174,7 @@
     <button id="switch">이동</button>
 
   </aside>
-  </details>
+  </div></details></footer>
   <output id="notice" aria-live="polite"></output>
   <dialog id="shop-dialog" aria-labelledby="shop-title">
     <h2 id="shop-title">EDM 상품</h2>

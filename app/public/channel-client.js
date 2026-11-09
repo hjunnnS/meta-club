@@ -46,9 +46,9 @@ function guide(step) {
       log[step] = Date.now();
       localStorage.setItem(key, JSON.stringify(log));
     }
-    if (step === 'entry') showGuide(guideOpened || !(log.dismissed || log.exit));
+    if (step === 'entry') showGuide(guideOpened);
   } catch {
-    if (step === 'entry') showGuide(true);
+    if (step === 'entry') showGuide(guideOpened);
   }
 }
 function display(data) {

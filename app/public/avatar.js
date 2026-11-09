@@ -174,13 +174,13 @@ export function avatarFactory(B, scene, glow) {
 }
 
 // The walking camera stays at the player's eyes for input, collisions and network movement.
-export function playerView(B, scene, cam, canvas, eyeHeight, controls) {
+export function playerView(B, scene, cam, canvas, eyeHeight, controls, { followDistance = 3.4, followLift = 0.32, followFov = cam.fov } = {}) {
   const follow = new B.FreeCamera('third person', B.Vector3.Zero(), scene);
   const seatedEye = new B.FreeCamera('activity eyes', B.Vector3.Zero(), scene);
   seatedEye.minZ = cam.minZ;
   seatedEye.fov = cam.fov;
   follow.minZ = cam.minZ;
-  follow.fov = cam.fov;
+  follow.fov = followFov;
   const button = document.createElement('button');
   button.type = 'button';
   button.title = '3인칭 거리 조절: 화면 위에서 마우스 휠을 사용하세요.';
@@ -189,7 +189,7 @@ export function playerView(B, scene, cam, canvas, eyeHeight, controls) {
   controls.append(button);
 
   let thirdPerson = true, model, activity, fixed, preview;
-  const defaultDistance = 3.4;
+  const defaultDistance = followDistance;
   let zoomDistance = defaultDistance;
   function wheel(event) {
     if (!thirdPerson || preview || event.ctrlKey || !event.deltaY) return;
@@ -238,7 +238,7 @@ export function playerView(B, scene, cam, canvas, eyeHeight, controls) {
       length = activity.offset.length() * zoomDistance / defaultDistance;
     } else {
       direction = cam.getForwardRay().direction.negate();
-      direction.y += 0.32;
+      direction.y += followLift;
       direction.normalize();
       length = zoomDistance;
     }

@@ -28,7 +28,7 @@ export function startLiveScene({
   let fastFlash = false, otherWands = true;
   const updateBoard = houseScreen(B, scene);
   const stageEvents = eventPlayer(B, scene, () => Date.now() + offset, () => fastFlash);
-  const view = playerView(B, scene, cam, canvas, eyeHeight, document.body);
+  const view = playerView(B, scene, cam, canvas, eyeHeight, document.body, { followDistance: 7.1, followLift: 0.47, followFov: 1.23 });
   const viewDance = danceCamera(B, scene);
   let own,
     mode = 'auto',
@@ -203,7 +203,7 @@ export function startLiveScene({
       }
       const adjacentRider = ownSlot != null && a.trainSlot != null && Math.abs(a.trainSlot - ownSlot) <= 1;
       const detailRadius = low ? (adjacentRider ? 12 : 8) : 21;
-      const close = B.Vector3.DistanceSquared(scene.activeCamera.position, target) < detailRadius ** 2;
+      const close = a.id === own || B.Vector3.DistanceSquared(scene.activeCamera.position, target) < detailRadius ** 2;
       m.near.setEnabled(close);
       m.far.setEnabled(!close);
       m.showWand(Boolean(a.wand && (a.id === own || otherWands)), close);
