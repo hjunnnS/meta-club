@@ -5,9 +5,10 @@ const el = (id) => document.getElementById(id),
   map = document.querySelector('iframe');
 const music = musicPlayer(
   (s) => (el('track').textContent = s),
-  () => guide('music'),
+  () => { el('music').textContent = '음악 재생 중'; guide('music'); },
   firstVisitFailure,
 );
+let visitOrigin;
 let needsPlace = true,
   room,
   snapshot,
@@ -78,6 +79,7 @@ function display(data) {
     if (needsPlace) {
       const self = data.actors.find((a) => a.id === room.sessionId);
       if (self) {
+        visitOrigin = { x: self.x, z: self.z };
         frame('place', self);
         needsPlace = false;
       }
@@ -150,6 +152,7 @@ async function enter(channelId) {
     needsPlace = true;
     snapshot = null;
     attempts = 0;
+    el('music').textContent = '음악 시작';
     music.reset();
     note('');
     next.onMessage('occupancy', ({ channelId, people, capacity }) => {
@@ -199,6 +202,8 @@ window.addEventListener('message', (event) => {
   const { kind, data } = event.data || {};
   if (kind === 'scene-ready') {
     ready = true;
+    const floor = map.contentDocument?.querySelector('canvas');
+    floor?.addEventListener('pointerdown', () => el('music').click(), { once: true });
     el('event-controls').hidden = !memberId?.startsWith('local-test:');
     if (memberId?.startsWith('local-test:')) shop.channel(room.roomId, memberId);
     room.send('snapshot');
@@ -210,7 +215,7 @@ window.addEventListener('message', (event) => {
   }
   if (kind === 'move' && ready) {
     room.send('move', data);
-    if (Math.hypot(data.x, data.z - 25) > 0.5) guide('move');
+    if (visitOrigin && Math.hypot(data.x - visitOrigin.x, data.z - visitOrigin.z) > 0.5) guide('move');
   }
   if (kind === 'render-info') {
     el('info').textContent =

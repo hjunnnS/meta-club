@@ -1,6 +1,6 @@
 import { rhythmFloor } from './rhythm-floor.js';
 import { playlistPosition, trackBeat } from './music.js';
-import { eventPlayer, ledScreen, houseScreen } from '/stage/festival/events.js';
+import { eventPlayer, ledScreen, houseScreen, houseLights } from '/stage/festival/events.js';
 import { permittedPath } from './edm-layout.js';
 import { dances, danceCamera, animateDance } from './free-dance.js';
 import { avatarFactory, playerView } from './avatar.js';
@@ -21,6 +21,9 @@ export function startLiveScene({
   let epoch = Date.now(),
     offset = 0;
   const renderFloor = rhythmFloor(B, scene);
+  const renderHouseLights = houseLights(B, scene);
+  const ambient = scene.getLightByName('ambient');
+  if (ambient) ambient.intensity = 0.52;
   let tracks = [];
   let fastFlash = false, otherWands = true;
   const updateBoard = houseScreen(B, scene);
@@ -175,6 +178,7 @@ export function startLiveScene({
     const playback = playlistPosition(tracks, epoch, Date.now() + offset);
     const beats = trackBeat(playback, t);
     const celebrating = stageEvents.kind === 'led';
+    renderHouseLights(beats, !stageEvents.kind);
     renderFloor(beats, celebrating);
     updateBoard(playback?.track.title || '음악 대기 중', beats, !preview && !celebrating);
     const phase = beats * Math.PI * 2,

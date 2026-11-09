@@ -193,6 +193,44 @@ function laserBlackouts(start) {
   return cuts;
 }
 
+// House lights sweep continuously between events, including when the room has just opened.
+export function houseLights(B, scene) {
+  const rig = new B.TransformNode('house lighting rig', scene);
+  const calm = matchMedia('(prefers-reduced-motion: reduce)');
+  const colors = ['#489eff', '#ff36a8'];
+  const lights = colors.map(hex => {
+    const material = paint(B, scene, 'house wash', hex, 0.95);
+    material.disableLighting = true;
+    material.alphaMode = B.Engine.ALPHA_ADD;
+    material.alpha = 0.16;
+    return material;
+  });
+  const beams = [];
+  for (const side of [-1, 1]) {
+    for (let i = 0; i < 4; i++) {
+      const origin = new B.Vector3(side * (3.4 + 1.35 * i), 6.7, -12 + i * .6);
+      const mesh = attach(B.MeshBuilder.CreateCylinder('house fan', {
+        height: 1, diameterTop: .32, diameterBottom: .055, tessellation: 8, cap: B.Mesh.NO_CAP
+      }, scene), rig, lights[side === 1 ? 0 : 1]);
+      mesh.rotationQuaternion = new B.Quaternion();
+      beams.push({ mesh, side, i, origin });
+    }
+  }
+  const delta = new B.Vector3();
+  return (beat, visible) => {
+    rig.setEnabled(visible);
+    if (!visible) return;
+    const phase = calm.matches ? 0 : beat * Math.PI / 16;
+    for (const {mesh, side, i, origin} of beams) {
+      delta.set(side * (i * 3.3 - 6 + 4 * Math.sin(phase + i * .22)), 3.8 + i * .32, 9 + i * 1.8);
+      delta.subtractInPlace(origin);
+      mesh.position.copyFrom(delta).scaleInPlace(.5).addInPlace(origin);
+      mesh.scaling.y = delta.length();
+      B.Quaternion.FromUnitVectorsToRef(B.Axis.Y, delta.normalize(), mesh.rotationQuaternion);
+    }
+  };
+}
+
 function lasers(B, scene, root, event, fastFlash) {
   const cuts = laserBlackouts(event.start);
   const lime = '#cfff3c', violet = '#bc3aff', amber = '#ffae1e';
