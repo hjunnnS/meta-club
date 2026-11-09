@@ -16,7 +16,7 @@ export const connected = new Map(),
   recent = new Map(),
   rooms = new Map();
 // Additional background visitors use only spare human places, never reserved seats.
-const extraVisitors = Number(process.env.CLUB_AI_EXTRA_WHEN_EMPTY || 0);
+const extraVisitors = Number(process.env.CLUB_AI_EXTRA_WHEN_EMPTY || 15);
 if (!Number.isInteger(extraVisitors) || extraVisitors < 0 || extraVisitors > capacity)
   throw Error('CLUB_AI_EXTRA_WHEN_EMPTY must be an integer from 0 to ' + capacity);
 const floorEntry = { x: -1.8, y: 0.018, z: 6.4, yaw: 0 };
@@ -193,14 +193,19 @@ export class EdmRoom extends Room {
     const before = new Set(this.ai.map((a) => a.id));
     const elapsed = (Date.now() - this.epoch) / 1000;
     for (let i = 0; i < 3; i++) this.ai[i] = background(i, elapsed);
-    const extra = Math.min(extraVisitors, capacity - this.members.size);
+    const extra = Math.min(15, extraVisitors, capacity - this.members.size);
     this.ai.length = 5 + extra;
     for (let i = 0; i < extra; i++) {
-      const actor = background(i % 3, elapsed + (i + 1) * 4);
+      if (this.ai[5 + i]) continue;
+      // Two staggered rings leave the middle open and keep every dancer on the base floor.
+      const inner = i < 6;
+      const angle = inner ? i * Math.PI / 3 : (i - 6 + 0.45) * 2 * Math.PI / 9;
+      const radius = inner ? 2.6 : 6.2;
       this.ai[5 + i] = {
-        ...actor,
-        id: 'extra-' + i + '-' + actor.id,
-        nickname: 'AI 손님 ' + (6 + i),
+        id: 'floor-dancer-' + i, ai: true, nickname: 'AI 손님 ' + (6 + i),
+        avatar: ['teal', 'rose', 'gold', 'indigo'][i % 4],
+        x: radius * Math.cos(angle), y: 0.018, z: radius * Math.sin(angle) - 1,
+        yaw: angle * 0.35, action: ['groove', 'side-step', 'disco-point'][i % 3],
       };
     }
     // Two reactive dancers use the reviewed side floors once available.

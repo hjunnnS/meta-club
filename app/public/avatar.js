@@ -18,6 +18,40 @@ export function avatarFactory(B, scene, glow) {
   trailMaterial.emissiveColor = wandMaterial.emissiveColor;
   trailMaterial.disableLighting = true;
   trailMaterial.alpha = 0.23;
+  const distantBlocks = new Map();
+  const blockMaterial = new B.StandardMaterial('crowd blocks', scene);
+  function block(parent, name, width, height, depth, y, material) {
+    const mesh = B.MeshBuilder.CreateBox(name, { width, height, depth }, scene);
+    mesh.parent = parent;
+    mesh.position.y = y;
+    mesh.material = material;
+    mesh.isPickable = false;
+    return mesh;
+  }
+  function distantGuest(root, shirt) {
+    if (!distantBlocks.has(shirt)) {
+      const parts = [];
+      function part(x, y, w, h, d, color) {
+        const mesh = block(null, 'crowd part', w, h, d, y, blockMaterial);
+        mesh.position.x = x;
+        const colors = [];
+        for (let i = 0; i < mesh.getTotalVertices(); i++)
+          colors.push(color.r, color.g, color.b, 1);
+        mesh.setVerticesData(B.VertexBuffer.ColorKind, colors);
+        parts.push(mesh);
+      }
+      part(0, .78, .34, .33, .32, face.diffuseColor);
+      part(0, .28, .50, .61, .30, shirt.diffuseColor);
+      for (const sign of [-1, 1]) {
+        part(sign * .33, .28, .13, .54, .19, shirt.diffuseColor);
+        part(sign * .13, -.40, .20, .70, .26, leg.diffuseColor);
+      }
+      const template = B.Mesh.MergeMeshes(parts, true);
+      template.setEnabled(false);
+      distantBlocks.set(shirt, template);
+    }
+    return distantBlocks.get(shirt).createInstance(root.name + ' distant blocks');
+  }
   return function make(actor) {
     const root = new B.TransformNode(actor.id, scene);
     const near = new B.TransformNode('detail', scene);
@@ -35,15 +69,21 @@ export function avatarFactory(B, scene, glow) {
       return mesh;
     };
     const shirt = materials.get(actor.avatar) || materials.get('indigo');
-    const torso = capsule(near, 'torso', 0.23, 0.72, 1.04, shirt);
-    capsule(near, 'head', 0.15, 0.32, 1.55, face);
+    const torso = actor.ai ? block(near, 'block torso', .50, .61, .30, 1.06, shirt)
+      : capsule(near, 'torso', 0.23, 0.72, 1.04, shirt);
+    if (actor.ai) block(near, 'block head', .34, .33, .32, 1.55, face);
+    else capsule(near, 'head', 0.15, 0.32, 1.55, face);
     const limbs = [];
     for (const sign of [-1, 1]) {
       for (const arm of [true, false]) {
         const joint = new B.TransformNode('joint', scene);
         joint.parent = near;
         joint.position.set(sign * (arm ? 0.25 : 0.115), arm ? 1.33 : 0.79, 0);
-        capsule(
+        if (actor.ai) {
+          joint.position.x = sign * (arm ? .32 : .13);
+          block(joint, arm ? 'block arm' : 'block leg', arm ? .15 : .2,
+            arm ? .55 : .73, arm ? .18 : .26, arm ? -.25 : -.34, arm ? shirt : leg);
+        } else capsule(
           joint,
           arm ? 'arm' : 'leg',
           arm ? 0.075 : 0.095,
@@ -54,7 +94,9 @@ export function avatarFactory(B, scene, glow) {
         limbs.push(joint);
       }
     }
-    const far = capsule(root, 'distant avatar', 0.22, 1.56, 0.79, shirt);
+    const far = actor.ai ? distantGuest(root, shirt) : capsule(root, 'distant avatar', 0.22, 1.56, 0.79, shirt);
+    far.parent = root;
+    far.position.y = .79;
     far.setEnabled(false);
     const label = B.MeshBuilder.CreatePlane(
       'name',
