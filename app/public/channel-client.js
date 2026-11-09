@@ -32,6 +32,11 @@ function firstVisitFailure(reason) {
 }
 const frame = (kind, data) => map.contentWindow?.postMessage({ kind, data }, location.origin);
 const shop = initShop(frame);
+let guideOpened = false;
+function showGuide(open) {
+  el('guide').hidden = !open;
+  el('show-guide').setAttribute('aria-expanded', String(open));
+}
 function guide(step) {
   try {
     const key = 'edm-first-visit',
@@ -40,9 +45,9 @@ function guide(step) {
       log[step] = Date.now();
       localStorage.setItem(key, JSON.stringify(log));
     }
-    el('guide').hidden = Boolean(log.dismissed || log.exit);
+    if (step === 'entry') showGuide(guideOpened || !(log.dismissed || log.exit));
   } catch {
-    el('guide').hidden = true;
+    if (step === 'entry') showGuide(true);
   }
 }
 function display(data) {
@@ -60,6 +65,11 @@ function display(data) {
   el('train-join').hidden = !data.trainLeader || riding;
   el('train-leave').hidden = !riding;
   el('train-leave').textContent = data.trainLeader === self?.id ? '기차 종료' : '기차 내리기';
+  const trainHint = !data.trainLeader ? '아직 운행 전입니다.'
+    : !riding ? (self?.seat != null ? '자리에서 일어나면 합류할 수 있습니다.' : '운행 중입니다. 합류하면 선두를 따라갑니다.')
+    : data.trainLeader === self?.id ? '선두입니다. WASD로 이끌어 보세요.' : '탑승 중입니다. 원할 때 내릴 수 있습니다.';
+  if (el('train-hint').textContent !== trainHint) el('train-hint').textContent = trainHint;
+  el('train-join').disabled = !memberId || self?.seat != null;
   el('seat').disabled = riding;
   selectDance(self?.action, self?.seat != null || riding);
   if (self?.action === 'dance' || dances.has(self?.action)) guide('dance');
@@ -84,6 +94,8 @@ function disconnected(message, reconnect) {
   ready = false;
   map.hidden = true;
   map.removeAttribute('src');
+  for (const id of ['train-start', 'train-join', 'train-leave']) el(id).hidden = true;
+  el('train-hint').textContent = '채널 연결을 기다리는 중입니다.';
   el('population').textContent = message;
   el('retry').hidden = false;
   if (reconnect && !manual && attempts < 4) {
@@ -170,6 +182,7 @@ async function enter(channelId) {
     next.send('clock', Date.now());
     map.src = '/stage/festival/index.html?live';
     map.hidden = false;
+    el('guide-guest').hidden = Boolean(memberId);
     guide('entry');
     list().catch(() => {});
   } catch (error) {
@@ -246,7 +259,18 @@ const selectDance = danceButtons(el('dance-options'), (action) => {
 for (const b of document.querySelectorAll('[data-action]'))
   b.onclick = () => room?.send('action', b.dataset.action);
 document.querySelector('a[href="/lobby"]').onclick = () => guide('exit');
-el('dismiss').onclick = () => guide('dismissed');
+el('show-guide').onclick = () => {
+  if (!el('guide').hidden) return el('dismiss').click();
+  guideOpened = true;
+  showGuide(true);
+  el('music').focus();
+};
+el('dismiss').onclick = () => {
+  guideOpened = false;
+  guide('dismissed');
+  showGuide(false);
+  el('show-guide').focus();
+};
 function resume() {
   if (document.hidden || manual) return;
   frame('resume');
