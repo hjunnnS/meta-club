@@ -75,12 +75,13 @@ async function open(){
    }else{syncControls();}
  }
  walk.onclick=()=>walkMode(!walking);
- window.addEventListener('keydown',event=>{
+ function walkKeyDown(event){
    if(!walking||event.altKey||event.ctrlKey||event.metaKey)return;
    if(event.code==='Escape'&&!tour.hidden){walkMode(false);walk.focus();return;}
    if(document.activeElement!==canvas||!movementKeys.has(event.code))return;
    event.preventDefault();keys.add(event.code);
- });
+ }
+ window.addEventListener('keydown',walkKeyDown);
  window.addEventListener('keyup',event=>keys.delete(event.code));
  window.addEventListener('blur',()=>keys.clear());
  canvas.addEventListener('blur',()=>keys.clear());
@@ -210,10 +211,24 @@ async function open(){
    nav.hidden=true;nav.style.display='none';tour.hidden=true;
    walkMode(true);
    cam.detachControl();
+   // Activity buttons live in the parent document. Hand walking back to the
+   // canvas on the very first key press, even when the key is held down.
+   const owner = parent.document;
+   const listeners = new AbortController();
+   owner.addEventListener('keydown', event => {
+     if (!movementKeys.has(event.code) || event.defaultPrevented || event.isComposing ||
+         event.ctrlKey || event.altKey || event.metaKey || owner.querySelector('dialog[open]') ||
+         owner.querySelector('#shop-stop:not([hidden])') ||
+         event.target.closest('input,textarea,select,[contenteditable]:not([contenteditable=false]),[role=textbox]')) return;
+     canvas.focus({preventScroll:true});
+     walkKeyDown(event);
+   }, {signal:listeners.signal});
+   owner.addEventListener('keyup', event=>keys.delete(event.code), {signal:listeners.signal});
+   window.addEventListener('pagehide',()=>listeners.abort(),{once:true});
    allowedStep=startLiveScene({B,cam,scene,engine,canvas,glow,eyeHeight,
      joystick:(x,y)=>{joystick={x,y};},
      place(actor){
-       seated=actor.seat!==null || actor.trainSlot>0;
+       seated=actor.seat!=null || actor.trainSlot>0;
        cam.position.set(actor.x,actor.y+eyeHeight-(actor.seat != null ? .35 : 0),actor.z);
        walker.position.set(actor.x,actor.y+walker.ellipsoid.y+.12,actor.z);
        cam.rotation.y=actor.yaw;cam.cameraRotation.set(0,0);

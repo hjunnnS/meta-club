@@ -281,5 +281,13 @@ export function startLiveScene({
     }
   });
   send('scene-ready', true);
-  return (from, to) => permittedPath(from, to, states);
+  let lastGateNotice = -Infinity;
+  return (from, to) => {
+    const allowed = permittedPath(from, to, states);
+    if (!allowed && performance.now() - lastGateNotice > 4000) {
+      send('gate-notice', '아직 열리지 않은 구역입니다. 중앙 플로어에서 입구 방향으로 걸으면 바와 라운지로 나갈 수 있습니다.');
+      lastGateNotice = performance.now();
+    }
+    return allowed;
+  };
 }

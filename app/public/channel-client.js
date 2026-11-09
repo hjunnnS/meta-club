@@ -68,7 +68,7 @@ function display(data) {
   el('train-leave').textContent = data.trainLeader === self?.id ? '기차 종료' : '기차 내리기';
   const trainHint = !data.trainLeader ? '아직 운행 전입니다.'
     : !riding ? (self?.seat != null ? '자리에서 일어나면 합류할 수 있습니다.' : '운행 중입니다. 합류하면 선두를 따라갑니다.')
-    : data.trainLeader === self?.id ? '선두입니다. WASD로 이끌어 보세요.' : '탑승 중입니다. 원할 때 내릴 수 있습니다.';
+    : data.trainLeader === self?.id ? '선두입니다. 플로어 밖으로 나가려면 기차 종료를 누르세요.' : '탑승 중입니다. 원할 때 내릴 수 있습니다.';
   if (el('train-hint').textContent !== trainHint) el('train-hint').textContent = trainHint;
   el('train-join').disabled = !memberId || self?.seat != null;
   el('seat').disabled = riding;
@@ -200,6 +200,7 @@ async function enter(channelId) {
 window.addEventListener('message', (event) => {
   if (!room || event.source !== map.contentWindow || event.origin !== location.origin) return;
   const { kind, data } = event.data || {};
+  if (kind === 'gate-notice') note(data);
   if (kind === 'scene-ready') {
     ready = true;
     const floor = map.contentDocument?.querySelector('canvas');
