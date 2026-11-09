@@ -1,4 +1,5 @@
 """Scenic dressing for the approved v3 footprint. Coordinates are in metres."""
+from pathlib import Path
 import math
 import random
 import struct
@@ -31,7 +32,6 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
     stone=finish('Obsidian counter',(.15,.095,.14),.32,.22)
     brass=finish('Satin champagne',(.61,.31,.115),.48,.33)
     seat=finish('Aubergine velvet',(.39,.064,.18),0,.94)
-    seam=finish('Velvet welting',(.61,.13,.27),0,.83)
     wood=finish('Fluted walnut',(.27,.103,.045),.06,.68)
     indigo=finish('Indigo acoustic felt',(.072,.049,.147),0,.95)
     black=finish('Speaker grille',(.015,.019,.028),.12,.71)
@@ -154,23 +154,44 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
             post('Backbar bottles',m,x,y+.08,14.24,.073,h)
             post('Bottle necks',m,x,y+.08+h,14.24,.035,.14)
     # Lounge groups face tables and keep a clear approach from the lobby.
+    velvet=finish('Lounge jade velvet',(.075,.42,.33),0,.90,(.018,.07,.052))
+    welt=finish('Lounge mint piping',(.53,.85,.65),0,.58,(.085,.18,.12))
+    marble=finish('Lounge champagne stone',(.76,.52,.31),.12,.37,(.10,.065,.035))
+    # Mount lettering on the inner face of the existing east wall, above the booths.
+    signX=21.16
+    signStart, signEnd=10.15,18.55
+    signBottom,signTop=3.55,5.65
+    box('Lounge sign frame',brass,signX+.01,21.45,signStart-.06,signEnd+.06,signBottom-.06,signTop+.06)
+    signMat=finish('Lounge lettering',(1,1,1),0,.95,(.85,.85,.85))
+    images[signMat]=(Path(__file__).with_name('lounge-sign.png').read_bytes(),
+                     lambda x,y,z:((z-signStart)/(signEnd-signStart),(signTop-y)/(signTop-signBottom)))
+    low=(signX,signBottom,signStart)
+    right=(signX,signBottom,signEnd)
+    high=(signX,signTop,signEnd)
+    tri('Lounge sign face',signMat,low,right,high)
+    tri('Lounge sign face',signMat,low,high,(signX,signTop,signStart))
     for x in [11.1,16.9]:
         for z in [14.0,18.65]:
             octagon('Velvet sofa plinth',brass,x,z,3.9,1.52,.24,.08,.25)
-            octagon('Velvet sofa cushions',seat,x,z,3.97,1.58,.24,.25,.62)
+            octagon('Velvet sofa cushions',velvet,x,z,3.97,1.58,.24,.25,.62)
             sign=1 if z>16 else -1
-            octagon('Channel tufted sofa back',seat,x,z+sign*.57,3.96,.48,.16,.48,1.12)
+            octagon('Channel tufted sofa back',velvet,x,z+sign*.57,3.96,.48,.16,.48,1.34)
+            beam('Booth top welt',welt,(x-1.70,1.30,z+sign*.37),(x+1.70,1.30,z+sign*.37),.034)
             for j in range(11):
                 xx=x-1.66+j*.33
-                beam('Upholstery piping',seam,(xx,.63,z+sign*.314),(xx,1.08,z+sign*.314),.013)
+                beam('Upholstery piping',welt,(xx,.63,z+sign*.314),(xx,1.28,z+sign*.314),.013)
         post('Cocktail table stem',brass,x,.08,16.35,.16,.58)
-        post('Cocktail table top',stone,x,.64,16.35,.74,.10)
-        post('Table lantern',gold,x,.75,16.35,.095,.22)
+        post('Cocktail table top',marble,x,.64,16.35,.74,.10)
+        post('Cocktail table rim',brass,x,.67,16.35,.75,.035)
+        post('Table lantern',white,x,.75,16.35,.15,.33)
     for x,z in [(-17,15),(-11,15),(11,16),(17,16)]:
         post('Pendant cable',ink,x,3.3,z,.022,4.3)
         post('Pendant brass shade',brass,x,3.09,z,.40,.24)
         post('Pendant diffuser',gold,x,3.06,z,.335,.035)
-        lamp('Amber pendant',(x,2.96,z),(1,.47,.17),80,8)
+        if x>0:
+            lamp('Lounge booth light',(x,2.96,z),(1,.79,.51),110,5)
+        else:
+            lamp('Amber pendant',(x,2.96,z),(1,.47,.17),80,8)
     for x,z,c in [(-5,-13,(.22,.15,1)),(5,-13,(1,.06,.37)),(-8,0,(.33,.12,1)),(8,0,(.06,.52,1))]:
         lamp('Stage wash',(x,4.4,z),c,160,16)
     # Close the vista beyond the entrance without enclosing the entry corridor.
