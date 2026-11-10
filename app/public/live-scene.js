@@ -3,7 +3,7 @@ import { clubAmbience, strobeDurations } from './ambience.js';
 import { rhythmFloor } from './rhythm-floor.js';
 import { playlistPosition, trackBeat } from './music.js';
 import { effects, eventPlayer, ledScreen, houseScreen, houseLights } from '/stage/festival/events.js';
-import { permittedPath } from './edm-layout.js';
+import { permittedPath, edmCameraDistance } from './edm-layout.js';
 import { dances, danceCamera, animateDance } from './free-dance.js';
 import { avatarFactory, playerView } from './avatar.js';
 // Inlaid chevrons cross the arena rim before the closed side zone and end between the lounge sofas.
@@ -121,7 +121,7 @@ export function startLiveScene({
     mesh.material.alpha = level * (calmBeats.matches ? .4 : .92);
   }
   const stageEvents = eventPlayer(B, scene, () => Date.now() + offset, () => fastFlash);
-  const view = playerView(B, scene, cam, canvas, eyeHeight, document.body, { followDistance: 7.1, followLift: 0.47, followFov: 1.23, maxDistance: 24 });
+  const view = playerView(B, scene, cam, canvas, eyeHeight, document.body, { followDistance: 7.1, followLift: 0.47, followFov: 1.23, maxDistance: 24, cameraLimit: edmCameraDistance, arrivalSeconds: 2.5 });
   const viewDance = danceCamera(B, scene);
   let own,
     mode = 'auto',
@@ -330,7 +330,7 @@ export function startLiveScene({
     const phase32 = phraseBeat % 32;
     const gather = phase32 >= 30 ? (phase32 - 30) / 2 : 0;
     const release = phraseBeat >= 32 && phase32 < 3 ? phase32 / 3 : -1;
-    renderHouseLights(beats, !stageEvents.kind, preview ? -1 : release);
+    renderHouseLights(beats, !stageEvents.kind, preview ? -1 : release, playback?.track.bpm || 120, musicEnergy, strobing);
     // Pick the upcoming phrase's color during the pickup and keep it through the release.
     const cue = cueColors[Math.floor((Math.max(0, phraseBeat) + 2) / 32) % cueColors.length];
     const wallRelease = preview || celebrating ? -1 : release;

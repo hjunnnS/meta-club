@@ -208,7 +208,7 @@ export function avatarFactory(B, scene, glow) {
 }
 
 // The walking camera stays at the player's eyes for input, collisions and network movement.
-export function playerView(B, scene, cam, canvas, eyeHeight, controls, { followDistance = 3.4, followLift = 0.32, followFov = cam.fov, maxDistance = 9 } = {}) {
+export function playerView(B, scene, cam, canvas, eyeHeight, controls, { followDistance = 3.4, followLift = 0.32, followFov = cam.fov, maxDistance = 9, cameraLimit = null, arrivalSeconds = 0 } = {}) {
   const follow = new B.FreeCamera('third person', B.Vector3.Zero(), scene);
   const seatedEye = new B.FreeCamera('activity eyes', B.Vector3.Zero(), scene);
   seatedEye.minZ = cam.minZ;
@@ -225,17 +225,28 @@ export function playerView(B, scene, cam, canvas, eyeHeight, controls, { followD
   let thirdPerson = true, model, activity, fixed, preview;
   const defaultDistance = followDistance;
   let zoomDistance = defaultDistance;
+  let arrivalStart=null,arrivalSeen=false;
+  const calmArrival=matchMedia('(prefers-reduced-motion: reduce)');
+  const cancelArrival=()=>{arrivalStart=null;arrivalSeen=true;};
+  const keyArrival=event=>{if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(event.code))cancelArrival();};
+  canvas.addEventListener('pointerdown',cancelArrival);
+  window.addEventListener('keydown',keyArrival);
   function wheel(event) {
     if (!thirdPerson || preview || event.ctrlKey || !event.deltaY) return;
     event.preventDefault();
+    cancelArrival();
     const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? canvas.clientHeight : 1;
     zoomDistance = Math.max(1.2, Math.min(maxDistance, zoomDistance * Math.exp(event.deltaY * unit * 0.002)));
   }
   canvas.addEventListener('wheel', wheel, { passive: false });
-  scene.onDisposeObservable.addOnce(() => canvas.removeEventListener('wheel', wheel));
+  scene.onDisposeObservable.addOnce(() => {
+    canvas.removeEventListener('wheel', wheel);
+    canvas.removeEventListener('pointerdown',cancelArrival);
+    window.removeEventListener('keydown',keyArrival);
+  });
 
   function select() {
-    scene.activeCamera = preview || (thirdPerson ? activity?.camera || follow : fixed ? seatedEye : cam);
+    scene.activeCamera = preview || (!model ? cam : thirdPerson ? activity?.camera || follow : fixed ? seatedEye : cam);
     if (model) model.root.setEnabled(thirdPerson);
     button.disabled = Boolean(preview);
   }
@@ -243,6 +254,7 @@ export function playerView(B, scene, cam, canvas, eyeHeight, controls, { followD
     button.textContent = thirdPerson ? '3인칭 · 1인칭으로 전환' : '1인칭 · 3인칭으로 전환';
   }
   button.onclick = () => {
+    cancelArrival();
     thirdPerson = !thirdPerson;
     label();
     select();
@@ -276,6 +288,14 @@ export function playerView(B, scene, cam, canvas, eyeHeight, controls, { followD
       direction.normalize();
       length = zoomDistance;
     }
+    if(arrivalStart!==null) {
+      const progress=Math.min(1,(performance.now()-arrivalStart)/(arrivalSeconds*1000));
+      const remaining=1-progress*progress*(3-2*progress);
+      direction.y+=remaining*.85;direction.normalize();
+      length+=(Math.max(defaultDistance*1.2,length)-length)*remaining;
+      if(progress>=1)arrivalStart=null;
+    }
+    if(cameraLimit)length=cameraLimit(target,direction,length);
     const hit = scene.pickWithRay(new B.Ray(target, direction, length),
       mesh => mesh.checkCollisions || mesh.name.startsWith('wall/') || mesh.name.startsWith('floor/'));
     const distance = hit?.hit ? Math.max(0.08, hit.distance - 0.12) : length;
@@ -285,6 +305,7 @@ export function playerView(B, scene, cam, canvas, eyeHeight, controls, { followD
   return {
     actor(next, activityCamera = null, stationary = false) {
       model = next;
+      if(model&&!arrivalSeen){arrivalSeen=true;if(arrivalSeconds>0&&!calmArrival.matches)arrivalStart=performance.now();}
       activity = activityCamera;
       if (activity) activity.offset = activity.camera.position.subtract(activity.target);
       fixed = stationary;

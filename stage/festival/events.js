@@ -321,8 +321,75 @@ function laserBlackouts(start) {
   return cuts;
 }
 
+// Peripheral atmosphere remains visible independently of the central stage show.
+function peripheralLighting(B,scene) {
+  const calm=matchMedia('(prefers-reduced-motion: reduce)');
+  const rig=new B.TransformNode('entry and wall lighting',scene);
+  const stations=[[-6,6.2,20],[6,6.2,20],[-20,6.8,-3],[20,6.8,-3],[-18,6.8,7],[18,6.8,7],[-17.8,6.8,16],[17.8,6.8,16]];
+  const housing=paint(B,scene,'peripheral fixture graphite','#252235');
+  const lens=paint(B,scene,'peripheral fixture lens','#fff0d5');lens.disableLighting=true;
+  const texture=new B.DynamicTexture('peripheral soft falloff',64,scene,false);
+  const ctx=texture.getContext(),gradient=ctx.createRadialGradient(32,32,0,32,32,32);
+  gradient.addColorStop(0,'#ffffff');gradient.addColorStop(.35,'#b8b8b8');gradient.addColorStop(1,'#000000');
+  ctx.fillStyle=gradient;ctx.fillRect(0,0,64,64);texture.getAlphaFromRGB=true;texture.update();
+  const lamps=stations.map(([x,y,z],i)=>{
+    const origin=new B.Vector3(x,y,z);
+    const body=attach(B.MeshBuilder.CreateCylinder('wall downlight housing',{height:.42,diameter:.48,tessellation:10},scene),rig,housing);
+    body.position.copyFrom(origin);body.position.y+=.18;
+    const cable=attach(B.MeshBuilder.CreateCylinder('downlight suspension',{height:10.9-y,diameter:.025,tessellation:4},scene),rig,housing);
+    cable.position.set(x,(10.9+y)/2,z);
+    const glass=attach(B.MeshBuilder.CreateSphere('wall downlight lens',{diameter:.25,segments:6},scene),rig,lens);
+    glass.position.copyFrom(origin);
+    const ink=paint(B,scene,'peripheral broad beam',i%2?'#d8d3ff':'#fff0d5');
+    ink.disableLighting=true;ink.alphaMode=B.Engine.ALPHA_ADD;ink.alpha=.045;
+    const cone=attach(B.MeshBuilder.CreateCylinder('wall downward light cone',{height:1,diameterBottom:.14,diameterTop:4.3,tessellation:16,cap:B.Mesh.NO_CAP},scene),rig,ink);
+    cone.rotationQuaternion=new B.Quaternion();
+    const poolInk=paint(B,scene,'peripheral floor glow','#fff0dc');
+    poolInk.disableLighting=true;poolInk.opacityTexture=texture;poolInk.alphaMode=B.Engine.ALPHA_ADD;poolInk.alpha=.16;
+    const pool=attach(B.MeshBuilder.CreateGround('wall downlight floor pool',{width:4.3,height:4.3},scene),rig,poolInk);
+    return {origin,body,glass,cone,pool,ink,poolInk};
+  });
+  const smokeInk=paint(B,scene,'peripheral descending haze','#a8a6b8');
+  smokeInk.disableLighting=true;smokeInk.opacityTexture=texture;smokeInk.alpha=.19;smokeInk.backFaceCulling=false;
+  const smoke=new B.SolidParticleSystem('entry wall and lounge haze',scene);
+  const puff=B.MeshBuilder.CreatePlane('peripheral haze template',{size:1},scene);
+  smoke.addShape(puff,stations.length*24);puff.dispose();
+  const cloud=smoke.buildMesh();cloud.parent=rig;cloud.material=smokeInk;cloud.isPickable=false;cloud.hasVertexAlpha=true;smoke.billboard=true;
+  let time=0;
+  const noise=(i,s)=>{const n=Math.sin(i*127.1+s*311.7)*43758.5453;return n-Math.floor(n);};
+  smoke.updateParticle=p=>{
+    const station=Math.floor(p.idx/24),[x,y,z]=stations[station];
+    const age=((time-station*.43-noise(p.idx,1)*3.4)%6+6)%6;
+    p.isVisible=age<4.2;if(!p.isVisible)return p;
+    const inward=x>0?-1:1;
+    p.position.set(x+inward*age*.20+(noise(p.idx,2)-.5)*(.4+age*.42),y-.12-age*.95,z+(noise(p.idx,3)-.5)*(.4+age*.55));
+    p.scaling.setAll(.45+age*.45);p.rotation.z=noise(p.idx,4)*6.28;
+    p.color ||= new B.Color4(1,1,1,1);p.color.a=Math.min(1,age*2)*Math.max(0,1-age/4.2);
+    return p;
+  };
+  const target=new B.Vector3(),direction=new B.Vector3();
+  return (beat,bpm,energy,strobing)=>{
+    time=beat*60/Math.max(1,bpm);
+    cloud.setEnabled(!calm.matches);if(cloud.isEnabled())smoke.setParticles();
+    lamps.forEach((lamp,i)=>{
+      const {origin,cone,pool,ink,poolInk,body}=lamp;
+      const phase=calm.matches?0:beat*.10+i*.8;
+      const inward=origin.x>0?-1:1;
+      target.set(origin.x+inward*(1.15+.45*Math.sin(phase)),.075,origin.z+.8*Math.sin(phase*.7));
+      target.subtractToRef(origin,direction);
+      cone.position.copyFrom(origin).addInPlace(direction.scale(.5));cone.scaling.y=direction.length();
+      B.Quaternion.FromUnitVectorsToRef(B.Axis.Y,direction.normalize(),cone.rotationQuaternion);
+      body.rotationQuaternion=cone.rotationQuaternion;
+      pool.position.copyFrom(target);
+      const strength=strobing?.10:1+.35*energy;
+      ink.alpha=.045*strength;poolInk.alpha=.16*strength;
+    });
+  };
+}
+
 // House lights sweep continuously between events, including when the room has just opened.
 export function houseLights(B, scene) {
+  const renderPeriphery=peripheralLighting(B,scene);
   const rig = new B.TransformNode('house lighting rig', scene);
   const calm = matchMedia('(prefers-reduced-motion: reduce)');
   const colors = ['#489eff', '#ff36a8'];
@@ -358,7 +425,8 @@ export function houseLights(B, scene) {
     return { side, ray, material, origin: new B.Vector3(side * 4.2, 4.7, -12.2) };
   });
   const delta = new B.Vector3();
-  return (beat, visible, release) => {
+  return (beat, visible, release, bpm=120, energy=0, strobing=false) => {
+    renderPeriphery(beat,bpm,energy,strobing);
     rig.setEnabled(visible);
     if (!visible) return;
     const sweeping = release >= 0 && !calm.matches;

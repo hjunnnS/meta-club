@@ -1,4 +1,18 @@
 // Foot positions in the approved festival GLB (stage/build.py): metres, Y up.
+export function edmCameraDistance(target,direction,length) {
+  const inside=(x,y,z)=>{
+    const arena=Math.abs(x)<=21.7&&Math.abs(z)<=20.7&&Math.abs(x)+Math.abs(z)<=38.9;
+    const entry=Math.abs(x)<=3.5&&z>=19.7&&z<=26.4;
+    return y>=.20&&y<=7.7&&(arena||entry);
+  };
+  for(let d=.08;d<=length+.12;d+=.12) {
+    const at=Math.min(d,length);
+    if(!inside(target.x+direction.x*at,target.y+direction.y*at,target.z+direction.z*at))return Math.max(.08,at-.18);
+    if(at===length)break;
+  }
+  return length;
+}
+
 function octagon(dx, dz, halfWidth, halfDepth, corner) {
   return dx <= halfWidth && dz <= halfDepth && dx + dz <= halfWidth + halfDepth - corner;
 }
