@@ -56,12 +56,12 @@ export function celebration(B, scene, root, seconds, holographic = false, select
     p.isVisible = age >= 0 && age < life;
     if (!p.isVisible) return p;
     const angle = noise(i,2)*Math.PI*2;
-    const velocity = 8.5 + noise(i,3)*2.7;
-    const spread=core?.18:.90;
+    const velocity = 7.0 + noise(i,3)*2.0;
+    const spread=core?.65+age*.45:1.3+age*.5;
     p.position.set([-6.3,-4.2,-2.1,2.1,4.2,6.3][emitter] + Math.cos(angle)*age*spread,
-      1.4 + velocity*age - 4*age*age, -10.05 + Math.sin(angle)*age*.65);
+      1.4 + velocity*age - 4*age*age, -10.05 + Math.sin(angle)*age*spread*.55);
     p.scaling.setAll(.65+noise(i,4));
-    p.scaling.y *= (core?13:4)*(.85+.15*Math.cos(time*bpm/60*Math.PI*2));
+    p.scaling.y *= (core?7:4)*(.85+.15*Math.cos(time*bpm/60*Math.PI*2));
     p.color = new B.Color4(1, core?.94:.76+noise(i,5)*.24, core?.80:.43+noise(i,6)*.55, Math.min(1,(life-age)*5));
     return p;
   };

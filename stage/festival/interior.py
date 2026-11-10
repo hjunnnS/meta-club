@@ -156,33 +156,32 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
             x=-18.15+k*.36+rng.uniform(-.045,.045);h=rng.uniform(.23,.39);m=rng.choice(bottleMats)
             post('Backbar bottles',m,x,y+.08,14.24,.073,h)
             post('Bottle necks',m,x,y+.08+h,14.24,.035,.14)
-    # Lounge groups face tables and keep a clear approach from the lobby.
-    velvet=finish('Lounge jade velvet',(.075,.42,.33),0,.90,(.018,.07,.052))
-    welt=finish('Lounge mint piping',(.53,.85,.65),0,.58,(.085,.18,.12))
-    marble=finish('Lounge champagne stone',(.76,.52,.31),.12,.37,(.10,.065,.035))
-    # Keep the lounge wall clear; sofas and table groups remain below.
-    for x in [11.1,16.9]:
-        for z in [14.0,18.65]:
-            octagon('Velvet sofa plinth',brass,x,z,3.9,1.52,.24,.08,.25)
-            octagon('Velvet sofa cushions',velvet,x,z,3.97,1.58,.24,.25,.62)
-            sign=1 if z>16 else -1
-            octagon('Channel tufted sofa back',velvet,x,z+sign*.57,3.96,.48,.16,.48,1.34)
-            beam('Booth top welt',welt,(x-1.70,1.30,z+sign*.37),(x+1.70,1.30,z+sign*.37),.034)
-            for j in range(11):
-                xx=x-1.66+j*.33
-                beam('Upholstery piping',welt,(xx,.63,z+sign*.314),(xx,1.28,z+sign*.314),.013)
-        post('Cocktail table stem',brass,x,.08,16.35,.16,.58)
-        post('Cocktail table top',marble,x,.64,16.35,.74,.10)
-        post('Cocktail table rim',brass,x,.67,16.35,.75,.035)
-        post('Table lantern',white,x,.75,16.35,.15,.33)
-    for x,z in [(-17,15),(-11,15),(11,16),(17,16)]:
+    # Four open U-shaped booths face the arena from the west wall.
+    booth=finish('Booth midnight plum',(.17,.065,.25),0,.88,(.015,.005,.025))
+    piping=finish('Booth muted cyan',(.08,.52,.64),.15,.5,(.025,.22,.28))
+    top=finish('Booth smoked stone',(.10,.08,.17),.28,.32)
+    for index,z in enumerate([-16.2,-11.6,-6.8,-2.0]):
+        # Back bench, two returns and an unobstructed central opening toward +X.
+        octagon('Wall booth base',ink,-19.0,z,3.8,4.4,.20,.01,.17)
+        octagon('Wall booth seat',booth,-20.05,z,1.12,4.05,.12,.17,.57)
+        box('Wall booth back',booth,-20.82,-20.52,z-2.08,z+2.08,.42,1.36)
+        for side in [-1,1]:
+            zz=z+side*1.65
+            octagon('Wall booth seat',booth,-18.55,zz,2.38,.92,.12,.17,.57)
+            box('Wall booth back',booth,-19.85,-17.35,zz+side*.46-.10,zz+side*.46+.10,.42,1.24)
+            beam('Wall booth cyan piping',piping,(-20.45,1.31,z+side*1.98),(-17.42,1.18,z+side*1.98),.025)
+        beam('Wall booth back piping',piping,(-20.49,1.36,z-1.98),(-20.49,1.36,z+1.98),.025)
+        octagon('Wall booth table',top,-18.5,z,1.35,1.4,.16,.62,.72)
+        for xx in [-18.95,-18.05]:
+            for zz in [z-.46,z+.46]:post('Wall booth leg',brass,xx,.04,zz,.045,.58)
+        beam('Wall booth table glow',purple,(-17.82,.69,z-.49),(-17.82,.69,z+.49),.022)
+        post('Wall booth lantern',gold,-18.5,.73,z,.065,.18)
+    # Retain the existing bar pendants; the removed east lounge has none.
+    for x,z in [(-17,15),(-11,15)]:
         post('Pendant cable',ink,x,3.3,z,.022,4.3)
         post('Pendant brass shade',brass,x,3.09,z,.40,.24)
         post('Pendant diffuser',gold,x,3.06,z,.335,.035)
-        if x>0:
-            lamp('Lounge booth light',(x,2.96,z),(1,.79,.51),82,5)
-        else:
-            lamp('Amber pendant',(x,2.96,z),(1,.47,.17),80,8)
+        lamp('Amber pendant',(x,2.96,z),(1,.47,.17),80,8)
     for x,z,c in [(-5,-13,(.22,.15,1)),(5,-13,(1,.06,.37)),(-8,0,(.33,.12,1)),(8,0,(.06,.52,1))]:
         lamp('Stage wash',(x,4.4,z),c,190 if z==-13 else 115,16)
     # Close the vista beyond the entrance without enclosing the entry corridor.

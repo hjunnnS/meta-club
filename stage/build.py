@@ -162,7 +162,7 @@ for side, label in [(-1,"West"),(1,"East")]:
 for side in (-1,1):
     x=side*19.6
     # The east lounge stays open; retain its floor and route inlays below.
-    if not (festival and side > 0):
+    if not festival:
         for z in [2.6,5.0,7.4,9.8]:
             box("Side room fins",metal,x-.20,x+.20,z-.20,z+.20,0,2.2)
         beam("Side room header",violet,(x,2.2,2.6),(x,2.2,9.8),.13)

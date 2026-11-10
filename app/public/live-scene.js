@@ -6,10 +6,10 @@ import { effects, eventPlayer, ledScreen, houseScreen, houseLights, peripheralTe
 import { permittedPath, edmCameraDistance } from './edm-layout.js';
 import { dances, danceCamera, animateDance } from './free-dance.js';
 import { avatarFactory, playerView } from './avatar.js';
-// Inlaid chevrons cross the arena rim before the closed side zone and end between the lounge sofas.
+// Floor chevrons lead toward the west booths without changing the walking surfaces.
 function markLoungeWalk(B, scene) {
   const start = new B.Vector3(-.8, .061, 6.9);
-  const end = new B.Vector3(9.9, .061, 16.35);
+  const end = new B.Vector3(-9, .061, -10);
   const along = end.subtract(start).normalize();
   const across = new B.Vector3(-along.z, 0, along.x);
   const positions = [], indices = [];
@@ -21,12 +21,12 @@ function markLoungeWalk(B, scene) {
     }
     indices.push(base,base+1,base+4, base,base+4,base+5, base+1,base+2,base+3, base+1,base+3,base+4);
   }
-  const mesh = new B.Mesh('Lounge walkway arrows', scene);
+  const mesh = new B.Mesh('Booth approach arrows', scene);
   const data = new B.VertexData();
   data.positions = positions;
   data.indices = indices;
   data.applyToMesh(mesh);
-  const ink = new B.StandardMaterial('Lounge walkway amber', scene);
+  const ink = new B.StandardMaterial('Booth walkway amber', scene);
   ink.disableLighting = true;
   ink.emissiveColor = B.Color3.FromHexString('#ffca77');
   ink.backFaceCulling = false;
@@ -505,7 +505,7 @@ export function startLiveScene({
   return (from, to) => {
     const allowed = permittedPath(from, to, states);
     if (!allowed && performance.now() - lastGateNotice > 4000) {
-      send('gate-notice', '아직 열리지 않은 구역입니다. 중앙 플로어에서 입구 방향으로 걸으면 바와 라운지로 나갈 수 있습니다.');
+      send('gate-notice', '아직 열리지 않은 구역입니다. 중앙 플로어에서 입구 방향으로 걸으면 바와 테이블 구역으로 나갈 수 있습니다.');
       lastGateNotice = performance.now();
     }
     return allowed;
