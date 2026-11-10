@@ -51,6 +51,8 @@ export function startLiveScene({
   const strips = scene.materials
     .filter((m) => ['Orchid LED', 'Ice LED', 'Rose LED'].includes(m.name))
     .map((material) => ({ material, base: material.emissiveColor.clone() }));
+  // The west-side reactive guest already carries a wand beside the entry group.
+  const wandGuest = 'ai-3';
   function onSnapshot({ actors, self, zones, stageEvent }) {
     stageEvents.set(stageEvent);
     if (zones) states = zones;
@@ -60,7 +62,7 @@ export function startLiveScene({
     for (const a of actors) {
       let model = models.get(a.id);
       if (!model) {
-        model = make(a);
+        model = make(a, a.id === wandGuest);
         models.set(a.id, model);
       }
       model.actor = a;
@@ -169,6 +171,32 @@ export function startLiveScene({
   };
   window.addEventListener('blur', () => joystick(0, 0));
   window.addEventListener('resize', () => engine.resize());
+  // Keep member names; give the nearest AI name priority when labels overlap.
+  function arrangeNames() {
+    const camera = scene.activeCamera;
+    const viewport = camera.viewport.toGlobal(canvas.clientWidth, canvas.clientHeight);
+    const transform = scene.getTransformMatrix();
+    const names = [];
+    for (const model of models.values()) {
+      const center = model.label.getAbsolutePosition();
+      const screen = B.Vector3.Project(center, B.Matrix.IdentityReadOnly, transform, viewport);
+      if (screen.z < 0 || screen.z > 1) continue;
+      const top = B.Vector3.Project(center.add(camera.getDirection(B.Axis.Y).scale(.17)),
+        B.Matrix.IdentityReadOnly, transform, viewport);
+      const halfHeight = Math.max(3, Math.abs(screen.y - top.y));
+      names.push({model, x: screen.x, y: screen.y, h: halfHeight + 2,
+        w: halfHeight * 1.55 / .34 + 3, distance: screen.z});
+    }
+    names.sort((a,b) => Number(a.model.actor.ai) - Number(b.model.actor.ai) || a.distance - b.distance);
+    const kept = [];
+    for (const name of names) {
+      const overlaps = name.model.actor.ai && kept.some(other =>
+        Math.abs(name.x - other.x) < name.w + other.w && Math.abs(name.y - other.y) < name.h + other.h);
+      name.model.label.isVisible = !overlaps;
+      if (!overlaps) kept.push(name);
+    }
+  }
+  let nextNameLayout = 0;
   scene.onBeforeRenderObservable.add(() => {
     const now = performance.now(),
       dt = engine.getDeltaTime(),
@@ -206,7 +234,7 @@ export function startLiveScene({
       const close = a.id === own || B.Vector3.DistanceSquared(scene.activeCamera.position, target) < detailRadius ** 2;
       const dance = a.action === 'dance' ? 'groove' : a.action;
       const showSteps = dance === 'side-step' || dance === 'disco-point';
-      const articulated = close || (a.ai && showSteps);
+      const articulated = close || (a.ai && showSteps) || (a.id === wandGuest && otherWands);
       m.near.setEnabled(articulated);
       m.far.setEnabled(!articulated);
       m.showWand(Boolean(a.wand && (a.id === own || otherWands)), articulated);
@@ -271,6 +299,10 @@ export function startLiveScene({
         lastSent = now;
         moveBefore = pos;
       }
+    }
+    if (now >= nextNameLayout) {
+      arrangeNames();
+      nextNameLayout = now + 125;
     }
     frames++;
     tally += dt;

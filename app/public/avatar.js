@@ -68,7 +68,7 @@ export function avatarFactory(B, scene, glow) {
     mesh.isPickable = false;
     return mesh;
   }
-  return function make(actor) {
+  return function make(actor, featuredWand = false) {
     const root = new B.TransformNode(actor.id, scene);
     const near = new B.TransformNode('detail', scene);
     near.parent = root;
@@ -147,21 +147,21 @@ export function avatarFactory(B, scene, glow) {
     function showWand(visible, detailed) {
       if (!visible && !wand) return;
       if (!wand) {
-        wand = B.MeshBuilder.CreateCylinder('mood wand', { height: 0.54, diameter: 0.065, tessellation: 8 }, scene);
+        wand = B.MeshBuilder.CreateCylinder('mood wand', { height: featuredWand ? 0.83 : 0.54, diameter: featuredWand ? 0.105 : 0.065, tessellation: 8 }, scene);
         wand.material = wandMaterial;
         wand.isPickable = false;
         tip = new B.TransformNode('wand tip', scene);
         tip.parent = wand;
-        tip.position.y = -0.27;
+        tip.position.y = featuredWand ? -0.415 : -0.27;
       }
       wand.parent = detailed ? limbs[2] : root;
-      wand.position.set(detailed ? -0.117 : 0.38, detailed ? -0.753 : 1.28, detailed ? 0 : 0.12);
+      wand.position.set(detailed ? -0.117 : 0.38, detailed ? (featuredWand ? -0.88 : -0.753) : 1.28, detailed ? 0 : 0.12);
       wand.rotation.z = detailed ? -0.45 : -0.85;
       wand.setEnabled(visible);
       const drawTrail = visible && detailed && root.isEnabled();
       if (drawTrail && !trail) {
         tip.computeWorldMatrix(true);
-        trail = new B.TrailMesh('wand sweep', tip, scene, { diameter: 0.055, length: 5, sections: 3 });
+        trail = new B.TrailMesh('wand sweep', tip, scene, { diameter: featuredWand ? 0.14 : 0.055, length: featuredWand ? 9 : 5, sections: 3 });
         trail.material = trailMaterial;
         trail.isPickable = false;
       } else if (!drawTrail && trail) {
