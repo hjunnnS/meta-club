@@ -176,7 +176,7 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
             for zz in [z-.46,z+.46]:post('Wall booth leg',brass,xx,.04,zz,.045,.58)
         beam('Wall booth table glow',purple,(17.82,.69,z-.49),(17.82,.69,z+.49),.022)
         post('Wall booth lantern',gold,18.5,.73,z,.065,.18)
-        # Individually baked number plaques remain visible in any GLB viewer.
+        # Small number plaques attach to the aisle-facing lower front of each return seat.
         number=finish('Table number '+str(index),(1,1,1),0,.65,(.72,.72,.72))
         digits={1:['010','110','010','010','111'],2:['111','001','111','100','111'],
                 3:['111','001','111','001','111'],4:['101','101','111','001','001']}
@@ -186,8 +186,8 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
             col=(x-37)//18;row=(y-19)//18
             if 0<=col<3 and 0<=row<5 and glyph[row][col]=='1':return [246,235,255]
             return [24,12,39]
-        images[number]=(png(128,128,number_pixel),lambda x,y,zz,center=z:((zz-center+.39)/.78,(1.44-y)/.74))
-        box('Table number '+str(index),number,17.78,17.82,z-.39,z+.39,.70,1.44)
+        images[number]=(png(128,128,number_pixel),lambda x,y,zz,center=z+1.65:((zz-center+.14)/.28,(.49-y)/.26))
+        box('Table number '+str(index),number,17.325,17.345,z+1.51,z+1.79,.23,.49)
     # Retain the existing bar pendants; the removed east lounge has none.
     for x,z in [(-17,15),(-11,15)]:
         post('Pendant cable',ink,x,3.3,z,.022,4.3)
