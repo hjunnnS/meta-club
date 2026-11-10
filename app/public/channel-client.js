@@ -4,6 +4,7 @@ import { musicPlayer } from './music.js';
 const el = (id) => document.getElementById(id),
   map = document.querySelector('iframe');
 let audibleTrack = null;
+let loginRequired = false;
 function showMusic(id) {
   audibleTrack = id;
   el('music').textContent = id ? '음악 재생 중' : '음악 시작';
@@ -116,7 +117,8 @@ function disconnected(message, reconnect) {
   el('performance').textContent = '';
   el('population').textContent = message;
   el('retry').hidden = false;
-  if (reconnect && !manual && attempts < 4) {
+  el('retry').textContent = loginRequired ? '시험 회원 다시 로그인' : '다시 입장';
+  if (reconnect && !loginRequired && !manual && attempts < 4) {
     clearTimeout(retryTimer);
     retryTimer = setTimeout(() => enter(), 1000 * ++attempts);
   }
@@ -151,7 +153,16 @@ async function enter(channelId) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ channelId }),
     });
-    if (!res.ok) throw Error('입장 가능한 자리가 없거나 세션이 만료됐습니다.');
+    if (!res.ok) {
+      const failure = await res.json().catch(() => ({}));
+      loginRequired = res.status === 401;
+      if (loginRequired)
+        throw Error('로그인 정보가 만료되었거나 유효하지 않습니다. 다시 로그인해 주세요.');
+      if (res.status === 403) throw Error('현재 접속 주소에서 입장 요청이 허용되지 않았습니다.');
+      if (res.status === 409) throw Error('선택한 채널에 입장할 수 없습니다. 자동 입장으로 다시 시도해 주세요.');
+      throw Error('입장 요청 실패 (HTTP ' + res.status + (failure.error ? ' · ' + failure.error : '') + ')');
+    }
+    loginRequired = false;
     const a = await res.json();
     if (a.status === 'already_joined' && old?.roomId === a.channelId) return;
     if (a.status !== 'reserved')
@@ -272,6 +283,10 @@ el('particle-tests').onclick = el('event-controls').onclick = event => {
   if (kind && ready) room?.send('preview-event', { kind, message: el('event-message').value });
 };
 el('retry').onclick = () => {
+  if (loginRequired) {
+    location.assign('/auth/signin?callbackUrl=' + encodeURIComponent('/clubs/edm'));
+    return;
+  }
   attempts = 0;
   enter();
 };
