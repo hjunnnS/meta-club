@@ -44,7 +44,7 @@ test('numbered booths synchronize seating, protect occupied seats and exit to th
     const target=booths[0];place(a,target.exit);seat(a,target.index);
     room.onLeave(a,true);place(b,target.exit);seat(b,target.index);
     assert.equal(room.member(b).seat,target.index);
-    seat(b);place(b,{x:-13.7,y:0,z:17.95,yaw:0});seat(b);
+    seat(b);place(b,{x:edmSeats[2].x,y:0,z:14.45,yaw:0});seat(b);
     assert.equal(room.member(b).seat,2); // existing bar stools still work
     seat(b);assert.equal(room.member(b).seat,null);
     seat(b,999);assert.equal(room.member(b).seat,null);

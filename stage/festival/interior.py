@@ -135,27 +135,37 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
             x=s*18.05;z=-18+j*2.9
             octagon('Deck banquettes',seat,x,z,2.25,2.2,.20,4.14,4.55)
             box('Deck backrests',seat,x-.94,x+.94,z-.98,z-.66,4.42,5.06)
+    # Rotate the complete bar 180 degrees around (-13.65, 16.2).
+    # The tall bottle display moves behind the stools, clearing the stage sightline.
+    def bar_box(name,mat,x1,x2,z1,z2,lo,hi):
+        box(name,mat,-27.3-x2,-27.3-x1,32.4-z2,32.4-z1,lo,hi)
+    def bar_octagon(name,mat,x,z,*shape):
+        octagon(name,mat,-27.3-x,32.4-z,*shape)
+    def bar_beam(name,mat,a,b,r):
+        beam(name,mat,(-27.3-a[0],a[1],32.4-a[2]),(-27.3-b[0],b[1],32.4-b[2]),r)
+    def bar_post(name,mat,x,y,z,r,h):
+        post(name,mat,-27.3-x,y,32.4-z,r,h)
     # West entry bar, tucked outboard of the v3 approach wings.
-    octagon('Bar base',wood,-13.65,16.2,9.7,1.35,.28,.02,1.16)
-    octagon('Bar stone slab',stone,-13.65,16.2,10.05,1.65,.31,1.15,1.29)
+    bar_octagon('Bar base',wood,-13.65,16.2,9.7,1.35,.28,.02,1.16)
+    bar_octagon('Bar stone slab',stone,-13.65,16.2,10.05,1.65,.31,1.15,1.29)
     for j in range(37):
         x=-18.1+j*.246
-        box('Fluted bar front',brass,x,x+.052,16.86,16.90,.13,1.09)
-    beam('Underbar amber',gold,(-18.28,1.12,16.92),(-9.05,1.12,16.92),.038)
+        bar_box('Fluted bar front',brass,x,x+.052,16.86,16.90,.13,1.09)
+    bar_beam('Underbar amber',gold,(-18.28,1.12,16.92),(-9.05,1.12,16.92),.038)
     for x in [-17.6,-15.65,-13.7,-11.75,-9.8]:
-        post('Stool foot',brass,x,.02,17.95,.33,.08)
-        post('Stool stem',silver,x,.10,17.95,.068,.66)
-        post('Upholstered stools',seat,x,.76,17.95,.35,.15)
-    box('Backbar cabinet',wood,-18.6,-9.05,13.62,14.0,0,3.8)
+        bar_post('Stool foot',brass,x,.02,17.95,.33,.08)
+        bar_post('Stool stem',silver,x,.10,17.95,.068,.66)
+        bar_post('Upholstered stools',seat,x,.76,17.95,.35,.15)
+    bar_box('Backbar cabinet',wood,-18.6,-9.05,13.62,14.0,0,3.8)
     bottleMats=[finish('Bottle '+str(i),c,.15,.21) for i,c in enumerate([(.08,.35,.23),(.66,.26,.06),(.30,.48,.58)])]
     for row in range(3):
         y=1.16+row*.87
-        box('Bottle shelves',brass,-18.5,-9.15,13.95,14.50,y,y+.07)
-        beam('Backbar shelf light',gold,(-18.4,y+.08,14.02),(-9.25,y+.08,14.02),.045)
+        bar_box('Bottle shelves',brass,-18.5,-9.15,13.95,14.50,y,y+.07)
+        bar_beam('Backbar shelf light',gold,(-18.4,y+.08,14.02),(-9.25,y+.08,14.02),.045)
         for k in range(25):
             x=-18.15+k*.36+rng.uniform(-.045,.045);h=rng.uniform(.23,.39);m=rng.choice(bottleMats)
-            post('Backbar bottles',m,x,y+.08,14.24,.073,h)
-            post('Bottle necks',m,x,y+.08+h,14.24,.035,.14)
+            bar_post('Backbar bottles',m,x,y+.08,14.24,.073,h)
+            bar_post('Bottle necks',m,x,y+.08+h,14.24,.035,.14)
     # Four open U-shaped booths face the arena from the stair-free east wall.
     booth=finish('Booth midnight plum',(.17,.065,.25),0,.88,(.015,.005,.025))
     piping=finish('Booth muted cyan',(.08,.52,.64),.15,.5,(.025,.22,.28))
@@ -188,12 +198,12 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
             return [24,12,39]
         images[number]=(png(128,128,number_pixel),lambda x,y,zz,center=z+1.65:((zz-center+.14)/.28,(.49-y)/.26))
         box('Table number '+str(index),number,17.325,17.345,z+1.51,z+1.79,.23,.49)
-    # Retain the existing bar pendants; the removed east lounge has none.
+    # Rotate the existing bar pendants with the counter and bottle display.
     for x,z in [(-17,15),(-11,15)]:
-        post('Pendant cable',ink,x,3.3,z,.022,4.3)
-        post('Pendant brass shade',brass,x,3.09,z,.40,.24)
-        post('Pendant diffuser',gold,x,3.06,z,.335,.035)
-        lamp('Amber pendant',(x,2.96,z),(1,.47,.17),80,8)
+        bar_post('Pendant cable',ink,x,3.3,z,.022,4.3)
+        bar_post('Pendant brass shade',brass,x,3.09,z,.40,.24)
+        bar_post('Pendant diffuser',gold,x,3.06,z,.335,.035)
+        lamp('Amber pendant',(-27.3-x,2.96,32.4-z),(1,.47,.17),80,8)
     for x,z,c in [(-5,-13,(.22,.15,1)),(5,-13,(1,.06,.37)),(-8,0,(.33,.12,1)),(8,0,(.06,.52,1))]:
         lamp('Stage wash',(x,4.4,z),c,190 if z==-13 else 115,16)
     # Close the vista beyond the entrance without enclosing the entry corridor.
@@ -225,9 +235,9 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
             beam('Mezzanine chevrons',lamps[(j//2)%3],(xx-.55,5.5,-20.19),(xx+.5,6.75,-20.19),.05)
     for j in range(26):
         xx=-18.35+j*.35
-        box('Backbar arena face',brass,xx,xx+.035,13.55,13.62,.17,3.62)
+        bar_box('Backbar arena face',brass,xx,xx+.035,13.55,13.62,.17,3.62)
     for yy in [.28,3.45]:
-        beam('Backbar arena cornice',gold,(-18.5,yy,13.5),(-9.17,yy,13.5),.04)
+        bar_beam('Backbar arena cornice',gold,(-18.5,yy,13.5),(-9.17,yy,13.5),.04)
     # A perforated dark roof keeps the eye-level views inside the club.
     box('Ceiling',black,-23,23,-22,27,11.6,11.76)
     for j in range(32):
