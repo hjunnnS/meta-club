@@ -1,4 +1,4 @@
-import { ceilingLights } from './ceiling-lights.js';
+import { ceilingLights, musicSpeakers } from './ceiling-lights.js';
 import { clubAmbience, strobeDurations } from './ambience.js';
 import { rhythmFloor } from './rhythm-floor.js';
 import { playlistPosition, trackBeat, musicDynamics } from './music.js';
@@ -51,6 +51,7 @@ export function startLiveScene({
     offset = 0;
   markLoungeWalk(B, scene);
   const renderCeiling = ceilingLights(B,scene);
+  const renderSpeakers = musicSpeakers(B,scene);
   const renderAmbience = clubAmbience(B,scene);
   let strobePreviewStarted = -Infinity;
   let strobePreviewPattern = 'transition';
@@ -185,7 +186,18 @@ export function startLiveScene({
       models.delete(id);
     }
   }
-  let preview;
+  let preview, speakerCamera;
+  function speakerView(){
+    if(speakerCamera)return;
+    speakerCamera=new B.FreeCamera('Speaker observation',new B.Vector3(-8.5,2.6,11.8),scene);
+    speakerCamera.setTarget(new B.Vector3(-18.5,1.8,5.8));
+    view.preview(speakerCamera);
+    const close=document.createElement('button');
+    close.textContent='스피커 보기 종료';
+    close.style.cssText='position:fixed;top:15px;left:15px;z-index:3;background:#21172bdd;color:white;padding:10px;border:1px solid #ffffff66;border-radius:8px';
+    document.body.append(close);
+    close.onclick=()=>{view.preview(null);speakerCamera.dispose();speakerCamera=null;close.remove();canvas.focus();};
+  }
   function showPreview(data) {
     if (preview) {
       view.preview(null);
@@ -209,6 +221,7 @@ export function startLiveScene({
       offset = data.offset;
     }
     if (kind === 'audible-track') audibleTrack = data;
+    if (kind === 'speaker-view') speakerView();
     if(kind==='peripheral-preview'&&Object.hasOwn(peripheralTests,data)){
       peripheralPreview={kind:data,start:performance.now()};stageEvents.stop();strobePreviewStarted=-Infinity;
     }
@@ -363,6 +376,7 @@ export function startLiveScene({
     const effectBlocksStrobe=effectPreview&&effectPreview.kind!=='strobe-hold';
     const roomPulse = renderAmbience(beats, audioBands, strobing||Boolean(effectBlocksStrobe)||Boolean(smokeProtection), Boolean(audibleTrack), playback?.track.bpm || 120, previewAge<strobeDurations[strobePreviewPattern]+1.6 ? previewAge : null, strobePreviewPattern,dynamics.level);
     renderCeiling(beats,strobing,musicEnergy,roomPulse);
+    renderSpeakers(beats,audioBands,Boolean(playing),dt,calmBeats.matches);
     if (ambient) ambient.intensity = (smokeProtection?.42:.52) + roomPulse * 1.65;
     // The first beat of each four-beat bar accents both surfaces on the same frame.
     const barPhase = ((beats % 4) + 4) % 4;
@@ -527,6 +541,7 @@ export function startLiveScene({
   send('scene-ready', true);
   let lastGateNotice = -Infinity;
   return (from, to) => {
+    if(speakerCamera)return false;
     const allowed = permittedPath(from, to, states);
     if (!allowed && performance.now() - lastGateNotice > 4000) {
       send('gate-notice', '아직 열리지 않은 구역입니다. 중앙 플로어에서 입구 방향으로 걸으면 바와 테이블 구역으로 나갈 수 있습니다.');

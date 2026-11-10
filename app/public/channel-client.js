@@ -247,6 +247,7 @@ window.addEventListener('message', (event) => {
     note('');
     ready = true;
     showMusic(audibleTrack);
+    if(new URLSearchParams(location.search).get('view')==='speakers')frame('speaker-view');
     const floor = map.contentDocument?.querySelector('canvas');
     floor?.addEventListener('pointerdown', () => el('music').click(), { once: true });
     el('event-controls').hidden = !memberId?.startsWith('local-test:');

@@ -44,3 +44,40 @@ export function ceilingLights(B, scene) {
     });
   };
 }
+
+// Actual low-frequency analyser bands gate the accent; the song beat shapes each hit.
+export function speakerPulse(beat,bands,playing,dt,previous=0,reduced=false) {
+  if(!playing||bands.length<3)return {level:0,travel:0,light:.12};
+  const bass=bands.slice(0,3).reduce((n,v)=>n+(Number.isFinite(v)?Math.max(0,Math.min(1,v)):0),0)/3;
+  const target=Math.max(0,(bass-.025)/.975);
+  const elapsed=Math.max(0,Math.min(100,Number.isFinite(dt)?dt:16));
+  const blend=1-Math.exp(-elapsed/(target>previous?32:135));
+  const level=previous+(target-previous)*blend;
+  const phase=Number.isFinite(beat)?((beat%1)+1)%1:0;
+  const hit=Math.exp(-phase*9);
+  return {level,travel:reduced?0:level*(.025+.08*hit),
+    light:.12+level*(reduced?.24:.38+.65*hit)};
+}
+export function musicSpeakers(B,scene) {
+  const cones=[],strips=[],ink=[];
+  for(const mesh of scene.meshes) {
+    if(!mesh.getTotalVertices())continue;
+    const names=[mesh.name,mesh.parent?.name];
+    if(names.some(n=>n==='West speaker woofer'||n==='West speaker dust cap'))
+      cones.push({mesh,x:mesh.position.x});
+    if(names.some(n=>n==='West speaker trim')&&mesh.material?.name==='Ice LED') {
+      const material=mesh.material.clone('Music-reactive speaker edge');
+      mesh.material=material;ink.push(material);strips.push(material);
+    }
+  }
+  const cyan=B.Color3.FromHexString('#55e4f5'),rose=B.Color3.FromHexString('#b75dff');
+  let previous=0;
+  scene.onDisposeObservable.addOnce(()=>ink.forEach(m=>m.dispose()));
+  return (beat,bands,playing,dt,reduced=false)=>{
+    const state=speakerPulse(beat,bands,playing,dt,previous,reduced);
+    previous=state.level;
+    cones.forEach(({mesh,x})=>mesh.position.x=x+state.travel);
+    const color=B.Color3.Lerp(cyan,rose,Number.isFinite(beat)?(.5+.5*Math.sin(beat*Math.PI/8))*.45:0);
+    strips.forEach(material=>color.scaleToRef(state.light,material.emissiveColor));
+  };
+}
