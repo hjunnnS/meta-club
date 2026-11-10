@@ -74,6 +74,11 @@ export function musicPlayer(notice, playing, failed) {
       return;
     }
     if (current === next.track.id && source) {
+      if (lastFailure) {
+        lastFailure = null;
+        notice(next.track.title);
+        playing(current);
+      }
       // A one-track loop wraps in the audio device, without restarting the buffer.
       const length = source.buffer.duration,
         now = ctx.currentTime;
@@ -128,7 +133,7 @@ export function musicPlayer(notice, playing, failed) {
       pendingId = null;
       lastFailure = null;
       notice(actual.track.title);
-      playing();
+      playing(id);
     } catch {
       if (ticket === generation) {
         stop();

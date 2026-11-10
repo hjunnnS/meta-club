@@ -52,7 +52,8 @@ export function startLiveScene({
   const renderHouseLights = houseLights(B, scene);
   const ambient = scene.getLightByName('ambient');
   if (ambient) ambient.intensity = 0.52;
-  let tracks = [];
+  let tracks = [], audibleTrack = null;
+  const calmBeats = matchMedia('(prefers-reduced-motion: reduce)');
   let fastFlash = false, otherWands = true;
   const updateBoard = houseScreen(B, scene);
   const stageEvents = eventPlayer(B, scene, () => Date.now() + offset, () => fastFlash);
@@ -130,6 +131,7 @@ export function startLiveScene({
       tracks = data.tracks || [];
       offset = data.offset;
     }
+    if (kind === 'audible-track') audibleTrack = data;
     if (kind === 'other-wands') otherWands = data;
     if (kind === 'fast-flash') fastFlash = data === true;
     if (kind === 'led-preview') showPreview(data);
@@ -235,8 +237,12 @@ export function startLiveScene({
     const beats = trackBeat(playback, t);
     const celebrating = stageEvents.kind === 'led';
     renderHouseLights(beats, !stageEvents.kind);
-    renderFloor(beats, celebrating);
-    updateBoard(playback?.track.title || '음악 대기 중', beats, !preview && !celebrating);
+    const playing = playback && playback.track.id === audibleTrack;
+    // The first beat of each four-beat bar accents both surfaces on the same frame.
+    const barPhase = ((beats % 4) + 4) % 4;
+    const accent = playing && beats >= 0 ? Math.max(0, 1 - barPhase / .78) * (calmBeats.matches ? .3 : 1) : 0;
+    renderFloor(beats, celebrating, accent);
+    updateBoard(playing ? playback.track.title : null, beats, !preview && !celebrating, accent);
     const phase = beats * Math.PI * 2,
       beatWave = Math.sin(phase);
     washes.forEach(({ light, base }, i) => {

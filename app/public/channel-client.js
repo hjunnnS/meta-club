@@ -3,10 +3,17 @@ import { initShop } from './shop.js';
 import { musicPlayer } from './music.js';
 const el = (id) => document.getElementById(id),
   map = document.querySelector('iframe');
+let audibleTrack = null;
+function showMusic(id) {
+  audibleTrack = id;
+  el('music').textContent = id ? '음악 재생 중' : '음악 시작';
+  el('music').classList.toggle('awaiting', ready && !id);
+  if (ready) frame('audible-track', id);
+}
 const music = musicPlayer(
   (s) => (el('track').textContent = s),
-  () => { el('music').textContent = '음악 재생 중'; guide('music'); },
-  firstVisitFailure,
+  id => { showMusic(id); guide('music'); },
+  reason => { showMusic(null); firstVisitFailure(reason); },
 );
 let visitOrigin;
 let needsPlace = true,
@@ -94,6 +101,7 @@ function disconnected(message, reconnect) {
   room = undefined;
   snapshot = null;
   ready = false;
+  showMusic(null);
   map.hidden = true;
   map.removeAttribute('src');
   for (const id of ['train-start', 'train-join', 'train-leave']) el(id).hidden = true;
@@ -152,7 +160,7 @@ async function enter(channelId) {
     needsPlace = true;
     snapshot = null;
     attempts = 0;
-    el('music').textContent = '음악 시작';
+    showMusic(null);
     music.reset();
     note('');
     next.onMessage('occupancy', ({ channelId, people, capacity }) => {
@@ -203,6 +211,7 @@ window.addEventListener('message', (event) => {
   if (kind === 'gate-notice') note(data);
   if (kind === 'scene-ready') {
     ready = true;
+    showMusic(audibleTrack);
     const floor = map.contentDocument?.querySelector('canvas');
     floor?.addEventListener('pointerdown', () => el('music').click(), { once: true });
     el('event-controls').hidden = !memberId?.startsWith('local-test:');

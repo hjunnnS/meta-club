@@ -6,7 +6,7 @@ export function rhythmFloor(B, scene) {
   const material = new B.ShaderMaterial('rhythm tiles', scene, {
     vertexSource: 'precision highp float; attribute vec3 position; uniform mat4 worldViewProjection; varying vec2 p; void main(){p=position.xz;gl_Position=worldViewProjection*vec4(position,1.);}',
     fragmentSource: `precision highp float;
-      varying vec2 p; uniform float beat; uniform float intensity; uniform float celebration;
+      varying vec2 p; uniform float beat; uniform float intensity; uniform float celebration; uniform float accent;
       void main(){
         float radius=length(p); if(radius>8.2 || radius<0.85) discard;
         float band=(radius-.85)/2.45;
@@ -22,13 +22,16 @@ export function rhythmFloor(B, scene) {
         float lit=current*(1.-handoff)+next*handoff+trail*.14*(1.-handoff);
         vec3 color=mix(vec3(.16,.94,1.),vec3(.92,.46,.96),floor(band)*.37);
         color=mix(color,vec3(1.,.65,.24),celebration*.55);
+        lit=max(lit,accent*(.35+.30*(1.-fract(band))));
+        color=mix(color,vec3(.55,1.,.91),accent*.65);
         gl_FragColor=vec4(mix(vec3(.12,.12,.24),color,lit),intensity*(.18+.82*lit));
       }`
-  }, { attributes:['position'], uniforms:['worldViewProjection','beat','intensity','celebration'], needAlphaBlending:true });
+  }, { attributes:['position'], uniforms:['worldViewProjection','beat','intensity','celebration','accent'], needAlphaBlending:true });
   material.backFaceCulling = false;
   mesh.material = material;
   const calm = matchMedia('(prefers-reduced-motion: reduce)');
-  return (beat, celebrating) => {
+  return (beat, celebrating, accent) => {
+    material.setFloat('accent', accent);
     material.setFloat('celebration', celebrating ? 1 : 0);
     material.setFloat('beat', beat);
     material.setFloat('intensity', calm.matches ? 0.42 : 0.9);

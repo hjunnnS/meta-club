@@ -90,16 +90,23 @@ export function houseScreen(B, scene) {
   screen.name = 'EDM house screen';
   const texture = screen.material.emissiveTexture;
   const ctx = texture.getContext();
-  return (track, beats, visible) => {
+  return (track, beats, visible, accent) => {
     screen.setEnabled(visible);
     if (!visible) return;
-    const frame = Math.floor(beats * 3);
+    const frame = Math.floor(beats * (accent > 0 ? 12 : 3));
     if (title !== track) {
       title = track;
-      overlay = lettering('EDM CLUB', track);
+      overlay = track ? lettering(track, 'EDM CLUB') : lettering('EDM CLUB');
     } else if (lastFrame === frame) return;
     lastFrame = frame;
     mediaWall(ctx, beats * 0.36);
+    if (accent > 0) {
+      ctx.fillStyle = `rgba(71, 206, 228, ${.28 * accent})`;
+      ctx.fillRect(0, 0, 1024, 384);
+      ctx.fillStyle = `rgba(159, 255, 245, ${accent})`;
+      ctx.fillRect(0, 14, 1024, 18);
+      ctx.fillRect(0, 352, 1024, 18);
+    }
     ctx.drawImage(overlay, 0, 0);
     texture.update();
   };
