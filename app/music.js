@@ -33,16 +33,15 @@ function permitted(r, now) {
   );
 }
 const testTracks = [
-  { id: 'club-style-1', title: 'Club Style 01 · 원본' },
-  { id: 'club-style-2', title: 'Club Style 02 · Neon Current' },
-  { id: 'club-style-3', title: 'Club Style 03 · Midnight Drive' },
-  { id: 'club-style-4', title: 'Club Style 04 · Electric Pulse' },
-  { id: 'club-style-5', title: 'Club Style 05 · Afterglow' },
+  { id: 'club-style-1', title: 'Club Style 01 · 원본', bpm: 134 },
+  { id: 'club-style-2', title: 'Club Style 02 · Groove House', bpm: 128 },
+  { id: 'club-style-3', title: 'Club Style 03 · Steel Techno', bpm: 140 },
+  { id: 'club-style-4', title: 'Club Style 04 · Melodic Lights', bpm: 124 },
+  { id: 'club-style-5', title: 'Club Style 05 · Electric Break', bpm: 132 },
 ].map((track, index) => ({
   ...track,
   file: fileURLToPath(new URL('./fixtures/club-music/club_style_' + (index + 1) + '_60s.wav', import.meta.url)),
   duration: 60,
-  bpm: 134,
   firstBeat: 0,
   until: null,
   url: '/media/edm/' + track.id,
