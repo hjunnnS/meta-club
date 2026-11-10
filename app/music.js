@@ -36,7 +36,7 @@ const testTracks = [{
   id: 'neon-horizon-treblo',
   title: 'Neon Horizon · Treblo',
   file: fileURLToPath(new URL('./fixtures/club-music/neon-horizon-treblo.mp3', import.meta.url)),
-  duration: 208.752,
+  duration: 208.728,
   bpm: 132,
   firstBeat: .23,
   until: null,
