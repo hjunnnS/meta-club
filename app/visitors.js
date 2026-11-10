@@ -75,8 +75,12 @@ const groups = [
   { y: 0, spots: [[5.2, 10.7, -.4], [6.0, 12.2, .8]] }, // beside the lounge approach
 ];
 export const extraGuestPlaces = [0, 1, 2].flatMap(index =>
-  groups.filter(group => index < group.spots.length).map(({y, spots}) => {
+  groups.flatMap(({y, spots}, groupIndex) => {
+    if (index >= spots.length) return [];
     const [x, z, yaw] = spots[index];
-    return {x, y, z, yaw};
+    // Keep each anchor fixed. Vary just the choreography within each group.
+    const style = (groupIndex + index) % 3;
+    return [{x, y, z, yaw, danceStyle: style,
+      action: ['side-step', 'disco-point', 'groove'][(groupIndex + 2 * index) % 3]}];
   })
 );

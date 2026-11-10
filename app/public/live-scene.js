@@ -28,7 +28,7 @@ export function startLiveScene({
   let fastFlash = false, otherWands = true;
   const updateBoard = houseScreen(B, scene);
   const stageEvents = eventPlayer(B, scene, () => Date.now() + offset, () => fastFlash);
-  const view = playerView(B, scene, cam, canvas, eyeHeight, document.body, { followDistance: 7.1, followLift: 0.47, followFov: 1.23 });
+  const view = playerView(B, scene, cam, canvas, eyeHeight, document.body, { followDistance: 7.1, followLift: 0.47, followFov: 1.23, maxDistance: 24 });
   const viewDance = danceCamera(B, scene);
   let own,
     mode = 'auto',
@@ -204,17 +204,19 @@ export function startLiveScene({
       const adjacentRider = ownSlot != null && a.trainSlot != null && Math.abs(a.trainSlot - ownSlot) <= 1;
       const detailRadius = low ? (adjacentRider ? 12 : 8) : 21;
       const close = a.id === own || B.Vector3.DistanceSquared(scene.activeCamera.position, target) < detailRadius ** 2;
-      m.near.setEnabled(close);
-      m.far.setEnabled(!close);
-      m.showWand(Boolean(a.wand && (a.id === own || otherWands)), close);
+      const dance = a.action === 'dance' ? 'groove' : a.action;
+      const showSteps = dance === 'side-step' || dance === 'disco-point';
+      const articulated = close || (a.ai && showSteps);
+      m.near.setEnabled(articulated);
+      m.far.setEnabled(!articulated);
+      m.showWand(Boolean(a.wand && (a.id === own || otherWands)), articulated);
       if (a.ai) {
         ai++;
-        if ((close ? m.torso : m.far).isInFrustum(planes)) visibleAI++;
+        if ((articulated ? m.torso : m.far).isInFrustum(planes)) visibleAI++;
       }
-      const dance = a.action === 'dance' ? 'groove' : a.action;
       if (dances.has(dance)) {
-        if (close) {
-          animateDance(m, dance, beats);
+        if (articulated) {
+          animateDance(m, dance, beats, a.ai && a.trainSlot == null ? a.danceStyle : undefined);
           detailed++;
         } else {
           const sway = Math.sin(phase / 2);

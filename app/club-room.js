@@ -201,7 +201,6 @@ export class EdmRoom extends Room {
         id: 'floor-dancer-' + i, ai: true, nickname: 'AI 손님 ' + (6 + i),
         avatar: ['teal', 'rose', 'gold', 'indigo'][i % 4],
         ...extraGuestPlaces[i],
-        action: ['groove', 'side-step', 'disco-point'][i % 3],
       };
     }
     // Two reactive dancers use the reviewed side floors once available.

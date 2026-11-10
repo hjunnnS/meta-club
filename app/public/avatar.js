@@ -52,6 +52,22 @@ export function avatarFactory(B, scene, glow) {
     }
     return distantBlocks.get(shirt).createInstance(root.name + ' distant blocks');
   }
+  // Share articulated block meshes across guests, including their distant dance poses.
+  const blockTemplates = new Map();
+  function guestPart(parent, name, w, h, d, y, material) {
+    const key = name + ':' + material.uniqueId;
+    let template = blockTemplates.get(key);
+    if (!template) {
+      template = block(null, name, w, h, d, 0, material);
+      template.setEnabled(false);
+      blockTemplates.set(key, template);
+    }
+    const mesh = template.createInstance(name);
+    mesh.parent = parent;
+    mesh.position.y = y;
+    mesh.isPickable = false;
+    return mesh;
+  }
   return function make(actor) {
     const root = new B.TransformNode(actor.id, scene);
     const near = new B.TransformNode('detail', scene);
@@ -69,9 +85,9 @@ export function avatarFactory(B, scene, glow) {
       return mesh;
     };
     const shirt = materials.get(actor.avatar) || materials.get('indigo');
-    const torso = actor.ai ? block(near, 'block torso', .50, .61, .30, 1.06, shirt)
+    const torso = actor.ai ? guestPart(near, 'block torso', .50, .61, .30, 1.06, shirt)
       : capsule(near, 'torso', 0.23, 0.72, 1.04, shirt);
-    if (actor.ai) block(near, 'block head', .34, .33, .32, 1.55, face);
+    if (actor.ai) guestPart(near, 'block head', .34, .33, .32, 1.55, face);
     else capsule(near, 'head', 0.15, 0.32, 1.55, face);
     const limbs = [];
     for (const sign of [-1, 1]) {
@@ -81,7 +97,7 @@ export function avatarFactory(B, scene, glow) {
         joint.position.set(sign * (arm ? 0.25 : 0.115), arm ? 1.33 : 0.79, 0);
         if (actor.ai) {
           joint.position.x = sign * (arm ? .32 : .13);
-          block(joint, arm ? 'block arm' : 'block leg', arm ? .15 : .2,
+          guestPart(joint, arm ? 'block arm' : 'block leg', arm ? .15 : .2,
             arm ? .55 : .73, arm ? .18 : .26, arm ? -.25 : -.34, arm ? shirt : leg);
         } else capsule(
           joint,
@@ -174,7 +190,7 @@ export function avatarFactory(B, scene, glow) {
 }
 
 // The walking camera stays at the player's eyes for input, collisions and network movement.
-export function playerView(B, scene, cam, canvas, eyeHeight, controls, { followDistance = 3.4, followLift = 0.32, followFov = cam.fov } = {}) {
+export function playerView(B, scene, cam, canvas, eyeHeight, controls, { followDistance = 3.4, followLift = 0.32, followFov = cam.fov, maxDistance = 9 } = {}) {
   const follow = new B.FreeCamera('third person', B.Vector3.Zero(), scene);
   const seatedEye = new B.FreeCamera('activity eyes', B.Vector3.Zero(), scene);
   seatedEye.minZ = cam.minZ;
@@ -195,7 +211,7 @@ export function playerView(B, scene, cam, canvas, eyeHeight, controls, { followD
     if (!thirdPerson || preview || event.ctrlKey || !event.deltaY) return;
     event.preventDefault();
     const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? canvas.clientHeight : 1;
-    zoomDistance = Math.max(1.2, Math.min(9, zoomDistance * Math.exp(event.deltaY * unit * 0.002)));
+    zoomDistance = Math.max(1.2, Math.min(maxDistance, zoomDistance * Math.exp(event.deltaY * unit * 0.002)));
   }
   canvas.addEventListener('wheel', wheel, { passive: false });
   scene.onDisposeObservable.addOnce(() => canvas.removeEventListener('wheel', wheel));
