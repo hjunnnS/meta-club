@@ -2,7 +2,7 @@ import { ceilingLights } from './ceiling-lights.js';
 import { clubAmbience, strobeDurations } from './ambience.js';
 import { rhythmFloor } from './rhythm-floor.js';
 import { playlistPosition, trackBeat } from './music.js';
-import { effects, eventPlayer, ledScreen, houseScreen, houseLights } from '/stage/festival/events.js';
+import { effects, eventPlayer, ledScreen, houseScreen, houseLights, peripheralTests } from '/stage/festival/events.js';
 import { permittedPath, edmCameraDistance } from './edm-layout.js';
 import { dances, danceCamera, animateDance } from './free-dance.js';
 import { avatarFactory, playerView } from './avatar.js';
@@ -54,6 +54,13 @@ export function startLiveScene({
   const renderAmbience = clubAmbience(B,scene);
   let strobePreviewStarted = -Infinity;
   let strobePreviewPattern = 'transition';
+  let peripheralPreview=null;
+  function activePeripheralPreview() {
+    if(!peripheralPreview)return null;
+    const age=(performance.now()-peripheralPreview.start)/1000;
+    if(age>=peripheralTests[peripheralPreview.kind]+.5){peripheralPreview=null;return null;}
+    return {kind:peripheralPreview.kind,age};
+  }
   let spectrum = [], spectrumAt = 0;
   const renderFloor = rhythmFloor(B, scene);
   const renderHouseLights = houseLights(B, scene);
@@ -148,7 +155,7 @@ export function startLiveScene({
   const wandGuest = 'ai-3';
   let responders = [];
   function onSnapshot({ actors, self, zones, stageEvent }) {
-    stageEvents.set(stageEvent);
+    if(activePeripheralPreview())stageEvents.stop();else stageEvents.set(stageEvent);
     if (zones) states = zones;
     dancers = actors.filter((a) => a.action === 'dance' || dances.has(a.action)).length;
     const caller = actors.find(a => a.id === wandGuest && a.wand && a.trainSlot == null);
@@ -201,6 +208,9 @@ export function startLiveScene({
       offset = data.offset;
     }
     if (kind === 'audible-track') audibleTrack = data;
+    if(kind==='peripheral-preview'&&Object.hasOwn(peripheralTests,data)){
+      peripheralPreview={kind:data,start:performance.now()};stageEvents.stop();strobePreviewStarted=-Infinity;
+    }
     if (kind === 'strobe-preview' && Object.hasOwn(strobeDurations,data)) {
       strobePreviewPattern = data;
       strobePreviewStarted = performance.now();
@@ -312,6 +322,7 @@ export function startLiveScene({
     // follow a four-beat phrase; the floor strips and dancers keep the same phase.
     const playback = playlistPosition(tracks, epoch, Date.now() + offset);
     const beats = trackBeat(playback, t);
+    const effectPreview=activePeripheralPreview();
     const celebrating = stageEvents.kind === 'led';
     const strobing = stageEvents.strobing;
     const audioBands = performance.now()-spectrumAt<350 && audibleTrack ? spectrum : [];
@@ -319,7 +330,7 @@ export function startLiveScene({
     renderCeiling(beats,strobing,musicEnergy);
     const previewAge = (performance.now()-strobePreviewStarted)/1000;
     // After either test, leave a normal-light gap before automatic accents resume.
-    const roomPulse = renderAmbience(beats, audioBands, strobing, Boolean(audibleTrack), playback?.track.bpm || 120, previewAge<strobeDurations[strobePreviewPattern]+1.6 ? previewAge : null, strobePreviewPattern);
+    const roomPulse = renderAmbience(beats, audioBands, strobing||Boolean(effectPreview), Boolean(audibleTrack), playback?.track.bpm || 120, previewAge<strobeDurations[strobePreviewPattern]+1.6 ? previewAge : null, strobePreviewPattern);
     if (ambient) ambient.intensity = .52 + roomPulse * 1.65;
     const playing = playback && playback.track.id === audibleTrack;
     // The first beat of each four-beat bar accents both surfaces on the same frame.
@@ -330,7 +341,7 @@ export function startLiveScene({
     const phase32 = phraseBeat % 32;
     const gather = phase32 >= 30 ? (phase32 - 30) / 2 : 0;
     const release = phraseBeat >= 32 && phase32 < 3 ? phase32 / 3 : -1;
-    renderHouseLights(beats, !stageEvents.kind, preview ? -1 : release, playback?.track.bpm || 120, musicEnergy, strobing);
+    renderHouseLights(beats, !stageEvents.kind, preview ? -1 : release, playback?.track.bpm || 120, musicEnergy, strobing, effectPreview, Boolean(playing));
     // Pick the upcoming phrase's color during the pickup and keep it through the release.
     const cue = cueColors[Math.floor((Math.max(0, phraseBeat) + 2) / 32) % cueColors.length];
     const wallRelease = preview || celebrating ? -1 : release;

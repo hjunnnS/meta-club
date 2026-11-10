@@ -255,6 +255,8 @@ window.addEventListener('message', (event) => {
   }
 });
 el('particle-tests').onclick = el('event-controls').onclick = event => {
+  const effect=event.target.closest('[data-peripheral-preview]');
+  if(ready&&effect){frame('peripheral-preview',effect.dataset.peripheralPreview);return;}
   const strobe = event.target.closest('[data-strobe-preview]');
   if (ready && strobe) {
     frame('strobe-preview', strobe.dataset.strobePreview);
