@@ -8,9 +8,11 @@ function performanceAt(epoch, index, tracks) {
   const bpm = music.track.bpm || 120;
   const beat = ((music.phraseTime ?? music.time) - (music.track.firstBeat || 0)) * bpm / 60;
   const remaining = ((32 - beat % 32) % 32 + 32) % 32;
-  const start = due + remaining * 60000 / bpm;
+  // A loop restarts the song's first bar, even when its length is not a full eight-bar phrase.
+  const start = due + Math.min(remaining * 60000 / bpm, (music.track.duration - music.time) * 1000);
+  const startMusic = playlistPosition(tracks, epoch, start);
   const kind = index % 2 === 0 ? 'laser' : holograms[((index - 1) / 2) % holograms.length];
-  return {id:'scheduled-'+index, kind, start};
+  return {id:'scheduled-'+index, kind, start, bpm:startMusic?.track.bpm || bpm};
 }
 
 // All clients use the channel clock, including the countdown and late joins.

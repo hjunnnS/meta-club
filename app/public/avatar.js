@@ -143,7 +143,7 @@ export function avatarFactory(B, scene, glow) {
     label.material = mat;
     root.position.set(actor.x, actor.y, actor.z);
     root.rotation.y = actor.yaw;
-    let wand, tip, trail;
+    let wand, tip, trail, orbit, previousTip, previousTime = 0;
     function showWand(visible, detailed) {
       if (!visible && !wand) return;
       if (!wand) {
@@ -161,12 +161,30 @@ export function avatarFactory(B, scene, glow) {
       const drawTrail = visible && detailed && root.isEnabled();
       if (drawTrail && !trail) {
         tip.computeWorldMatrix(true);
-        trail = new B.TrailMesh('wand sweep', tip, scene, { diameter: featuredWand ? 0.14 : 0.055, length: featuredWand ? 9 : 5, sections: 3 });
+        trail = new B.TrailMesh('wand sweep', tip, scene, { diameter: featuredWand ? .14 : .055, length: featuredWand ? 9 : 5, sections: 3 });
         trail.material = trailMaterial;
         trail.isPickable = false;
       } else if (!drawTrail && trail) {
         trail.dispose();
         trail = null;
+      }
+      if (drawTrail) {
+        tip.computeWorldMatrix(true);
+        const point = tip.getAbsolutePosition(), now = performance.now();
+        const speed = previousTip ? B.Vector3.Distance(point,previousTip)/Math.max(.016,(now-previousTime)/1000) : 0;
+        const sweep = Math.min(1,speed/3.5);
+        trail.diameter = .035 + sweep*(featuredWand ? .20 : .13);
+        if(!orbit) {
+          orbit=B.MeshBuilder.CreateTorus('wand body orbit',{diameter:1.12,thickness:.018,tessellation:32},scene);
+          orbit.parent=root;orbit.position.y=1.03;orbit.material=trailMaterial;orbit.isPickable=false;
+        }
+        orbit.setEnabled(sweep>.15);
+        orbit.rotation.z=.16*Math.sin(now/420);
+        orbit.visibility=sweep*.55;
+        previousTip=point.clone();previousTime=now;
+      } else {
+        previousTip=null;
+        orbit?.setEnabled(false);
       }
     }
     return {

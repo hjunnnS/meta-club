@@ -455,9 +455,10 @@ function lasers(B, scene, root, event, fastFlash) {
     const lightsOn = reducedMotion.matches || !blackout;
     root.setEnabled(lightsOn);
     if (!lightsOn) return;
-    const phase = Math.floor(t / 4);
+    const musicalBeat = t * (event.bpm || 120) / 60;
+    const phase = Math.min(3, Math.floor(musicalBeat / 8));
     for (const [i, head] of heads.entries()) {
-      const a = head.angle + t * 0.72;
+      const a = head.angle + musicalBeat * .36;
       const color = palette[phase === 0 ? (i % 2 ? lime : violet)
         : phase === 2 ? amber : spectrum[(i + phase) % spectrum.length]];
       for (const mat of [head.core, head.light, head.footprint]) mat.emissiveColor.copyFrom(color);
@@ -558,7 +559,7 @@ export function eventPlayer(B, scene, now = Date.now, fastFlash = () => false) {
     animate = ['whale','dragon','jellyfish','butterflies'].includes(event.kind)
       ? hologram(B, scene, root, event.kind)
       : {led: marquee, laser: lasers, phoenix}[event.kind](B, scene, root, event, fastFlash);
-    adorn = event.kind === 'led' ? null : celebration(B, scene, root, effects[event.kind].seconds);
+    adorn = event.kind === 'led' ? null : celebration(B, scene, root, effects[event.kind].seconds, event.kind !== 'laser');
     tick();
   }
   function tick() {

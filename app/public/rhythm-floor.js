@@ -6,7 +6,7 @@ export function rhythmFloor(B, scene) {
   const material = new B.ShaderMaterial('rhythm tiles', scene, {
     vertexSource: 'precision highp float; attribute vec3 position; uniform mat4 worldViewProjection; varying vec2 p; void main(){p=position.xz;gl_Position=worldViewProjection*vec4(position,1.);}',
     fragmentSource: `precision highp float;
-      varying vec2 p; uniform float beat; uniform float intensity; uniform float celebration; uniform float accent; uniform float cueBeat; uniform vec3 cueColor;
+      varying vec2 p; uniform float beat; uniform float intensity; uniform float celebration; uniform float accent; uniform float cueBeat; uniform vec3 cueColor; uniform float pattern;
       void main(){
         float radius=length(p); if(radius>8.2 || radius<0.85) discard;
         float band=(radius-.85)/2.45;
@@ -34,13 +34,24 @@ export function rhythmFloor(B, scene) {
           color=mix(color,cueColor,wave);
           lit=max(lit,wave);
         }
+        if(pattern>.5 && pattern<1.5){
+          float checker=mod(floor(p.x/1.15)+floor(p.y/1.15)+floor(beat),2.);
+          color=mix(vec3(.28,.06,.74),vec3(.93,.29,.72),checker);
+          lit=.38+.48*checker;
+        }
+        if(pattern>1.5){
+          float halo=1.-smoothstep(.12,.65,abs(mod(radius-beat*.38+24.,2.6)-1.3));
+          color=mix(vec3(.34,.31,.53),vec3(.88,.79,.99),halo);
+          lit=.28+.58*halo;
+        }
         gl_FragColor=vec4(mix(vec3(.12,.12,.24),color,lit),intensity*(.18+.82*lit));
       }`
-  }, { attributes:['position'], uniforms:['worldViewProjection','beat','intensity','celebration','accent','cueBeat','cueColor'], needAlphaBlending:true });
+  }, { attributes:['position'], uniforms:['worldViewProjection','beat','intensity','celebration','accent','cueBeat','cueColor','pattern'], needAlphaBlending:true });
   material.backFaceCulling = false;
   mesh.material = material;
   const calm = matchMedia('(prefers-reduced-motion: reduce)');
-  return (beat, celebrating, accent, cueBeat, cueColor) => {
+  return (beat, celebrating, accent, cueBeat, cueColor, pattern = 0) => {
+    material.setFloat('pattern', pattern);
     material.setColor3('cueColor', cueColor);
     material.setFloat('cueBeat', cueBeat);
     material.setFloat('accent', accent);

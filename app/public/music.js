@@ -6,7 +6,7 @@ export function playlistPosition(tracks, epoch, now) {
   const age = Math.max(0, (now - epoch) / 1000);
   let time = age % duration;
   for (const track of valid) {
-    if (time < track.duration) return { track, time, phraseTime: valid.length === 1 ? age : time, cycle: Math.floor(age / duration) };
+    if (time < track.duration) return { track, time, phraseTime: time, cycle: Math.floor(age / duration) };
     time -= track.duration;
   }
   return null;

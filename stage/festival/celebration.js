@@ -1,5 +1,5 @@
 // Deterministic particles share the channel event's elapsed time, including late joins.
-export function celebration(B, scene, root, seconds) {
+export function celebration(B, scene, root, seconds, holographic = false) {
   const ink = new B.StandardMaterial('celebration particles', scene);
   ink.disableLighting = true;
   ink.emissiveColor = B.Color3.White();
@@ -25,6 +25,24 @@ export function celebration(B, scene, root, seconds) {
     const value = Math.sin(index * 127.1 + salt * 311.7) * 43758.5453;
     return value - Math.floor(value);
   };
+  let glitter, glitterMesh;
+  if (holographic) {
+    glitter = new B.SolidParticleSystem('hologram gathering glints',scene);
+    const diamond = B.MeshBuilder.CreatePolyhedron('glint template',{type:1,size:.10},scene);
+    glitter.addShape(diamond,96);diamond.dispose();
+    glitterMesh=glitter.buildMesh();glitterMesh.parent=root;glitterMesh.material=ink;glitterMesh.isPickable=false;
+    glitter.updateParticle=p=>{
+      const ending=time>seconds-2.8;
+      const phase=ending?(time-(seconds-2.8))/2.8:time/2.3;
+      const angle=noise(p.idx,13)*Math.PI*2;
+      const radius=(ending?phase:1-phase)*(1.2+noise(p.idx,14)*3.7);
+      p.position.set(3+radius*Math.cos(angle),4.2+(noise(p.idx,15)-.5)*radius,1+radius*Math.sin(angle));
+      const blink=.35+.65*Math.abs(Math.sin(time*7+p.idx));
+      p.scaling.setAll(blink);
+      p.color=new B.Color4(.75+noise(p.idx,16)*.25,.85,1,Math.min(1,Math.max(0,1-phase)*3));
+      return p;
+    };
+  }
   let time = 0;
   sparks.updateParticle = p => {
     const i = p.idx, emitter = Math.floor(i / 60);
@@ -57,6 +75,10 @@ export function celebration(B, scene, root, seconds) {
   };
   return elapsed => {
     time = elapsed;
+    if (glitterMesh) {
+      glitterMesh.setEnabled(elapsed<2.3 || elapsed>seconds-2.8);
+      if(glitterMesh.isEnabled())glitter.setParticles();
+    }
     sparkMesh.setEnabled(elapsed < 2.7);
     if (sparkMesh.isEnabled()) sparks.setParticles();
     paperMesh.setEnabled(elapsed >= seconds-7);

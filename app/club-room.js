@@ -6,6 +6,7 @@ import { edmArea, permittedPath } from './edm-layout.js';
 import { blockedMessage } from './message-filter.js';
 import { background, extraGuestPlaces } from './visitors.js';
 import { performanceStatus } from './club-performances.js';
+import { playlistPosition } from './public/music.js';
 import { playlist } from './music.js';
 import { Room } from '@colyseus/core';
 import { profile } from './store.js';
@@ -67,7 +68,7 @@ export class EdmRoom extends Room {
           this.stageEvent = null;
         } else {
           if (typeof input?.kind !== 'string' || !Object.hasOwn(effects, input.kind)) return;
-          const event = { id: ++this.eventSequence, kind: input.kind, start: Date.now() };
+          const event = { id: ++this.eventSequence, kind: input.kind, start: Date.now(), bpm:playlistPosition(playlist(),this.epoch,Date.now())?.track.bpm || 120 };
           if (event.kind === 'led') {
             const message = text(input.message, 80);
             if (!message || /[\p{Cc}\p{Cf}]/u.test(message + actor.nickname) ||

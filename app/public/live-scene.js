@@ -1,3 +1,4 @@
+import { ceilingLights } from './ceiling-lights.js';
 import { rhythmFloor } from './rhythm-floor.js';
 import { playlistPosition, trackBeat } from './music.js';
 import { effects, eventPlayer, ledScreen, houseScreen, houseLights } from '/stage/festival/events.js';
@@ -48,6 +49,7 @@ export function startLiveScene({
   let epoch = Date.now(),
     offset = 0;
   markLoungeWalk(B, scene);
+  const renderCeiling = ceilingLights(B,scene);
   const renderFloor = rhythmFloor(B, scene);
   const renderHouseLights = houseLights(B, scene);
   const ambient = scene.getLightByName('ambient');
@@ -299,11 +301,12 @@ export function startLiveScene({
     const beats = trackBeat(playback, t);
     const celebrating = stageEvents.kind === 'led';
     const strobing = stageEvents.strobing;
+    renderCeiling(beats,strobing);
     const playing = playback && playback.track.id === audibleTrack;
     // The first beat of each four-beat bar accents both surfaces on the same frame.
     const barPhase = ((beats % 4) + 4) % 4;
     const accent = playing && beats >= 0 ? Math.max(0, 1 - barPhase / .78) * (calmBeats.matches ? .3 : 1) : 0;
-    // The twelve-second test loop wraps before eight bars; count through its repeat.
+    // Every visual phrase restarts with the selected song at its loop boundary.
     const phraseBeat = playing ? (playback.phraseTime - (playback.track.firstBeat || 0)) * (playback.track.bpm || 120) / 60 : -1;
     const phase32 = phraseBeat % 32;
     const gather = phase32 >= 30 ? (phase32 - 30) / 2 : 0;
@@ -321,7 +324,7 @@ export function startLiveScene({
     for (const end of boothEnds) illuminate(end, cue.rgb, endGlow);
     const lipGlow = ramp(cueBeat - 1.22, .28) * ramp(2.95 - cueBeat, .75);
     for (const lip of stageLips) illuminate(lip, cue.rgb, lipGlow);
-    renderFloor(beats, celebrating, accent, cueBeat, cue.rgb);
+    renderFloor(beats, celebrating, accent, cueBeat, cue.rgb, stageEvents.kind === 'laser' ? 1 : stageEvents.kind && !celebrating ? 2 : 0);
     updateBoard(playing ? playback.track.title : null, beats, !preview && !celebrating, accent, gather, calmBeats.matches, phraseBeat, wallRelease, cue.hex, stageEvents.kind && stageEvents.kind !== 'led' ? effects[stageEvents.kind].label : null, strobing);
     const phase = beats * Math.PI * 2,
       beatWave = Math.sin(phase);
