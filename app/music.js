@@ -32,20 +32,16 @@ function permitted(r, now) {
     existsSync(resolve(dirname(catalogue), r.file))
   );
 }
-const testTracks = [
-  { id: 'club-style-1', title: 'Club Style 01 · 원본', bpm: 134 },
-  { id: 'club-style-2', title: 'Club Style 02 · Groove House', bpm: 128 },
-  { id: 'club-style-3', title: 'Club Style 03 · Steel Techno', bpm: 140 },
-  { id: 'club-style-4', title: 'Club Style 04 · Melodic Lights', bpm: 124 },
-  { id: 'club-style-5', title: 'Club Style 05 · Electric Break', bpm: 132 },
-].map((track, index) => ({
-  ...track,
-  file: fileURLToPath(new URL('./fixtures/club-music/club_style_' + (index + 1) + '_60s.wav', import.meta.url)),
+const testTracks = [{
+  id: 'club-style-selected',
+  title: 'Club Style 02',
+  file: fileURLToPath(new URL('./fixtures/club-music/club_style_2_60s.mp3', import.meta.url)),
   duration: 60,
+  bpm: 134,
   firstBeat: 0,
   until: null,
-  url: '/media/edm/' + track.id,
-}));
+  url: '/media/edm/club-style-selected',
+}];
 export function playlist(now = Date.now()) {
   if (localTest) return testTracks.map(({file, ...track}) => track);
   return records
