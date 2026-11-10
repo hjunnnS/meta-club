@@ -46,7 +46,10 @@ export function celebration(B, scene, root, seconds, holographic = false, select
   let time = 0;
   sparks.updateParticle = p => {
     const i = p.idx, emitter = Math.floor(i / 120), core = i%5!==0;
-    const age = time - (i % 120) / 120 * 1.10;
+    const offset=(i%120)/120*1.55;
+    let emitted=offset+Math.floor(Math.max(0,time-offset)/1.65)*1.65;
+    if(emitted>3.2)emitted-=1.65;
+    const age = time - emitted;
     const life = 1.10 + noise(i,1)*.50;
     p.isVisible = age >= 0 && age < life;
     if (!p.isVisible) return p;
@@ -81,7 +84,7 @@ export function celebration(B, scene, root, seconds, holographic = false, select
       glitterMesh.setEnabled(elapsed<2.3 || elapsed>seconds-2.8);
       if(glitterMesh.isEnabled())glitter.setParticles();
     }
-    sparkMesh.setEnabled(selection !== 'confetti' && elapsed < 2.9);
+    sparkMesh.setEnabled(selection !== 'confetti' && elapsed < 4.9);
     if (sparkMesh.isEnabled()) sparks.setParticles();
     paperMesh.setEnabled(selection !== 'fountain' && elapsed >= seconds-7);
     if (paperMesh.isEnabled()) confetti.setParticles();

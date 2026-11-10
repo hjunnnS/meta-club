@@ -4,7 +4,7 @@ import { hologram } from './holograms.js';
 export const effects = {
   led: { label: 'LED 전광판', seconds: 15 },
   laser: { label: '레이저 쇼', seconds: 16 },
-  fountain: { label: '분수 불꽃 시험', seconds: 3 },
+  fountain: { label: '분수 불꽃 시험', seconds: 5 },
   confetti: { label: '종이조각 시험', seconds: 7 },
   phoenix: { label: '불사조', seconds: 14 },
   whale: { label: '대형 고래', seconds: 14 },
@@ -385,23 +385,29 @@ function peripheralLighting(B,scene) {
     return {side,light};
   });
   const ambient=scene.getLightByName('ambient');if(ambient)ambient.renderPriority=100;
-  const smokeInk=paint(B,scene,'peripheral descending haze','#d5d8df',.4);
+  const smokeStations=Array.from({length:8},(_,i)=>{
+    const angle=i*Math.PI/4+Math.PI/8;
+    const position=[8.85*Math.cos(angle),.09,8.85*Math.sin(angle)];
+    const nozzle=attach(B.MeshBuilder.CreateCylinder('arena smoke nozzle',{height:.12,diameter:.17,tessellation:8},scene),rig,housing);
+    nozzle.position.set(position[0],.06,position[2]);return position;
+  });
+  const smokeInk=paint(B,scene,'arena upward smoke','#d5d8df',.4);
   smokeInk.disableLighting=true;smokeInk.opacityTexture=texture;smokeInk.alpha=.18;smokeInk.backFaceCulling=false;
-  const smoke=new B.SolidParticleSystem('entry wall and lounge haze',scene);
+  const smoke=new B.SolidParticleSystem('arena upward smoke jets',scene);
   smoke.computeBoundingBox=true;
   const puff=B.MeshBuilder.CreatePlane('peripheral haze template',{size:1},scene);
-  smoke.addShape(puff,stations.length*32);puff.dispose();
+  smoke.addShape(puff,smokeStations.length*32);puff.dispose();
   const cloud=smoke.buildMesh();cloud.parent=rig;cloud.material=smokeInk;cloud.isPickable=false;cloud.hasVertexAlpha=true;smoke.billboard=true;
   for(const layer of scene.effectLayers||[])if(typeof layer.addExcludedMesh==='function')layer.addExcludedMesh(cloud);
   let time=0;
   const noise=(i,s)=>{const n=Math.sin(i*127.1+s*311.7)*43758.5453;return n-Math.floor(n);};
   smoke.updateParticle=p=>{
-    const station=Math.floor(p.idx/32),[x,y,z]=stations[station];
-    // Emission ends after ~1.2s; existing puffs continue falling and dissipating.
+    const station=Math.floor(p.idx/32),[x,y,z]=smokeStations[station];
+    // A strong upward jet slows near the rig and leaves a fading cloud above the rim.
     const age=time-station*.035-noise(p.idx,1)*.95;
     p.isVisible=age>=0&&age<4.2;if(!p.isVisible)return p;
-    const inward=x>0?-1:1;
-    p.position.set(x+inward*age*.20+(noise(p.idx,2)-.5)*(.4+age*.42),y-.12-age*1.45,z+(noise(p.idx,3)-.5)*(.4+age*.55));
+    const rise=Math.min(age,1.5)*4.2+Math.max(0,age-1.5)*.35;
+    p.position.set(x+(noise(p.idx,2)-.5)*(.25+age*.25),y+rise,z+(noise(p.idx,3)-.5)*(.25+age*.25));
     const jet=age<.7;
     p.scaling.set(jet?.40+age*.4:.68+age*.60,jet?1.9:1.2+age*.3,1);
     p.rotation.z=(noise(p.idx,4)-.5)*.30;
@@ -518,7 +524,6 @@ export function houseLights(B, scene) {
 }
 
 function lasers(B, scene, root, event, fastFlash) {
-  const eventRoot = root;
   const optics = new B.TransformNode('laser optics', scene);
   optics.parent = root;
   root = optics;
@@ -536,29 +541,6 @@ function lasers(B, scene, root, event, fastFlash) {
   ctx.fillRect(0, 0, 64, 64);
   gradient.getAlphaFromRGB = true;
   gradient.update();
-
-  // Soft downwards plumes start at the truss, independent of laser blackouts.
-  const mistInk=paint(B,scene,'ceiling mist','#94a6bf');
-  mistInk.disableLighting=true;mistInk.alpha=.22;mistInk.backFaceCulling=false;
-  mistInk.opacityTexture=gradient;
-  const mist=new B.SolidParticleSystem('ceiling smoke plumes',scene);
-  const puff=B.MeshBuilder.CreatePlane('smoke puff template',{size:1},scene);
-  mist.addShape(puff,96);puff.dispose();
-  const mistMesh=mist.buildMesh();mistMesh.parent=eventRoot;mistMesh.material=mistInk;
-  mistMesh.isPickable=false;mistMesh.hasVertexAlpha=true;mist.billboard=true;
-  let smokeTime=0;
-  const noise=(i,s)=>{const v=Math.sin(i*127.1+s*311.7)*43758.5453;return v-Math.floor(v);};
-  mist.updateParticle=p=>{
-    const age=smokeTime-noise(p.idx,1)*1.1;
-    p.isVisible=age>=0&&age<4.8;
-    if(!p.isVisible)return p;
-    const emitter=Math.floor(p.idx/24),x=emitter%2?-5.98:5.98,z=emitter<2?-5.98:5.98;
-    p.position.set(x+(noise(p.idx,2)-.5)*(1+age*.9),7.5-age*.9,z+(noise(p.idx,3)-.5)*(1+age*.8));
-    p.scaling.setAll(.5+age*.48);p.rotation.z=noise(p.idx,4)*6.28;
-    p.color ||= new B.Color4(1,1,1,1);
-    p.color.a=Math.min(1,age*3)*Math.max(0,1-age/4.8);
-    return p;
-  };
 
   function beam(name, top, bottom, material) {
     const mesh = attach(B.MeshBuilder.CreateCylinder(name, {
@@ -616,9 +598,6 @@ function lasers(B, scene, root, event, fastFlash) {
   const target = new B.Vector3();
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   return t => {
-    smokeTime=t;
-    mistMesh.setEnabled(!reducedMotion.matches&&t<5.9);
-    if(mistMesh.isEnabled())mist.setParticles();
     const ms = Math.round(t * 1000);
     // One two-second strobe in the middle of the sixteen-second performance.
     const rapidCue = fastFlash() && ms >= 7000 && ms < 9000;
