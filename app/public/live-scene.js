@@ -309,7 +309,8 @@ export function startLiveScene({
     const celebrating = stageEvents.kind === 'led';
     const strobing = stageEvents.strobing;
     renderCeiling(beats,strobing);
-    renderAmbience(performance.now()/1000, performance.now()-spectrumAt<350 && audibleTrack ? spectrum : [], strobing);
+    const roomPulse = renderAmbience(beats, performance.now()-spectrumAt<350 && audibleTrack ? spectrum : [], strobing, Boolean(audibleTrack), playback?.track.bpm || 120);
+    if (ambient) ambient.intensity = .52 + roomPulse * 1.65;
     const playing = playback && playback.track.id === audibleTrack;
     // The first beat of each four-beat bar accents both surfaces on the same frame.
     const barPhase = ((beats % 4) + 4) % 4;

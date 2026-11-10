@@ -135,15 +135,6 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
             x=s*18.05;z=-18+j*2.9
             octagon('Deck banquettes',seat,x,z,2.25,2.2,.20,4.14,4.55)
             box('Deck backrests',seat,x-.94,x+.94,z-.98,z-.66,4.42,5.06)
-    # Open east booths use the cleared outer edge, leaving x=14.6 route unobstructed.
-    for z in [3.5,8.5]:
-        post('East cocktail table stem',brass,17.8,.06,z,.13,.85)
-        post('East cocktail table top',stone,17.8,.91,z,.78,.09)
-        ellipse('East cocktail table rim',gold,17.8,1.01,z,.78,.78,.025,32)
-        post('East table candle',white,17.8,1.01,z,.07,.18)
-        octagon('East booth seat',seat,19.15,z,1.0,2.5,.16,.08,.55)
-        box('East booth backrest',seat,19.45,19.75,z-1.25,z+1.25,.45,1.15)
-        beam('East booth piping',gold,(19.43,1.15,z-1.12),(19.43,1.15,z+1.12),.022)
     # West entry bar, tucked outboard of the v3 approach wings.
     octagon('Bar base',wood,-13.65,16.2,9.7,1.35,.28,.02,1.16)
     octagon('Bar stone slab',stone,-13.65,16.2,10.05,1.65,.31,1.15,1.29)
