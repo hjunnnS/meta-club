@@ -406,7 +406,7 @@ function lasers(B, scene, root, event, fastFlash) {
   // Eight overhead heads on a circular truss project shafts and matching pools on the floor.
   const heads = Array.from({ length: 8 }, (_, i) => {
     const angle = Math.PI * i / 4;
-    const origin = new B.Vector3(4.6 * Math.cos(angle), 7.65, -8 + 3.3 * Math.sin(angle));
+    const origin = new B.Vector3(7.1 * Math.cos(angle), 7.65, 3 + 7.1 * Math.sin(angle));
     const light = paint(B, scene, 'shaft glow', '#ffffff');
     light.disableLighting = true;
     light.alphaMode = B.Engine.ALPHA_ADD;
@@ -423,7 +423,7 @@ function lasers(B, scene, root, event, fastFlash) {
     footprint.emissiveTexture = gradient;
     footprint.alphaMode = B.Engine.ALPHA_ADD;
     footprint.alpha = 0.52;
-    const spot = attach(B.MeshBuilder.CreateGround('floor pool', {width: 2.8, height: 2.8}, scene), root, footprint);
+    const spot = attach(B.MeshBuilder.CreateGround('floor pool', {width: 3.8, height: 3.8}, scene), root, footprint);
     return {angle, origin, shaft, ray, light, core, spot, footprint};
   });
   const fanMaterials = spectrum.map(hex => paint(B, scene, 'scanner beam', hex));
@@ -452,19 +452,14 @@ function lasers(B, scene, root, event, fastFlash) {
       const color = palette[phase === 0 ? (i % 2 ? lime : violet)
         : phase === 2 ? amber : spectrum[(i + phase) % spectrum.length]];
       for (const mat of [head.core, head.light, head.footprint]) mat.emissiveColor.copyFrom(color);
-      if (phase === 2) {
-        target.set(head.origin.x + 2.6 * Math.sin(t * 1.8), 0.08, head.origin.z + 3.3);
-      } else {
-        const radius = phase === 0 ? 5.7 : 7.3 + 1.6 * Math.sin(t * 1.5);
-        target.set(radius * Math.cos(a), 0.08, -6 + radius * Math.sin(a));
-      }
-      // Alternate sides across the audience, then wash the rear wall above the entrance.
       const side = i % 2 ? 1 : -1;
-      if (phase === 1) target.set(side * (14.6 + 2.7 * Math.sin(a)), 4.06, -13.8 + 3.7 * Math.cos(a));
-      if (phase === 3) target.set(side * (10 + 8 * Math.sin(a)), 2.8, 18 + 5 * Math.cos(a));
+      if (phase === 0) target.set(8 * Math.cos(a), .08, 3 + 8 * Math.sin(a));
+      if (phase === 1) target.set(side * (11 + 6 * Math.sin(a)), .08, 7 + 8 * Math.cos(a));
+      if (phase === 2) target.set(17 * Math.cos(a), .08, 9 + 10 * Math.sin(a));
+      if (phase === 3) target.set(side * (8 + 8 * Math.sin(a)), .08, 16 + 3.5 * Math.cos(a));
       aim(head.shaft, head.origin, target);
       aim(head.ray, head.origin, target);
-      head.spot.position.set(target.x, phase === 1 ? 4.05 : 0.08, target.z);
+      head.spot.position.set(target.x, .08, target.z);
     }
     for (const {mesh, origin, side, spread} of fans) {
       mesh.setEnabled(phase === 1 || phase === 3);

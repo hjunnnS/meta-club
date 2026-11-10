@@ -60,6 +60,12 @@ function guide(step) {
 }
 function display(data) {
   snapshot = data;
+  const names = {laser:'레이저 쇼',phoenix:'불사조',whale:'대형 고래',dragon:'네온 용',jellyfish:'우주 해파리',butterflies:'나비 군집'};
+  const next = data.nextPerformance;
+  const seconds = next ? Math.max(0, Math.ceil((next.start - data.performanceNow) / 1000)) : 0;
+  const countdown = next ? '다음 ' + names[next.kind] + ' · ' + Math.floor(seconds/60) + ':' + String(seconds%60).padStart(2,'0') : '';
+  el('performance').textContent = data.stageEvent && data.stageEvent.kind !== 'led'
+    ? names[data.stageEvent.kind] + ' 공연 중' + (countdown ? ' · ' + countdown : '') : countdown;
   if (data.zones) {
     const labels = { CLOSED: '닫힘', OPENING: '준비 중', OPEN: '열림', DRAINING: '퇴장 대기' };
     el('zones').textContent =
@@ -106,6 +112,7 @@ function disconnected(message, reconnect) {
   map.removeAttribute('src');
   for (const id of ['train-start', 'train-join', 'train-leave']) el(id).hidden = true;
   el('train-hint').textContent = '채널 연결을 기다리는 중입니다.';
+  el('performance').textContent = '';
   el('population').textContent = message;
   el('retry').hidden = false;
   if (reconnect && !manual && attempts < 4) {

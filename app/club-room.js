@@ -5,7 +5,7 @@ import { ManagedChannelZones } from './managed-channel-zones.js';
 import { edmArea, permittedPath } from './edm-layout.js';
 import { blockedMessage } from './message-filter.js';
 import { background, extraGuestPlaces } from './visitors.js';
-import { scheduledPerformance } from './club-performances.js';
+import { performanceStatus } from './club-performances.js';
 import { playlist } from './music.js';
 import { Room } from '@colyseus/core';
 import { profile } from './store.js';
@@ -266,8 +266,11 @@ export class EdmRoom extends Room {
   snapshot() {
     const event = this.stageEvent;
     if (event && Date.now() >= event.start + effects[event.kind].seconds * 1000) this.stageEvent = null;
+    const performances = performanceStatus(this.epoch, Date.now(), playlist());
     return {
-      stageEvent: this.stageEvent ?? scheduledPerformance(this.epoch, Date.now(), playlist()),
+      stageEvent: this.stageEvent ?? performances.active,
+      nextPerformance: performances.next,
+      performanceNow: Date.now(),
       trainLeader: this.train.leader,
       actors: [...this.members.values(), ...this.ai.map(a =>
         this.train.riders.has(a.id) ? { ...a, ...this.train.pose(a.id) } : a)],
