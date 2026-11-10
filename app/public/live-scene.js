@@ -1,5 +1,5 @@
 import { ceilingLights } from './ceiling-lights.js';
-import { clubAmbience } from './ambience.js';
+import { clubAmbience, strobeDurations } from './ambience.js';
 import { rhythmFloor } from './rhythm-floor.js';
 import { playlistPosition, trackBeat } from './music.js';
 import { effects, eventPlayer, ledScreen, houseScreen, houseLights } from '/stage/festival/events.js';
@@ -53,6 +53,7 @@ export function startLiveScene({
   const renderCeiling = ceilingLights(B,scene);
   const renderAmbience = clubAmbience(B,scene);
   let strobePreviewStarted = -Infinity;
+  let strobePreviewPattern = 'transition';
   let spectrum = [], spectrumAt = 0;
   const renderFloor = rhythmFloor(B, scene);
   const renderHouseLights = houseLights(B, scene);
@@ -200,7 +201,10 @@ export function startLiveScene({
       offset = data.offset;
     }
     if (kind === 'audible-track') audibleTrack = data;
-    if (kind === 'strobe-preview') strobePreviewStarted = performance.now();
+    if (kind === 'strobe-preview' && Object.hasOwn(strobeDurations,data)) {
+      strobePreviewPattern = data;
+      strobePreviewStarted = performance.now();
+    }
     if (kind === 'music-spectrum' && Array.isArray(data) && data.length === 12) {
       spectrum = data.map(value => Number.isFinite(value) ? Math.max(0,Math.min(1,value)) : 0);
       spectrumAt = performance.now();
@@ -312,8 +316,8 @@ export function startLiveScene({
     const strobing = stageEvents.strobing;
     renderCeiling(beats,strobing);
     const previewAge = (performance.now()-strobePreviewStarted)/1000;
-    // After the 2.6s test, leave a normal-light gap before automatic accents resume.
-    const roomPulse = renderAmbience(beats, performance.now()-spectrumAt<350 && audibleTrack ? spectrum : [], strobing, Boolean(audibleTrack), playback?.track.bpm || 120, previewAge<4.2 ? previewAge : null);
+    // After either test, leave a normal-light gap before automatic accents resume.
+    const roomPulse = renderAmbience(beats, performance.now()-spectrumAt<350 && audibleTrack ? spectrum : [], strobing, Boolean(audibleTrack), playback?.track.bpm || 120, previewAge<strobeDurations[strobePreviewPattern]+1.6 ? previewAge : null, strobePreviewPattern);
     if (ambient) ambient.intensity = .52 + roomPulse * 1.65;
     const playing = playback && playback.track.id === audibleTrack;
     // The first beat of each four-beat bar accents both surfaces on the same frame.

@@ -1,9 +1,16 @@
 // Music spectrum plus short whole-room lighting pulses; no sparkle particles.
-export function strobePattern(elapsed) {
-  if (!Number.isFinite(elapsed) || elapsed < 0 || elapsed >= 2.6) return 0;
+export const strobeDurations = {normal:1.2, transition:2.3};
+export function strobePattern(elapsed, kind = 'transition') {
+  if (!Object.hasOwn(strobeDurations,kind) || !Number.isFinite(elapsed) || elapsed < 0 || elapsed >= strobeDurations[kind]) return 0;
   const ms = Math.floor(elapsed * 1000 + .000001);
-  const start = ms < 800 ? 0 : ms < 1800 ? 800 : 1800;
-  const interval = start === 800 ? 50 : 100;
+  if (kind === 'normal') {
+    // Two fast flashes, a gap, repeated in three groups.
+    const groupTime=ms%500;
+    return groupTime<200 && Math.floor(groupTime/50)%2===0 ? 1 : 0;
+  }
+  if (ms>=1800) return ms>=2100 ? 1 : 0;
+  const start = ms < 600 ? 0 : ms < 1200 ? 600 : 1200;
+  const interval = start === 0 ? 150 : start === 600 ? 100 : 50;
   return Math.floor((ms-start)/interval)%2 === 0 ? 1 : 0;
 }
 
@@ -28,19 +35,20 @@ export function clubAmbience(B, scene) {
     p.color.set(.25+level*.05,.90-level*.04,1,1);
     return p;
   };
-  return (beat,values,strobing=false,playing=false,bpm=120,previewAge=null)=>{
+  return (beat,values,strobing=false,playing=false,bpm=120,previewAge=null,previewKind='transition')=>{
     bands=values;
     bars.setParticles();
     if (strobing || calm.matches) return 0;
     if (previewAge !== null) {
-      return strobePattern(previewAge);
+      return strobePattern(previewAge,previewKind);
     }
     if (!playing) return 0;
     const bass=((values[0]||0)+(values[1]||0)+(values[2]||0))/3;
     if (bass<.02) return 0;
-    // Four slow flashes, ten fast, four slow at each eight-bar transition.
+    // Normal accent halfway through the phrase; the large accent owns its transition.
     const phase=((beat%32)+32)%32;
-    const elapsed=phase*60/Math.max(1,bpm);
-    return strobePattern(elapsed)*(.7+.3*bass);
+    const kind=phase<16?'transition':'normal';
+    const elapsed=(phase<16?phase:phase-16)*60/Math.max(1,bpm);
+    return strobePattern(elapsed,kind)*(.7+.3*bass);
   };
 }
