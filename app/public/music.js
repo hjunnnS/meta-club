@@ -28,7 +28,8 @@ export function musicDynamics(position) {
 }
 
 export function musicPlayer(notice, playing, failed) {
-  let ctx, analyser, frequencies,
+  const waveHistory=Array(64).fill(0);
+  let ctx, analyser, frequencies, waveSamples,
     source,
     started = 0,
     offset = 0,
@@ -160,6 +161,7 @@ export function musicPlayer(notice, playing, failed) {
           analyser.fftSize = 512;
           analyser.smoothingTimeConstant = .72;
           frequencies = new Uint8Array(analyser.frequencyBinCount);
+          waveSamples = new Uint8Array(analyser.fftSize);
           analyser.connect(ctx.destination);
         }
         await ctx.resume();
@@ -189,12 +191,22 @@ export function musicPlayer(notice, playing, failed) {
       }
       return bands;
     },
+    waveform() {
+      if(!source||!current||ctx?.state!=='running'||lastFailure){waveHistory.fill(0);return [...waveHistory];}
+      analyser.getByteTimeDomainData(waveSamples);
+      let power=0;
+      for(const sample of waveSamples){const value=(sample-128)/128;power+=value*value;}
+      // A rolling 3.2-second amplitude envelope makes the actual beat visible at entry distance.
+      waveHistory.shift();waveHistory.push(Math.min(1,Math.sqrt(power/waveSamples.length)*3.3));
+      return [...waveHistory];
+    },
     beat: () => trackBeat(target(), (Date.now() + clockOffset - epoch) / 1000),
     reset() {
       stop();
       epoch = 0;
       tracks = [];
       cache.clear();
+      waveHistory.fill(0);
       notice('');
     },
   };
