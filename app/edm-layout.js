@@ -5,10 +5,10 @@ function octagon(dx, dz, halfWidth, halfDepth, corner) {
 export function edmArea({ x, y, z }) {
   const dx = Math.abs(Math.abs(x) - 14.6),
     side = x < 0 ? 'west' : 'east';
-  if (
+  if (x < 0 && (
     (y >= 3.6 && octagon(dx, Math.abs(z + 13.8), 5.4, 5.9, 0.8)) ||
     (dx <= 1.55 && z >= -8 && z <= 0 && Math.abs(y + z * 0.5) < 0.35)
-  ) {
+  )) {
     return { tier: 2, group: side + '-deck' };
   }
   if (octagon(dx, Math.abs(z - 6), 5.1, 5.5, 1.6)) return { tier: 1, group: side + '-dance' };

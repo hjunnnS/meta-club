@@ -7,6 +7,7 @@ import struct
 import sys
 
 ROOT = Path(__file__).resolve().parent
+festival = "--festival" in sys.argv
 VERSION = "05a-2.v3"
 materials = []
 parts = {}
@@ -136,6 +137,8 @@ for side, label in [(-1,"West"),(1,"East")]:
     for z in [1.7,10.3]:
         box(label+" threshold",violet,x-3.65,x+3.65,z,z+.13,.055,.07)
     box(label+" zone edge",violet,x+side*4.65-.08,x+side*4.65+.08,2.6,9.4,.05,.09)
+    if festival and side > 0:
+        continue
     # Approach is behind each side zone. A broad opening connects to its upper deck.
     rect(label+" deck ramp",deck,x-1.55,x+1.55,-8,0,4,0,-.01,True)
     for edge in [x-1.5,x+1.5]:
@@ -170,6 +173,8 @@ for side in (-1,1):
     # The two approach walls converge on the audience floor.
     beam("Lobby wings",metal,(side*3.9,1.0,20.7),(side*8.4,1.3,15.5),.27)
     beam("Lobby wing trim",ice,(side*3.9,1.25,20.7),(side*8.4,1.55,15.5),.08)
+    if festival and side > 0:
+        continue
     for z in [-18,-15,-12,-9]:
         box("Upper deck fascia",violet,side*14.6-4.5,side*14.6+4.5,z,z+.07,4.002,4.018)
 # Proscenium brackets distinguish the elevated stage from the two audience decks.
@@ -179,7 +184,6 @@ for side in (-1,1):
     beam("Stage surround trim",ice,(side*7.4,7.55,-17.52),(side*4.8,8.6,-17.52),.07)
 beam("Stage surround",metal,(-4.8,8.55,-17.85),(4.8,8.55,-17.85),.26)
 
-festival = '--festival' in sys.argv
 images, lights = {}, []
 if festival:
     from festival.interior import scenery
@@ -190,6 +194,10 @@ route=[(0,0,25),(0,0,12),(0,.018,0),(0,.018,-7.6),(0,1.35,-10.05),(0,1.35,-13),
        (0,1.35,-10.05),(0,.018,-7.6),(0,.018,0),(-14.6,.045,6),(0,.018,0),
        (14.6,.045,6),(14.6,0,0),(14.6,4,-8),(14.6,4,-13),(10.1,4,-13)]
 stops=dict(entry=0,floor=2,stage=5,west=9,east=11,balcony=15)
+if festival:
+    # Visit the east dance floor first, then climb the remaining west balcony.
+    route[9:] = [(-x,y,z) for x,y,z in route[9:]]
+    stops.update(west=11,east=9)
 def ground(x,z):
     top=-999
     for (ax,ay,az),(bx,by,bz),(cx,cy,cz) in walkable:

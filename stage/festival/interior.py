@@ -128,6 +128,8 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
             z=-18+j*7
             beam('Roof ribs',ink,(s*21.7,7.7,z),(s*7.5,11,z),.125)
             beam('Roof ribs',ink,(s*7.5,11,z),(0,11.25,z),.10)
+        if s > 0:
+            continue
         # Leave the inner part of each elevated deck and its ramp clear.
         for j in range(3):
             x=s*18.05;z=-18+j*2.9
@@ -212,6 +214,8 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
         for j in range(8):
             zz=-19+j*4.9
             beam('Wall cornice',silver,(side*21.2,6.75,zz),(side*21.2,6.75,min(20.5,zz+4.7)),.11)
+        if side > 0:
+            continue
         for j in range(19):
             xx=side*(9.45+j*.56)
             box('Deck fascia flutes',brass,xx-.047,xx+.047,-8.30,-8.22,3.64,3.98)

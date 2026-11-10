@@ -33,14 +33,14 @@ async function open(){
  finally{URL.revokeObjectURL(model);}
  for(const m of scene.materials)if('maxSimultaneousLights' in m)m.maxSimultaneousLights=10;
  const glow=new B.GlowLayer('light diffusion',scene,{blurKernelSize:48});glow.intensity=.53;
- const views={'입구':[[0,1.65,25],[0,3.4,-16]],'발코니':[[10.1,5.65,-13],[0,.4,0]],'바': [[-7.8,1.65,19.7],[-14,1.6,14]],'라운지':[[8,1.65,13.5],[15,.85,17]],'무대':[[0,1.67,3],[0,3.6,-17]]};
+ const views={'입구':[[0,1.65,25],[0,3.4,-16]],'발코니':[[-10.1,5.65,-13],[0,.4,0]],'바': [[-7.8,1.65,19.7],[-14,1.6,14]],'라운지':[[8,1.65,13.5],[15,.85,17]],'무대':[[0,1.67,3],[0,3.6,-17]]};
  const nav=document.querySelector('nav'), tour=document.querySelector('.tour');
  const play=document.querySelector('#play'), slider=tour.querySelector('input'), locationLabel=document.querySelector('#location');
  const points=reviewRoute.map(p=>B.Vector3.FromArray(p));
  const lengths=[0];
  for(let i=1;i<points.length;i++)lengths.push(lengths[i-1]+B.Vector3.Distance(points[i-1],points[i]));
  const end=lengths.at(-1);
- const landmarks=[[0,'입구'],[stops.floor,'중앙 플로어'],[stops.stage,'DJ 무대'],[8,'중앙 플로어'],[stops.west,'서쪽 댄스존'],[10,'중앙 플로어'],[stops.east,'동쪽 댄스존'],[12,'경사로 입구'],[13,'2층 데크'],[stops.balcony,'발코니']];
+ const landmarks=[[0,'입구'],[stops.floor,'중앙 플로어'],[stops.stage,'DJ 무대'],[8,'중앙 플로어'],[stops.east,'동쪽 댄스존'],[10,'중앙 플로어'],[stops.west,'서쪽 댄스존'],[12,'경사로 입구'],[13,'2층 데크'],[stops.balcony,'발코니']];
  let distance=0, playing=false, onRoute=false;
  const walk=document.querySelector('#walk');
  const keys=new Set(), movementKeys=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight']);
@@ -181,7 +181,7 @@ async function open(){
    const panel=document.querySelector('#event-panel'), buttons=document.querySelector('#event-buttons');
    const state=document.querySelector('#effect-state'), fastFlash=document.querySelector('#fast-flash');
    const player=eventPlayer(B,scene,Date.now,()=>fastFlash.checked);
-   views['발코니']=[[10.1,5.65,-13],[0,4.2,-10]];
+   views['발코니']=[[-10.1,5.65,-13],[0,4.2,-10]];
    views['무대']=[[0,3.4,4.8],[0,4,-10]];
    select('무대');
    tour.hidden=true;

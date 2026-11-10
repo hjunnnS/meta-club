@@ -252,7 +252,7 @@ export function startLiveScene({
     const release = phraseBeat >= 32 && phase32 < 3 ? phase32 / 3 : -1;
     renderHouseLights(beats, !stageEvents.kind, preview ? -1 : release);
     renderFloor(beats, celebrating, accent, release);
-    updateBoard(playing ? playback.track.title : null, beats, !preview && !celebrating, accent, gather, calmBeats.matches);
+    updateBoard(playing ? playback.track.title : null, beats, !preview && !celebrating, accent, gather, calmBeats.matches, phraseBeat);
     const phase = beats * Math.PI * 2,
       beatWave = Math.sin(phase);
     washes.forEach(({ light, base }, i) => {

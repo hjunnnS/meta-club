@@ -84,15 +84,53 @@ export function ledScreen(B, scene, message, nickname = '', overlay = lettering(
   return screen;
 }
 
+// Four eight-beat looks on the same 32-beat clock as the floor and crowd.
+function playWall(ctx, beat) {
+  const section = Math.floor(beat / 8) % 4;
+  const baseHue = [258, 181, 316, 225][section];
+  const hue = baseHue + 28 * Math.sin(beat * Math.PI / 4);
+  const kick = Math.exp(-3.4 * (beat % 1));
+  const wash = ctx.createLinearGradient(0, 0, 1024, 384);
+  wash.addColorStop(0, `hsl(${hue} 90% 41%)`);
+  wash.addColorStop(.5, `hsl(${hue+18} 74% 13%)`);
+  wash.addColorStop(1, `hsl(${hue+85} 92% 40%)`);
+  ctx.fillStyle = wash;
+  ctx.fillRect(0,0,1024,384);
+  ctx.save();
+  ctx.translate(512,192);
+  for (let i=0; i<9; i++) {
+    const travel = ((beat * .32 + i) % 9) / 9;
+    ctx.strokeStyle = `hsla(${hue+travel*125} 100% 68% / ${.28+.65*travel})`;
+    ctx.lineWidth = 3 + 15*travel + 4*kick;
+    ctx.beginPath();
+    if (section % 2 === 0) {
+      ctx.ellipse(0, 0, 24+650*travel, 10+295*travel, .19*Math.sin(beat*.8), 0, Math.PI*2);
+    } else {
+      for (let x=-540; x<=540; x+=12) {
+        const y = (travel-.5)*510 + 67*Math.sin(x*.011 + beat*.9 + travel*5);
+        if (x===-540) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+  // Keep a dark field behind the title while the outer wall remains saturated.
+  const shade = ctx.createRadialGradient(512,165,25,512,165,440);
+  shade.addColorStop(0,'rgba(10,4,32,.70)');
+  shade.addColorStop(1,'rgba(10,4,32,0)');
+  ctx.fillStyle = shade;
+  ctx.fillRect(0,0,1024,384);
+}
+
 export function houseScreen(B, scene) {
   let title, overlay, lastFrame = -1;
   const screen = ledScreen(B, scene, 'EDM CLUB');
   screen.name = 'EDM house screen';
   screen.scaling.set(1.42, 1.21, 1);
-  screen.position.set(3.2, 5.85, -16.90);
+  screen.position.set(3.2, 5.85, -13.95);
   const texture = screen.material.emissiveTexture;
   const ctx = texture.getContext();
-  return (track, beats, visible, accent, gather, calm) => {
+  return (track, beats, visible, accent, gather, calm, phraseBeat) => {
     screen.setEnabled(visible);
     if (!visible) return;
     const frame = Math.floor(beats * 12);
@@ -101,7 +139,8 @@ export function houseScreen(B, scene) {
       overlay = track ? lettering(track, 'EDM CLUB') : lettering('EDM CLUB');
     } else if (lastFrame === frame) return;
     lastFrame = frame;
-    mediaWall(ctx, beats * 0.36);
+    if (track) playWall(ctx, calm ? 0 : Math.max(0, phraseBeat));
+    else mediaWall(ctx, beats * 0.36);
     // Mirrored neon wings leave the dark central field clear for the title.
     const sweep = calm ? 0 : Math.sin(beats * Math.PI / 4);
     for (const side of [-1, 1]) {
