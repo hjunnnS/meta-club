@@ -1,3 +1,4 @@
+import { celebration } from './celebration.js';
 import { hologram } from './holograms.js';
 // Channel performances and local previews share the same durations.
 export const effects = {
@@ -377,6 +378,9 @@ export function houseLights(B, scene) {
 }
 
 function lasers(B, scene, root, event, fastFlash) {
+  const optics = new B.TransformNode('laser optics', scene);
+  optics.parent = root;
+  root = optics;
   const cuts = laserBlackouts(event.start);
   const lime = '#cfff3c', violet = '#bc3aff', amber = '#ffae1e';
   const spectrum = ['#30ecff', '#fe309b', '#4673ff', '#6bff56', '#ffd540', '#ff4141'];
@@ -540,10 +544,10 @@ function phoenix(B, scene, root) {
 }
 
 export function eventPlayer(B, scene, now = Date.now, fastFlash = () => false) {
-  let current, root, animate;
+  let current, root, animate, adorn;
   function stop() {
     root?.dispose(false, true);
-    root = current = animate = null;
+    root = current = animate = adorn = null;
   }
   function set(event) {
     if (!event || !Object.hasOwn(effects, event.kind)) { stop(); return; }
@@ -554,13 +558,17 @@ export function eventPlayer(B, scene, now = Date.now, fastFlash = () => false) {
     animate = ['whale','dragon','jellyfish','butterflies'].includes(event.kind)
       ? hologram(B, scene, root, event.kind)
       : {led: marquee, laser: lasers, phoenix}[event.kind](B, scene, root, event, fastFlash);
+    adorn = event.kind === 'led' ? null : celebration(B, scene, root, effects[event.kind].seconds);
     tick();
   }
   function tick() {
     if (!current) return;
     const t = Math.max(0, (now()-current.start)/1000);
     if (t >= effects[current.kind].seconds) stop();
-    else animate?.(t);
+    else {
+      animate?.(t);
+      adorn?.(t);
+    }
   }
   scene.onBeforeRenderObservable.add(tick);
   return {set, stop, get kind() { return current?.kind; },
