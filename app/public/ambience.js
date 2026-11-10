@@ -20,10 +20,14 @@ export function clubAmbience(B, scene) {
     p.color.set(.25+level*.05,.90-level*.04,1,1);
     return p;
   };
-  return (beat,values,strobing=false,playing=false,bpm=120)=>{
+  return (beat,values,strobing=false,playing=false,bpm=120,previewAge=null)=>{
     bands=values;
     bars.setParticles();
-    if (!playing || strobing || calm.matches) return 0;
+    if (strobing || calm.matches) return 0;
+    if (previewAge !== null) {
+      return previewAge>=0 && previewAge<1.6 && Math.floor(previewAge/.1)%2===0 ? 1 : 0;
+    }
+    if (!playing) return 0;
     const bass=((values[0]||0)+(values[1]||0)+(values[2]||0))/3;
     if (bass<.02) return 0;
     // One 1.6-second strobe burst at each eight-bar transition, then normal lighting.

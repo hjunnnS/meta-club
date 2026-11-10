@@ -52,6 +52,7 @@ export function startLiveScene({
   markLoungeWalk(B, scene);
   const renderCeiling = ceilingLights(B,scene);
   const renderAmbience = clubAmbience(B,scene);
+  let strobePreviewStarted = -Infinity;
   let spectrum = [], spectrumAt = 0;
   const renderFloor = rhythmFloor(B, scene);
   const renderHouseLights = houseLights(B, scene);
@@ -199,6 +200,7 @@ export function startLiveScene({
       offset = data.offset;
     }
     if (kind === 'audible-track') audibleTrack = data;
+    if (kind === 'strobe-preview') strobePreviewStarted = performance.now();
     if (kind === 'music-spectrum' && Array.isArray(data) && data.length === 12) {
       spectrum = data.map(value => Number.isFinite(value) ? Math.max(0,Math.min(1,value)) : 0);
       spectrumAt = performance.now();
@@ -309,7 +311,9 @@ export function startLiveScene({
     const celebrating = stageEvents.kind === 'led';
     const strobing = stageEvents.strobing;
     renderCeiling(beats,strobing);
-    const roomPulse = renderAmbience(beats, performance.now()-spectrumAt<350 && audibleTrack ? spectrum : [], strobing, Boolean(audibleTrack), playback?.track.bpm || 120);
+    const previewAge = (performance.now()-strobePreviewStarted)/1000;
+    // After the 1.6s test, leave a normal-light gap before automatic accents resume.
+    const roomPulse = renderAmbience(beats, performance.now()-spectrumAt<350 && audibleTrack ? spectrum : [], strobing, Boolean(audibleTrack), playback?.track.bpm || 120, previewAge<3.2 ? previewAge : null);
     if (ambient) ambient.intensity = .52 + roomPulse * 1.65;
     const playing = playback && playback.track.id === audibleTrack;
     // The first beat of each four-beat bar accents both surfaces on the same frame.

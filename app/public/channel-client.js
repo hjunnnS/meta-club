@@ -255,6 +255,10 @@ window.addEventListener('message', (event) => {
   }
 });
 el('particle-tests').onclick = el('event-controls').onclick = event => {
+  if (ready && event.target.closest('[data-strobe-preview]')) {
+    frame('strobe-preview');
+    return;
+  }
   const kind = event.target.closest('[data-event]')?.dataset.event;
   if (kind && ready) room?.send('preview-event', { kind, message: el('event-message').value });
 };
