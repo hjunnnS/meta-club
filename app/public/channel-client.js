@@ -1,3 +1,4 @@
+import { nearbyEdmSeats } from './edm-layout.js';
 import { dances, danceButtons } from './free-dance.js';
 import { initShop } from './shop.js';
 import { musicPlayer } from './music.js';
@@ -85,6 +86,13 @@ function display(data) {
     : data.trainLeader === self?.id ? '선두입니다. 플로어 밖으로 나가려면 기차 종료를 누르세요.' : '탑승 중입니다. 원할 때 내릴 수 있습니다.';
   if (el('train-hint').textContent !== trainHint) el('train-hint').textContent = trainHint;
   el('train-join').disabled = !memberId || self?.seat != null;
+  const occupied = new Set(data.actors.filter(a=>!a.ai).map(a=>a.seat));
+  const nearest = nearbyEdmSeats(self).find(({index})=>!occupied.has(index));
+  const sitting = self?.seat != null;
+  el('seat').hidden = !sitting && (!nearest || riding);
+  el('seat').textContent = sitting ? (self.table ? self.table+'번 테이블 일어나기' : '일어나기')
+    : nearest?.seat.table ? nearest.seat.table+'번 테이블 앉기' : '바 의자 앉기';
+  el('seat').dataset.seat = nearest ? String(nearest.index) : '';
   el('seat').disabled = riding;
   selectDance(self?.action, self?.seat != null || riding);
   if (self?.action === 'dance' || dances.has(self?.action)) guide('dance');
@@ -112,6 +120,7 @@ function disconnected(message, reconnect) {
   showMusic(null);
   map.hidden = true;
   map.removeAttribute('src');
+  el('seat').hidden = true;
   for (const id of ['train-start', 'train-join', 'train-leave']) el(id).hidden = true;
   el('train-hint').textContent = '채널 연결을 기다리는 중입니다.';
   el('performance').textContent = '';
@@ -228,6 +237,7 @@ window.addEventListener('message', (event) => {
   if (!room || event.source !== map.contentWindow || event.origin !== location.origin) return;
   const { kind, data } = event.data || {};
   if (kind === 'gate-notice') note(data);
+  if (kind === 'seat-request' && ready && Number.isInteger(data)) room.send('seat',data);
   if (kind === 'scene-error') {
     ready = false;
     needsPlace = true;
@@ -303,7 +313,7 @@ for (const action of ['start','join','leave'])
   el('train-' + action).onclick = () => room?.send('train', action);
 el('wand').onclick = () => room?.send('wand', el('wand').getAttribute('aria-pressed') !== 'true');
 el('other-wands').onchange = e => frame('other-wands', e.target.checked);
-el('seat').onclick = () => room?.send('seat');
+el('seat').onclick = () => room?.send('seat', el('seat').dataset.seat === '' ? undefined : Number(el('seat').dataset.seat));
 const selectDance = danceButtons(el('dance-options'), (action) => {
   room?.send('action', action);
   map.contentDocument?.querySelector('canvas')?.focus();

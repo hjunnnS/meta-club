@@ -146,7 +146,7 @@
     <iframe title="EDM 클럽 공간" hidden></iframe>
   <section id="guide" aria-label="EDM 첫 방문 안내" hidden>
     <strong>EDM에서 처음 놀기</strong> <button id="dismiss">안내 닫기</button>
-    <p>음악을 켜고 춤을 고르세요. 무드봉을 들거나 운행 중인 기차에 합류할 수 있습니다. WASD로 걷고 드래그로 둘러보세요.</p>
+    <p>음악을 켜고 춤을 고르세요. 무드봉을 들거나 운행 중인 기차에 합류할 수 있습니다. WASD로 걷고 드래그로 둘러보세요. 오른쪽 1~4번 테이블 가까이에서 소파를 클릭하거나 앉기 버튼을 누르세요. 일어나기 버튼으로 통로에 나올 수 있습니다.</p>
     <p id="train-hint" aria-live="polite"></p>
     <p id="guide-guest" hidden>춤·무드봉·기차는 <a href="/auth/signin?callbackUrl=%2Fclubs%2Fedm">회원 로그인</a> 후 이용할 수 있습니다.</p>
   </section>
@@ -157,6 +157,7 @@
       <div><button id="music">음악 시작</button> <output id="track"></output></div>
       <div><span id="dance-options"></span></div>
       <div><button id="wand" aria-pressed="false">무드봉 들기</button></div>
+      <div><button id="seat" hidden>앉기</button></div>
       <div>
         <button id="train-start" hidden>중앙 플로어 기차 출발</button>
         <button id="train-join" hidden>기차 합류</button><button id="train-leave" hidden>기차 내리기</button>
@@ -168,8 +169,7 @@
     <button id="shop-stop" hidden>미리보기 종료</button>
     <button data-action="wave">인사</button><button data-action="idle">멈춤</button>
     <label><input id="other-wands" type="checkbox" checked>다른 손님 무드봉</label>
-    <button id="seat">앉기 / 일어나기</button
-    ><label><input id="fast-flash" type="checkbox">빠른 점멸 (0.1초)</label>
+    <label><input id="fast-flash" type="checkbox">빠른 점멸 (0.1초)</label>
     <label
       >화질
       <select id="quality">

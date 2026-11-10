@@ -53,3 +53,16 @@ export function permittedPath(from, to, states) {
   }
   return true;
 }
+
+// Seat roots match the approved GLB: stool row plus three sofa faces per booth.
+export const edmSeats = [-17.6,-15.65,-13.7,-11.75,-9.8].map(x=>({x,y:0,z:17.95,yaw:0}));
+for (const [i,z] of [-2,-6.8,-11.6,-16.2].entries()) {
+  for (const [x,dz,yaw] of [[20.05,0,-Math.PI/2],[18.55,1.65,Math.PI],[18.55,-1.65,0]])
+    edmSeats.push({x,y:.10,z:z+dz,yaw,table:i+1,exit:{x:16.6,y:0,z:z+dz,yaw:-Math.PI/2}});
+}
+export function nearbyEdmSeats(actor) {
+  if (!actor) return [];
+  return edmSeats.map((seat,index)=>({seat,index,distance:Math.hypot(actor.x-seat.x,actor.z-seat.z)}))
+    .filter(({seat,distance})=>distance<(seat.table?3.8:2)&&Math.abs(actor.y-seat.y)<.5)
+    .sort((a,b)=>a.distance-b.distance);
+}

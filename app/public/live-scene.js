@@ -3,7 +3,7 @@ import { clubAmbience, strobeDurations } from './ambience.js';
 import { rhythmFloor } from './rhythm-floor.js';
 import { playlistPosition, trackBeat, musicDynamics } from './music.js';
 import { effects, eventPlayer, ledScreen, houseScreen, houseLights, peripheralTests, peripheralCue } from '/stage/festival/events.js';
-import { permittedPath, edmCameraDistance } from './edm-layout.js';
+import { permittedPath, edmCameraDistance, edmSeats } from './edm-layout.js';
 import { dances, danceCamera, animateDance } from './free-dance.js';
 import { avatarFactory, playerView } from './avatar.js';
 // Floor chevrons lead toward the east booths without changing the walking surfaces.
@@ -289,6 +289,30 @@ export function startLiveScene({
   canvas.onlostpointercapture = () => {
     lookId = null;
   };
+  let seatTap = null;
+  canvas.addEventListener('pointerdown', e=>{
+    seatTap=e.button===0?{id:e.pointerId,x:e.clientX,y:e.clientY,drag:false}:null;
+  });
+  canvas.addEventListener('pointermove', e=>{
+    if(seatTap?.id===e.pointerId&&Math.hypot(e.clientX-seatTap.x,e.clientY-seatTap.y)>6)seatTap.drag=true;
+  });
+  canvas.addEventListener('pointercancel', ()=>seatTap=null);
+  canvas.addEventListener('pointerup', e=>{
+    const tap=seatTap;seatTap=null;
+    if(!tap||tap.id!==e.pointerId||tap.drag||activeSeat!==null||riding)return;
+    const bounds=canvas.getBoundingClientRect();
+    const hit=scene.pick(e.clientX-bounds.left,e.clientY-bounds.top,
+      mesh=>[mesh.name,mesh.parent?.name].includes('Wall booth seat'));
+    if(!hit?.hit)return;
+    const point=hit.pickedPoint;
+    let selected=-1,distance=Infinity;
+    edmSeats.forEach((seat,index)=>{
+      if(!seat.table)return;
+      const d=Math.hypot(seat.x-point.x,seat.z-point.z);
+      if(d<distance){distance=d;selected=index;}
+    });
+    if(selected>=0)send('seat-request',selected);
+  });
   window.addEventListener('blur', () => joystick(0, 0));
   window.addEventListener('resize', () => engine.resize());
   // Keep member names; give the nearest AI name priority when labels overlap.

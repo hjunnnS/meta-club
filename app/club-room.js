@@ -2,7 +2,7 @@ import { DanceTrain, onTrainFloor } from './dance-train.js';
 import { effects } from '../stage/festival/events.js';
 import { localTest } from './local-test.js';
 import { ManagedChannelZones } from './managed-channel-zones.js';
-import { edmArea, permittedPath } from './edm-layout.js';
+import { edmArea, permittedPath, edmSeats as seats, nearbyEdmSeats } from './edm-layout.js';
 import { blockedMessage } from './message-filter.js';
 import { background, extraGuestPlaces } from './visitors.js';
 import { performanceStatus } from './club-performances.js';
@@ -22,9 +22,6 @@ const extraVisitors = Number(process.env.CLUB_AI_EXTRA_WHEN_EMPTY || 15);
 if (!Number.isInteger(extraVisitors) || extraVisitors < 0 || extraVisitors > capacity)
   throw Error('CLUB_AI_EXTRA_WHEN_EMPTY must be an integer from 0 to ' + capacity);
 const floorEntry = { x: -1.8, y: 0.018, z: 6.4, yaw: -1.0 };
-const seats = [-17.6, -15.65, -13.7, -11.75, -9.8].map((x) => ({ x, y: 0, z: 17.95, yaw: 0 }));
-for (const x of [11.1, 16.9])
-  for (const z of [14, 18.65]) seats.push({ x, y: 0, z, yaw: z > 16 ? 0 : Math.PI });
 import { dances } from './public/free-dance.js';
 const emotions = new Set(['idle', 'dance', 'wave', ...dances.keys()]);
 function text(value, max) {
@@ -125,23 +122,27 @@ export class EdmRoom extends Room {
       this.dirty = true;
       if (a === 'wave' || a === 'dance') this.react(m, a, true);
     });
-    this.onMessage('seat', (c) => {
+    this.onMessage('seat', (c, requested) => {
       const m = this.member(c);
       if (!m || !this.allowActivity(c) || this.train.riders.has(m.id)) return;
       if (m.seat !== null) {
-        if (!this.positionMember(c.sessionId, m, c.userData.preSeat)) return;
-        Object.assign(m, c.userData.preSeat);
+        const exit = seats[m.seat]?.exit || c.userData.preSeat;
+        if (!exit || !this.positionMember(c.sessionId, m, exit)) return;
+        Object.assign(m, exit);
         m.seat = null;
+        m.table = null;
         m.action = 'idle';
       } else {
-        const idx = seats.findIndex(
-          (s) => Math.hypot(m.x - s.x, m.z - s.z) < 2 && Math.abs(m.y - s.y) < 0.5,
-        );
-        if (idx < 0 || [...this.members.values()].some((other) => other.seat === idx))
-          return this.notice(c, '가까운 빈 좌석이 필요합니다.');
+        if (requested !== undefined && !Number.isInteger(requested)) return;
+        const occupied = new Set([...this.members.values()].map(other=>other.seat));
+        const candidate = nearbyEdmSeats(m).find(({index})=>
+          (requested === undefined || index === requested) && !occupied.has(index));
+        if (!candidate) return this.notice(c, '가까운 빈 소파 의자 앞에서 앉기를 눌러 주세요.');
+        const idx = candidate.index;
         if (!this.positionMember(c.sessionId, m, seats[idx])) return;
         c.userData.preSeat = { x: m.x, y: m.y, z: m.z, yaw: m.yaw };
-        Object.assign(m, seats[idx], { seat: idx, action: 'sit' });
+        const {exit, ...pose} = seats[idx];
+        Object.assign(m, pose, { seat: idx, table: pose.table ?? null, action: 'sit' });
       }
       this.dirty = true;
       c.send('place', m);
@@ -340,6 +341,7 @@ export class EdmRoom extends Room {
       ai: false,
       action: 'idle',
       seat: null,
+      table: null,
     };
     client.userData = { identity, lastMove: Date.now() };
     this.members.set(client.sessionId, m);
