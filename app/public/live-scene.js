@@ -82,10 +82,15 @@ export function startLiveScene({
     .map((material) => ({ material, base: material.emissiveColor.clone() }));
   // The west-side reactive guest already carries a wand beside the entry group.
   const wandGuest = 'ai-3';
+  let responders = [];
   function onSnapshot({ actors, self, zones, stageEvent }) {
     stageEvents.set(stageEvent);
     if (zones) states = zones;
     dancers = actors.filter((a) => a.action === 'dance' || dances.has(a.action)).length;
+    const caller = actors.find(a => a.id === wandGuest && a.wand && a.trainSlot == null);
+    responders = caller ? actors.filter(a => a.ai && a.id !== caller.id && a.trainSlot == null && dances.has(a.action))
+      .sort((a, b) => Math.hypot(a.x-caller.x, a.z-caller.z) - Math.hypot(b.x-caller.x, b.z-caller.z))
+      .slice(0, 2).map(a => a.id) : [];
     own = self;
     const remaining = new Set(models.keys());
     for (const a of actors) {
@@ -241,8 +246,13 @@ export function startLiveScene({
     // The first beat of each four-beat bar accents both surfaces on the same frame.
     const barPhase = ((beats % 4) + 4) % 4;
     const accent = playing && beats >= 0 ? Math.max(0, 1 - barPhase / .78) * (calmBeats.matches ? .3 : 1) : 0;
-    renderFloor(beats, celebrating, accent);
-    updateBoard(playing ? playback.track.title : null, beats, !preview && !celebrating, accent);
+    // The twelve-second test loop wraps before eight bars; count through its repeat.
+    const phraseBeat = playing ? (playback.phraseTime - (playback.track.firstBeat || 0)) * (playback.track.bpm || 120) / 60 : -1;
+    const phase32 = phraseBeat % 32;
+    const gather = phase32 >= 30 ? (phase32 - 30) / 2 : 0;
+    const release = phraseBeat >= 32 && phase32 < 3 ? phase32 / 3 : -1;
+    renderFloor(beats, celebrating, accent, release);
+    updateBoard(playing ? playback.track.title : null, beats, !preview && !celebrating, accent, gather, calmBeats.matches);
     const phase = beats * Math.PI * 2,
       beatWave = Math.sin(phase);
     washes.forEach(({ light, base }, i) => {
@@ -266,7 +276,9 @@ export function startLiveScene({
       const adjacentRider = ownSlot != null && a.trainSlot != null && Math.abs(a.trainSlot - ownSlot) <= 1;
       const detailRadius = low ? (adjacentRider ? 12 : 8) : 21;
       const close = a.id === own || B.Vector3.DistanceSquared(scene.activeCamera.position, target) < detailRadius ** 2;
-      const dance = a.action === 'dance' ? 'groove' : a.action;
+      const response = release >= 0 && otherWands && responders.includes(a.id);
+      const liftWand = gather > .48 && a.id === wandGuest && a.wand && otherWands && a.trainSlot == null;
+      const dance = response ? 'disco-point' : liftWand || a.action === 'dance' ? 'groove' : a.action;
       const showSteps = dance === 'side-step' || dance === 'disco-point';
       const articulated = close || (a.ai && showSteps) || (a.id === wandGuest && otherWands);
       m.near.setEnabled(articulated);
@@ -278,7 +290,14 @@ export function startLiveScene({
       }
       if (dances.has(dance)) {
         if (articulated) {
-          animateDance(m, dance, beats, a.ai && a.trainSlot == null ? a.danceStyle : undefined);
+          animateDance(m, dance, response ? .85 + release * .6 : beats,
+            response ? responders.indexOf(a.id) : a.ai && a.trainSlot == null ? a.danceStyle : undefined);
+          if (liftWand) {
+            const reach = Math.min(1, (gather - .48) * 4);
+            const arm = m.limbs[2];
+            arm.rotation.z += (2.92 - arm.rotation.z) * reach;
+            arm.rotation.x += (-.16 - arm.rotation.x) * reach;
+          }
           detailed++;
         } else {
           const sway = Math.sin(phase / 2);

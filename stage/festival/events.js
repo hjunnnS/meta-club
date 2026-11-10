@@ -88,18 +88,39 @@ export function houseScreen(B, scene) {
   let title, overlay, lastFrame = -1;
   const screen = ledScreen(B, scene, 'EDM CLUB');
   screen.name = 'EDM house screen';
+  screen.scaling.set(1.42, 1.21, 1);
+  screen.position.set(3.2, 5.85, -16.90);
   const texture = screen.material.emissiveTexture;
   const ctx = texture.getContext();
-  return (track, beats, visible, accent) => {
+  return (track, beats, visible, accent, gather, calm) => {
     screen.setEnabled(visible);
     if (!visible) return;
-    const frame = Math.floor(beats * (accent > 0 ? 12 : 3));
+    const frame = Math.floor(beats * 12);
     if (title !== track) {
       title = track;
       overlay = track ? lettering(track, 'EDM CLUB') : lettering('EDM CLUB');
     } else if (lastFrame === frame) return;
     lastFrame = frame;
     mediaWall(ctx, beats * 0.36);
+    // Mirrored neon wings leave the dark central field clear for the title.
+    const sweep = calm ? 0 : Math.sin(beats * Math.PI / 4);
+    for (const side of [-1, 1]) {
+      ctx.save();
+      ctx.translate(side < 0 ? 0 : 1024, 0);
+      ctx.scale(-side, 1);
+      for (let i = 0; i < 5; i++) {
+        const x = 10 + i * 24;
+        const tip = x + 65 + 12 * sweep + gather * (370 - i * 12);
+        ctx.beginPath();
+        ctx.moveTo(x - 36, 0);
+        ctx.lineTo(tip, 192);
+        ctx.lineTo(x - 36, 384);
+        ctx.strokeStyle = ['#7555e0','#389fce','#30d6d3','#f558bd','#ffc07a'][i];
+        ctx.lineWidth = i === 4 ? 12 : 5;
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
     if (accent > 0) {
       ctx.fillStyle = `rgba(71, 206, 228, ${.28 * accent})`;
       ctx.fillRect(0, 0, 1024, 384);
