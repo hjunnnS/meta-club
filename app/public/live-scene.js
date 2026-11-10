@@ -135,7 +135,7 @@ export function startLiveScene({
     .filter((l) => l.name.startsWith('Stage wash'))
     .map((light) => ({ light, base: light.intensity }));
   const strips = scene.materials
-    .filter((m) => ['Orchid LED', 'Ice LED', 'Rose LED'].includes(m.name))
+    .filter((m) => ['Orchid LED', 'Ice LED', 'Rose LED', 'Ultraviolet guide', 'Glacier guide', 'Fuchsia guide', 'Muted violet truss strip', 'LED / chromatic vortex'].includes(m.name))
     .map((material) => ({ material, base: material.emissiveColor.clone() }));
   // The west-side reactive guest already carries a wand beside the entry group.
   const wandGuest = 'ai-3';
@@ -298,6 +298,7 @@ export function startLiveScene({
     const playback = playlistPosition(tracks, epoch, Date.now() + offset);
     const beats = trackBeat(playback, t);
     const celebrating = stageEvents.kind === 'led';
+    const strobing = stageEvents.strobing;
     const playing = playback && playback.track.id === audibleTrack;
     // The first beat of each four-beat bar accents both surfaces on the same frame.
     const barPhase = ((beats % 4) + 4) % 4;
@@ -321,14 +322,14 @@ export function startLiveScene({
     const lipGlow = ramp(cueBeat - 1.22, .28) * ramp(2.95 - cueBeat, .75);
     for (const lip of stageLips) illuminate(lip, cue.rgb, lipGlow);
     renderFloor(beats, celebrating, accent, cueBeat, cue.rgb);
-    updateBoard(playing ? playback.track.title : null, beats, !preview && !celebrating, accent, gather, calmBeats.matches, phraseBeat, wallRelease, cue.hex, stageEvents.kind && stageEvents.kind !== 'led' ? effects[stageEvents.kind].label : null);
+    updateBoard(playing ? playback.track.title : null, beats, !preview && !celebrating, accent, gather, calmBeats.matches, phraseBeat, wallRelease, cue.hex, stageEvents.kind && stageEvents.kind !== 'led' ? effects[stageEvents.kind].label : null, strobing);
     const phase = beats * Math.PI * 2,
       beatWave = Math.sin(phase);
     washes.forEach(({ light, base }, i) => {
-      light.intensity = base * (dancers ? 1 + 0.38 * Math.sin(phase / 4 + (i * Math.PI) / 2) : 1);
+      light.intensity = base * (strobing ? .20 : 1) * (dancers ? 1 + 0.38 * Math.sin(phase / 4 + (i * Math.PI) / 2) : 1);
     });
     strips.forEach(({ material, base }, i) => {
-      base.scaleToRef(dancers ? 1 + 0.26 * Math.sin(phase / 4 + i * 2) : 1, material.emissiveColor);
+      base.scaleToRef(strobing ? .16 : dancers ? 1 + 0.26 * Math.sin(phase / 4 + i * 2) : 1, material.emissiveColor);
     });
     let detailed = 0,
       ai = 0,

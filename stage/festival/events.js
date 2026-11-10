@@ -149,17 +149,18 @@ export function houseScreen(B, scene, broadcast) {
     screen.material.dispose();
     screen.material = material;
   }
-  let lastSegment = -1, lastPerformance;
-  return (track, beats, visible, accent, gather, calm, phraseBeat, release, cueColor, performanceTitle = null) => {
+  let lastSegment = -1, lastPerformance, lastDim;
+  return (track, beats, visible, accent, gather, calm, phraseBeat, release, cueColor, performanceTitle = null, dimBackground = false) => {
     screen.setEnabled(visible);
     if (!visible) return;
     const segment = track && !performanceTitle ? Math.floor(Math.max(0, phraseBeat) % 32 / 8) : -1;
     if (broadcast) screen.material.setFloat('live', segment === 1 || segment === 2 ? 1 : 0);
     const frame = Math.floor(beats * 12);
-    if (title !== track || lastSegment !== segment || lastPerformance !== performanceTitle) {
+    if (title !== track || lastSegment !== segment || lastPerformance !== performanceTitle || lastDim !== dimBackground) {
       title = track;
       lastSegment = segment;
       lastPerformance = performanceTitle;
+      lastDim = dimBackground;
       overlay = performanceTitle ? lettering(performanceTitle) : segment === 1 || segment === 2 ? null : track ? lettering(track, 'EDM CLUB') : lettering('EDM CLUB');
     } else if (lastFrame === frame) return;
     lastFrame = frame;
@@ -210,6 +211,10 @@ export function houseScreen(B, scene, broadcast) {
       ctx.lineWidth = 28;
       ctx.stroke();
       ctx.restore();
+    }
+    if (dimBackground) {
+      ctx.fillStyle = 'rgba(0,0,0,.80)';
+      ctx.fillRect(0,0,1024,384);
     }
     const contraction = release >= 0 ? Math.min(1, (1 - release) / .55) : gather;
     const scale = 1 - (calm ? .18 : .56) * contraction;
@@ -558,5 +563,11 @@ export function eventPlayer(B, scene, now = Date.now, fastFlash = () => false) {
     else animate?.(t);
   }
   scene.onBeforeRenderObservable.add(tick);
-  return {set, stop, get kind() { return current?.kind; }};
+  return {set, stop, get kind() { return current?.kind; },
+    get strobing() {
+      const elapsed = current ? now() - current.start : -1;
+      return current?.kind === 'laser' && fastFlash() &&
+        !matchMedia('(prefers-reduced-motion: reduce)').matches && elapsed >= 7000 && elapsed < 9000;
+    }
+  };
 }
