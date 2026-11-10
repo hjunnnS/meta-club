@@ -32,16 +32,23 @@ function permitted(r, now) {
     existsSync(resolve(dirname(catalogue), r.file))
   );
 }
-const testLoop = {
-  id: 'g0-loop',
-  title: 'EDM 시험 루프',
-  duration: 12,
-  bpm: 120,
+const testTracks = [
+  { id: 'club-style-1', title: 'Club Style 01 · 원본' },
+  { id: 'club-style-2', title: 'Club Style 02 · Neon Current' },
+  { id: 'club-style-3', title: 'Club Style 03 · Midnight Drive' },
+  { id: 'club-style-4', title: 'Club Style 04 · Electric Pulse' },
+  { id: 'club-style-5', title: 'Club Style 05 · Afterglow' },
+].map((track, index) => ({
+  ...track,
+  file: fileURLToPath(new URL('./fixtures/club-music/club_style_' + (index + 1) + '_60s.wav', import.meta.url)),
+  duration: 60,
+  bpm: 134,
+  firstBeat: 0,
   until: null,
-  url: '/media/edm/g0-loop',
-};
+  url: '/media/edm/' + track.id,
+}));
 export function playlist(now = Date.now()) {
-  if (localTest) return [testLoop];
+  if (localTest) return testTracks.map(({file, ...track}) => track);
   return records
     .filter((r) => permitted(r, now))
     .map(({ id, title, duration, until, bpm, firstBeat }) => ({
@@ -69,8 +76,11 @@ export function installMusic(app) {
   );
   app.get('/media/edm/:id', (req, res) => {
     if (localTest) {
-      if (req.params.id !== testLoop.id) return res.sendStatus(404);
-      return res.sendFile(fileURLToPath(new URL('./fixtures/g0-loop.wav', import.meta.url)));
+      // Keep the G0 comparison fixture reachable for existing validation clients.
+      if (req.params.id === 'g0-loop')
+        return res.sendFile(fileURLToPath(new URL('./fixtures/g0-loop.wav', import.meta.url)));
+      const track = testTracks.find(t => t.id === req.params.id);
+      return track ? res.sendFile(track.file) : res.sendStatus(404);
     }
     const record = records.find((r) => r.id === req.params.id && permitted(r, Date.now()));
     if (!record) return res.sendStatus(404);
