@@ -13,19 +13,40 @@
 <script type="module">
 const sources=window.festivalAssets||{engine:'../../dance/node_modules/babylonjs/babylon.js',loader:'../../dance/node_modules/babylonjs-loaders/babylonjs.loaders.min.js',map:'edm-festival.glb'};
 const canvas=document.querySelector('canvas'), status=document.querySelector('output');
-async function script(url){const el=document.createElement('script');el.src=url;const done=new Promise((ok,no)=>{el.onload=ok;el.onerror=no});document.head.append(el);await done;}
+let activeEngine;
+async function script(url){const el=document.createElement('script');el.src=url;const done=new Promise((ok,no)=>{el.onload=ok;el.onerror=()=>no(Error('화면 파일 다운로드 실패: '+url));});document.head.append(el);await done;}
+async function downloadMap(url){
+ let failure;
+ for(let attempt=0;attempt<3;attempt++){
+   try{
+     const response=await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(20000)});
+     if(!response.ok){
+       const error=Error('HTTP '+response.status);
+       error.permanent=response.status<500;
+       throw error;
+     }
+     // A dropped connection can also fail while reading the large GLB body.
+     return await response.arrayBuffer();
+   }catch(error){
+     failure=error;
+     if(error.permanent||attempt===2)break;
+     status.textContent='맵 연결을 다시 시도하는 중… ('+(attempt+1)+'/2)';
+     await new Promise(resolve=>setTimeout(resolve,attempt===0?400:1000));
+   }
+ }
+ throw Error('맵 다운로드 실패: '+url+' · '+failure.message);
+}
+
 async function open(){
  await script(sources.engine);await script(sources.loader);
- const B=BABYLON, engine=new B.Engine(canvas,true,{preserveDrawingBuffer:true,stencil:true});
+ const B=BABYLON, engine=activeEngine=new B.Engine(canvas,true,{preserveDrawingBuffer:true,stencil:true});
  const scene=new B.Scene(engine);scene.useRightHandedSystem=true;
  scene.clearColor=new B.Color4(.038,.026,.075,1);
  const cam=new B.FreeCamera('visitor',B.Vector3.Zero(),scene);cam.minZ=.06;cam.fov=1.14;
  cam.attachControl(canvas,true);cam.inputs.removeByType('FreeCameraKeyboardMoveInput');cam.angularSensibility=2200;
  const sky=new B.HemisphericLight('ambient',new B.Vector3(.2,1,.4),scene);
  sky.diffuse=new B.Color3(.72,.66,.92);sky.groundColor=new B.Color3(.26,.18,.35);sky.intensity=.95;
- const response=await fetch(sources.map);
- if(!response.ok)throw Error('맵 파일을 불러올 수 없습니다.');
- const bytes=await response.arrayBuffer();
+ const bytes=await downloadMap(sources.map);
  const jsonLength=new DataView(bytes).getUint32(12,true);
  const {reviewRoute,eyeHeight,stops}=JSON.parse(new TextDecoder().decode(new Uint8Array(bytes,20,jsonLength))).extras;
  const model=URL.createObjectURL(new Blob([bytes],{type:'model/gltf-binary'}));
@@ -235,5 +256,17 @@ async function open(){
      }});
  }
 }
-open().catch(e=>{status.textContent='장면을 열 수 없습니다. '+e;console.error(e)});
+open().catch(e=>{
+ activeEngine?.dispose();
+ document.querySelector('nav').hidden=true;
+ document.querySelector('.tour').hidden=true;
+ status.hidden=false;
+ status.textContent='장면을 열 수 없습니다. '+e.message+' ';
+ const retry=document.createElement('button');
+ retry.textContent='장면 다시 열기';retry.type='button';
+ retry.onclick=()=>location.reload();
+ status.append(retry);
+ if(window.parent!==window)parent.postMessage({kind:'scene-error',data:e.message},location.origin);
+ console.error(e);
+});
 </script></html>

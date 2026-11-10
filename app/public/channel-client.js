@@ -217,7 +217,13 @@ window.addEventListener('message', (event) => {
   if (!room || event.source !== map.contentWindow || event.origin !== location.origin) return;
   const { kind, data } = event.data || {};
   if (kind === 'gate-notice') note(data);
+  if (kind === 'scene-error') {
+    ready = false;
+    needsPlace = true;
+    note('공간을 불러오지 못했습니다. 화면의 ‘장면 다시 열기’를 눌러 주세요. ' + String(data));
+  }
   if (kind === 'scene-ready') {
+    note('');
     ready = true;
     showMusic(audibleTrack);
     const floor = map.contentDocument?.querySelector('canvas');
