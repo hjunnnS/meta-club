@@ -199,10 +199,10 @@ export function houseLights(B, scene) {
   const calm = matchMedia('(prefers-reduced-motion: reduce)');
   const colors = ['#489eff', '#ff36a8'];
   const lights = colors.map(hex => {
-    const material = paint(B, scene, 'house wash', hex, 0.95);
+    const material = paint(B, scene, 'house wash', hex, 0.58);
     material.disableLighting = true;
     material.alphaMode = B.Engine.ALPHA_ADD;
-    material.alpha = 0.16;
+    material.alpha = 0.065;
     return material;
   });
   const beams = [];
@@ -210,7 +210,7 @@ export function houseLights(B, scene) {
     for (let i = 0; i < 4; i++) {
       const origin = new B.Vector3(side * (3.4 + 1.35 * i), 6.7, -12 + i * .6);
       const mesh = attach(B.MeshBuilder.CreateCylinder('house fan', {
-        height: 1, diameterTop: .32, diameterBottom: .055, tessellation: 8, cap: B.Mesh.NO_CAP
+        height: 1, diameterTop: .18, diameterBottom: .035, tessellation: 8, cap: B.Mesh.NO_CAP
       }, scene), rig, lights[side === 1 ? 0 : 1]);
       mesh.rotationQuaternion = new B.Quaternion();
       beams.push({ mesh, side, i, origin });

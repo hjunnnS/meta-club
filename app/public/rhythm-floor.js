@@ -12,12 +12,17 @@ export function rhythmFloor(B, scene) {
         float band=(radius-.85)/2.45;
         float slice=(atan(p.y,p.x)+3.141593)*16./6.283185;
         if(fract(band)<.035 || fract(slice)<.026) discard;
-        float key=mod(floor(slice)-floor(beat)*2.-floor(band)*2.+64.,8.);
-        float wave=exp(-2.*fract(beat))*step(key,1.);
-        float chorus=step(12.,mod(beat,16.))*max(0.,1.-abs(floor(band)-mod(beat,4.))*1.6);
-        vec3 color=mix(vec3(.09,.73,.84),vec3(.86,.12,.64),floor(band)/2.);
-        color=mix(color,vec3(.95,.47,.16),celebration*.65);
-        gl_FragColor=vec4(color*(.24+.76*max(wave,chorus)),intensity*(.23+.72*max(wave,chorus)));
+        // Two opposite fronts advance one neighboring sector on each beat.
+        float phase=beat-.16*floor(band);
+        float offset=mod(floor(slice)-floor(phase),8.);
+        float handoff=smoothstep(.34,.95,fract(phase));
+        float current=1.-step(.5,offset);
+        float next=1.-step(.5,abs(offset-1.));
+        float trail=1.-step(.5,abs(offset-7.));
+        float lit=current*(1.-handoff)+next*handoff+trail*.14*(1.-handoff);
+        vec3 color=mix(vec3(.16,.94,1.),vec3(.92,.46,.96),floor(band)*.37);
+        color=mix(color,vec3(1.,.65,.24),celebration*.55);
+        gl_FragColor=vec4(mix(vec3(.12,.12,.24),color,lit),intensity*(.18+.82*lit));
       }`
   }, { attributes:['position'], uniforms:['worldViewProjection','beat','intensity','celebration'], needAlphaBlending:true });
   material.backFaceCulling = false;

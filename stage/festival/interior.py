@@ -71,7 +71,8 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
             post('Moving heads',black,x,7.61,z,.17,.32)
             post('Optics',lamps[(j//3)%3],x,7.59,z,.132,.035)
             if j%6==0:post('Suspension drops',ink,x,8.45,z,.025,2.55)
-    ellipse('LED halo',purple,0,7.91,0,8.44,8.44,.044)
+    halo=finish('Muted violet truss strip',(.11,.05,.22),0,.8,(.18,.06,.34))
+    ellipse('LED halo',halo,0,7.91,0,8.44,8.44,.044)
     # The LED artwork is baked into the actual GLB for independent viewers.
     def led_pixel(x,y):
         u=(x+.5)/768*2-1;v=1-(y+.5)/384*2
@@ -109,7 +110,7 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
             tint=[(.25,.046,1),(.025,.37,1),(1,.023,.37)][i%3]
             haze=finish('Beam wash '+str(s)+' '+str(i),tint,0,1,tint)
             materials[haze].update(alphaMode='BLEND',doubleSided=True)
-            materials[haze]['pbrMetallicRoughness']['baseColorFactor'][3]=.048
+            materials[haze]['pbrMetallicRoughness']['baseColorFactor'][3]=.018
             for j in range(12):
                 a,b=2*pi*j/12,2*pi*(j+1)/12
                 def edge(t):return (far[0]+.48*math.cos(t),far[1],far[2]+.48*math.sin(t))
@@ -162,7 +163,7 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
     signStart, signEnd=10.15,18.55
     signBottom,signTop=3.55,5.65
     box('Lounge sign frame',brass,signX+.01,21.45,signStart-.06,signEnd+.06,signBottom-.06,signTop+.06)
-    signMat=finish('Lounge lettering',(1,1,1),0,.95,(.85,.85,.85))
+    signMat=finish('Lounge lettering',(.79,.83,.77),0,.95,(.29,.33,.29))
     images[signMat]=(Path(__file__).with_name('lounge-sign.png').read_bytes(),
                      lambda x,y,z:((z-signStart)/(signEnd-signStart),(signTop-y)/(signTop-signBottom)))
     low=(signX,signBottom,signStart)
@@ -189,11 +190,11 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
         post('Pendant brass shade',brass,x,3.09,z,.40,.24)
         post('Pendant diffuser',gold,x,3.06,z,.335,.035)
         if x>0:
-            lamp('Lounge booth light',(x,2.96,z),(1,.79,.51),110,5)
+            lamp('Lounge booth light',(x,2.96,z),(1,.79,.51),82,5)
         else:
             lamp('Amber pendant',(x,2.96,z),(1,.47,.17),80,8)
     for x,z,c in [(-5,-13,(.22,.15,1)),(5,-13,(1,.06,.37)),(-8,0,(.33,.12,1)),(8,0,(.06,.52,1))]:
-        lamp('Stage wash',(x,4.4,z),c,160,16)
+        lamp('Stage wash',(x,4.4,z),c,190 if z==-13 else 115,16)
     # Close the vista beyond the entrance without enclosing the entry corridor.
     for side in (-1,1):
         x=side*12.5
