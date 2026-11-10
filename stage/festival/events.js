@@ -380,6 +380,7 @@ export function houseLights(B, scene) {
 }
 
 function lasers(B, scene, root, event, fastFlash) {
+  const eventRoot = root;
   const optics = new B.TransformNode('laser optics', scene);
   optics.parent = root;
   root = optics;
@@ -397,6 +398,29 @@ function lasers(B, scene, root, event, fastFlash) {
   ctx.fillRect(0, 0, 64, 64);
   gradient.getAlphaFromRGB = true;
   gradient.update();
+
+  // Soft downwards plumes start at the truss, independent of laser blackouts.
+  const mistInk=paint(B,scene,'ceiling mist','#94a6bf');
+  mistInk.disableLighting=true;mistInk.alpha=.22;mistInk.backFaceCulling=false;
+  mistInk.opacityTexture=gradient;
+  const mist=new B.SolidParticleSystem('ceiling smoke plumes',scene);
+  const puff=B.MeshBuilder.CreatePlane('smoke puff template',{size:1},scene);
+  mist.addShape(puff,96);puff.dispose();
+  const mistMesh=mist.buildMesh();mistMesh.parent=eventRoot;mistMesh.material=mistInk;
+  mistMesh.isPickable=false;mistMesh.hasVertexAlpha=true;mist.billboard=true;
+  let smokeTime=0;
+  const noise=(i,s)=>{const v=Math.sin(i*127.1+s*311.7)*43758.5453;return v-Math.floor(v);};
+  mist.updateParticle=p=>{
+    const age=smokeTime-noise(p.idx,1)*1.1;
+    p.isVisible=age>=0&&age<4.8;
+    if(!p.isVisible)return p;
+    const emitter=Math.floor(p.idx/24),x=emitter%2?-5.98:5.98,z=emitter<2?-5.98:5.98;
+    p.position.set(x+(noise(p.idx,2)-.5)*(1+age*.9),7.5-age*.9,z+(noise(p.idx,3)-.5)*(1+age*.8));
+    p.scaling.setAll(.5+age*.48);p.rotation.z=noise(p.idx,4)*6.28;
+    p.color ||= new B.Color4(1,1,1,1);
+    p.color.a=Math.min(1,age*3)*Math.max(0,1-age/4.8);
+    return p;
+  };
 
   function beam(name, top, bottom, material) {
     const mesh = attach(B.MeshBuilder.CreateCylinder(name, {
@@ -417,7 +441,7 @@ function lasers(B, scene, root, event, fastFlash) {
   // Eight overhead heads on a circular truss project shafts and matching pools on the floor.
   const heads = Array.from({ length: 8 }, (_, i) => {
     const angle = Math.PI * i / 4;
-    const origin = new B.Vector3(7.1 * Math.cos(angle), 7.65, 3 + 7.1 * Math.sin(angle));
+    const origin = new B.Vector3(8.45 * Math.cos(angle), 7.59, 8.45 * Math.sin(angle));
     const light = paint(B, scene, 'shaft glow', '#ffffff');
     light.disableLighting = true;
     light.alphaMode = B.Engine.ALPHA_ADD;
@@ -428,6 +452,11 @@ function lasers(B, scene, root, event, fastFlash) {
     const ray = beam('overhead core', 0.13, 0.05, core);
     const lens = attach(B.MeshBuilder.CreateSphere('moving head lens', {diameter: 0.28, segments: 8}, scene), root, core);
     lens.position.copyFrom(origin);
+    const casing=paint(B,scene,'moving head housing','#242033');
+    const body=attach(B.MeshBuilder.CreateCylinder('laser fixture housing',{height:.45,diameter:.44,tessellation:8},scene),root,casing);
+    body.rotationQuaternion=new B.Quaternion();
+    const mount=attach(B.MeshBuilder.CreateBox('laser truss mount',{width:.46,height:.22,depth:.48},scene),root,casing);
+    mount.position.copyFrom(origin);mount.position.y+=.45;
     const footprint = paint(B, scene, 'floor wash', '#ffffff');
     footprint.disableLighting = true;
     footprint.opacityTexture = gradient;
@@ -435,7 +464,7 @@ function lasers(B, scene, root, event, fastFlash) {
     footprint.alphaMode = B.Engine.ALPHA_ADD;
     footprint.alpha = 0.52;
     const spot = attach(B.MeshBuilder.CreateGround('floor pool', {width: 3.8, height: 3.8}, scene), root, footprint);
-    return {angle, origin, shaft, ray, light, core, spot, footprint};
+    return {angle, origin, shaft, ray, light, core, body, spot, footprint};
   });
   const fanMaterials = spectrum.map(hex => paint(B, scene, 'scanner beam', hex));
   const fans = Array.from({length: 28}, (_, i) => {
@@ -449,6 +478,9 @@ function lasers(B, scene, root, event, fastFlash) {
   const target = new B.Vector3();
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   return t => {
+    smokeTime=t;
+    mistMesh.setEnabled(!reducedMotion.matches&&t<5.9);
+    if(mistMesh.isEnabled())mist.setParticles();
     const ms = Math.round(t * 1000);
     // One two-second strobe in the middle of the sixteen-second performance.
     const rapidCue = fastFlash() && ms >= 7000 && ms < 9000;
@@ -471,6 +503,8 @@ function lasers(B, scene, root, event, fastFlash) {
       if (phase === 3) target.set(side * (8 + 8 * Math.sin(a)), .08, 16 + 3.5 * Math.cos(a));
       aim(head.shaft, head.origin, target);
       aim(head.ray, head.origin, target);
+      head.body.rotationQuaternion.copyFrom(head.ray.rotationQuaternion);
+      head.body.position.copyFrom(head.origin).subtractInPlace(direction.scale(.20));
       head.spot.position.set(target.x, .08, target.z);
     }
     for (const {mesh, origin, side, spread} of fans) {

@@ -18,21 +18,29 @@ export function clubAmbience(B, scene) {
   const calm = matchMedia('(prefers-reduced-motion: reduce)');
   const ink=new B.ShaderMaterial('Music spectrum neon',scene,{
     vertexSource:'precision highp float;attribute vec3 position;attribute vec4 color;uniform mat4 worldViewProjection;varying vec4 tint;void main(){tint=color;gl_Position=worldViewProjection*vec4(position,1.);}',
-    fragmentSource:'precision highp float;varying vec4 tint;void main(){gl_FragColor=vec4(tint.rgb*.65,1.);}'
+    fragmentSource:'precision highp float;varying vec4 tint;void main(){gl_FragColor=vec4(tint.rgb*.85,1.);}'
   },{attributes:['position','color'],uniforms:['worldViewProjection']});
   const bars=new B.SolidParticleSystem('LED side equalizers',scene);
   const cube=B.MeshBuilder.CreateBox('spectrum bar template',{width:.21,height:.23,depth:.12},scene);
   bars.addShape(cube,24*14);cube.dispose();
   const mesh=bars.buildMesh();mesh.material=ink;mesh.isPickable=false;
+  const backing=new B.StandardMaterial('Equalizer dark contrast',scene);
+  backing.disableLighting=true;backing.emissiveColor=new B.Color3(.012,.008,.022);
+  for(const x of [-5.405,14.295]) {
+    const panel=B.MeshBuilder.CreateBox('Equalizer backing',{width:3.7,height:4.8,depth:.08},scene);
+    panel.position.set(x,4.8,-10.62);panel.material=backing;panel.isPickable=false;
+  }
   let bands=[];
   bars.updateParticle=p=>{
     const column=Math.floor(p.idx/14),i=column%12,side=column<12?-1:1,level=p.idx%14;
     const energy=bands[i]||0;
     p.isVisible=level<Math.max(1,Math.round(energy*14));
-    // Same plane as the large screen, outside its left/right edges.
-    p.position.set(side<0?-8.9+i*.29:13+i*.29,2.6+level*.32,-13.8);
+    // Forward of the screen and west deck, so the left bank clears the stairs.
+    p.position.set(side<0?-7+i*.29:12.7+i*.29,2.6+level*.32,-10.5);
     p.color ||= new B.Color4();
-    p.color.set(.25+level*.05,.90-level*.04,1,1);
+    const blend=level/13;
+    if(side<0)p.color.set(1,.64-.44*blend,.08+.38*blend,1);
+    else p.color.set(.65+.35*blend,1-.40*blend,.10,1);
     return p;
   };
   return (beat,values,strobing=false,playing=false,bpm=120,previewAge=null,previewKind='transition')=>{
