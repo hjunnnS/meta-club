@@ -1,8 +1,8 @@
 import { ceilingLights } from './ceiling-lights.js';
 import { clubAmbience, strobeDurations } from './ambience.js';
 import { rhythmFloor } from './rhythm-floor.js';
-import { playlistPosition, trackBeat } from './music.js';
-import { effects, eventPlayer, ledScreen, houseScreen, houseLights, peripheralTests } from '/stage/festival/events.js';
+import { playlistPosition, trackBeat, musicDynamics } from './music.js';
+import { effects, eventPlayer, ledScreen, houseScreen, houseLights, peripheralTests, peripheralCue } from '/stage/festival/events.js';
 import { permittedPath, edmCameraDistance } from './edm-layout.js';
 import { dances, danceCamera, animateDance } from './free-dance.js';
 import { avatarFactory, playerView } from './avatar.js';
@@ -323,6 +323,9 @@ export function startLiveScene({
     const playback = playlistPosition(tracks, epoch, Date.now() + offset);
     const beats = trackBeat(playback, t);
     const effectPreview=activePeripheralPreview();
+    const playing = playback && playback.track.id === audibleTrack;
+    const dynamics=musicDynamics(playback);
+    const peripheralPlan=peripheralCue(beats,playback?.track.bpm||120,effectPreview,Boolean(playing),dynamics.level);
     const celebrating = stageEvents.kind === 'led';
     const strobing = stageEvents.strobing;
     const audioBands = performance.now()-spectrumAt<350 && audibleTrack ? spectrum : [];
@@ -330,9 +333,9 @@ export function startLiveScene({
     renderCeiling(beats,strobing,musicEnergy);
     const previewAge = (performance.now()-strobePreviewStarted)/1000;
     // After either test, leave a normal-light gap before automatic accents resume.
-    const roomPulse = renderAmbience(beats, audioBands, strobing||Boolean(effectPreview), Boolean(audibleTrack), playback?.track.bpm || 120, previewAge<strobeDurations[strobePreviewPattern]+1.6 ? previewAge : null, strobePreviewPattern);
-    if (ambient) ambient.intensity = .52 + roomPulse * 1.65;
-    const playing = playback && playback.track.id === audibleTrack;
+    const smokeProtection=peripheralPlan.protectSmoke&&previewAge>=strobeDurations[strobePreviewPattern];
+    const roomPulse = renderAmbience(beats, audioBands, strobing||Boolean(effectPreview)||Boolean(smokeProtection), Boolean(audibleTrack), playback?.track.bpm || 120, previewAge<strobeDurations[strobePreviewPattern]+1.6 ? previewAge : null, strobePreviewPattern,dynamics.level);
+    if (ambient) ambient.intensity = (smokeProtection?.42:.52) + roomPulse * 1.65;
     // The first beat of each four-beat bar accents both surfaces on the same frame.
     const barPhase = ((beats % 4) + 4) % 4;
     const accent = playing && beats >= 0 ? Math.max(0, 1 - barPhase / .78) * (calmBeats.matches ? .3 : 1) : 0;
@@ -341,7 +344,7 @@ export function startLiveScene({
     const phase32 = phraseBeat % 32;
     const gather = phase32 >= 30 ? (phase32 - 30) / 2 : 0;
     const release = phraseBeat >= 32 && phase32 < 3 ? phase32 / 3 : -1;
-    renderHouseLights(beats, !stageEvents.kind, preview ? -1 : release, playback?.track.bpm || 120, musicEnergy, strobing, effectPreview, Boolean(playing));
+    renderHouseLights(beats, !stageEvents.kind, preview ? -1 : release, playback?.track.bpm || 120, musicEnergy, strobing, effectPreview, Boolean(playing),dynamics.level);
     // Pick the upcoming phrase's color during the pickup and keep it through the release.
     const cue = cueColors[Math.floor((Math.max(0, phraseBeat) + 2) / 32) % cueColors.length];
     const wallRelease = preview || celebrating ? -1 : release;

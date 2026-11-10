@@ -322,19 +322,23 @@ function laserBlackouts(start) {
 }
 
 export const peripheralTests = {smoke:6, laser:4, wash:4};
-export function peripheralCue(beat,bpm=120,preview=null,playing=true) {
+export function peripheralCue(beat,bpm=120,preview=null,playing=true,arrangement=1) {
   const fade=(t,a,b)=>{const p=Math.max(0,Math.min(1,(t-a)/(b-a)));return p*p*(3-2*p);};
   if(preview) {
     const {kind,age}=preview,seconds=peripheralTests[kind];
     const active=Number.isFinite(age)&&age>=0&&age<seconds;
     const level=active?fade(age,0,.25)*(1-fade(age,seconds-.6,seconds)):0;
-    return {smokeTime:age,smoke:active&&kind==='smoke',laser:kind==='laser'?level:0,wash:kind==='wash'?level:0,preview:true};
+    return {smokeTime:age,smoke:active&&kind==='smoke',laser:kind==='laser'?level:0,wash:kind==='wash'?level:0,preview:true,protectSmoke:active&&kind==='smoke'};
   }
   if(!playing||beat<0)return {smokeTime:0,smoke:false,laser:0,wash:0,preview:false};
   const phase=((beat%32)+32)%32;
-  return {smokeTime:phase*60/Math.max(1,bpm),smoke:phase<14,
-    laser:fade(phase,4,6)*(1-fade(phase,16,20)),
-    wash:fade(phase,14,18)*(1-fade(phase,28,32)),preview:false};
+  const smokeTime=phase*60/Math.max(1,bpm)-2.8;
+  if(arrangement<.55)return {smokeTime:0,smoke:false,laser:0,wash:.16+.10*(.5+.5*Math.sin(beat*Math.PI/8)),preview:false,protectSmoke:false};
+  const strong=arrangement>=.82;
+  return {smokeTime,smoke:strong&&smokeTime>=0&&smokeTime<5.5,
+    laser:fade(phase,9,11)*(1-fade(phase,20,24))*(strong?1:.40),
+    wash:(.15+.85*fade(phase,18,22)*(1-fade(phase,28,32)))*(strong?1:.65),preview:false,
+    protectSmoke:strong&&smokeTime>=-.15&&smokeTime<2.0};
 }
 
 // Peripheral atmosphere remains visible independently of the central stage show.
@@ -363,20 +367,32 @@ function peripheralLighting(B,scene) {
     const poolInk=paint(B,scene,'peripheral floor glow','#fff0dc');
     poolInk.disableLighting=true;poolInk.opacityTexture=texture;poolInk.alphaMode=B.Engine.ALPHA_ADD;poolInk.alpha=.16;
     const pool=attach(B.MeshBuilder.CreateGround('wall downlight floor pool',{width:4.3,height:4.3},scene),rig,poolInk);
-    const rayInk=paint(B,scene,'peripheral thin laser',i%2?'#fa52ca':'#53e9ff');
+    const rayInk=paint(B,scene,'peripheral thin laser',i%2?'#ffce4c':'#67ff83',1);
     rayInk.disableLighting=true;rayInk.alphaMode=B.Engine.ALPHA_ADD;
+    const haloInk=paint(B,scene,'peripheral laser halo',i%2?'#ffce4c':'#67ff83',1);
+    haloInk.disableLighting=true;haloInk.alphaMode=B.Engine.ALPHA_ADD;
     const rays=[-1,1].map(spread=>{
-      const ray=attach(B.MeshBuilder.CreateCylinder('peripheral laser ray',{height:1,diameter:.035,tessellation:5,cap:B.Mesh.NO_CAP},scene),rig,rayInk);
-      ray.rotationQuaternion=new B.Quaternion();return {ray,spread};
+      const ray=attach(B.MeshBuilder.CreateCylinder('peripheral laser ray',{height:1,diameter:.06,tessellation:6,cap:B.Mesh.NO_CAP},scene),rig,rayInk);
+      const halo=attach(B.MeshBuilder.CreateCylinder('peripheral laser soft edge',{height:1,diameter:.15,tessellation:6,cap:B.Mesh.NO_CAP},scene),rig,haloInk);
+      ray.rotationQuaternion=new B.Quaternion();halo.rotationQuaternion=new B.Quaternion();return {ray,halo,spread};
     });
-    return {origin,body,glass,cone,pool,ink,poolInk,rays,rayInk};
+    return {origin,body,glass,cone,pool,ink,poolInk,rays,rayInk,haloInk};
   });
-  const smokeInk=paint(B,scene,'peripheral descending haze','#e5e8ed',.9);
-  smokeInk.disableLighting=true;smokeInk.opacityTexture=texture;smokeInk.alpha=.40;smokeInk.backFaceCulling=false;
+  // Only two real spotlights are active: one on each side, near the current view.
+  const realWashes=[-1,1].map(side=>{
+    const light=new B.SpotLight('peripheral real wash '+side,B.Vector3.Zero(),new B.Vector3(0,-1,0),.75,2,scene);
+    light.diffuse=B.Color3.FromHexString(side<0?'#fff0d5':'#e0dfff');light.range=14;light.intensity=0;light.renderPriority=50;
+    return {side,light};
+  });
+  const ambient=scene.getLightByName('ambient');if(ambient)ambient.renderPriority=100;
+  const smokeInk=paint(B,scene,'peripheral descending haze','#d5d8df',.4);
+  smokeInk.disableLighting=true;smokeInk.opacityTexture=texture;smokeInk.alpha=.18;smokeInk.backFaceCulling=false;
   const smoke=new B.SolidParticleSystem('entry wall and lounge haze',scene);
+  smoke.computeBoundingBox=true;
   const puff=B.MeshBuilder.CreatePlane('peripheral haze template',{size:1},scene);
   smoke.addShape(puff,stations.length*32);puff.dispose();
   const cloud=smoke.buildMesh();cloud.parent=rig;cloud.material=smokeInk;cloud.isPickable=false;cloud.hasVertexAlpha=true;smoke.billboard=true;
+  for(const layer of scene.effectLayers||[])if(typeof layer.addExcludedMesh==='function')layer.addExcludedMesh(cloud);
   let time=0;
   const noise=(i,s)=>{const n=Math.sin(i*127.1+s*311.7)*43758.5453;return n-Math.floor(n);};
   smoke.updateParticle=p=>{
@@ -386,7 +402,9 @@ function peripheralLighting(B,scene) {
     p.isVisible=age>=0&&age<4.2;if(!p.isVisible)return p;
     const inward=x>0?-1:1;
     p.position.set(x+inward*age*.20+(noise(p.idx,2)-.5)*(.4+age*.42),y-.12-age*1.45,z+(noise(p.idx,3)-.5)*(.4+age*.55));
-    p.scaling.set(.65+age*.6,1.3+age*.25,.65+age*.6);p.rotation.z=(noise(p.idx,4)-.5)*.45;
+    const jet=age<.7;
+    p.scaling.set(jet?.40+age*.4:.68+age*.60,jet?1.9:1.2+age*.3,1);
+    p.rotation.z=(noise(p.idx,4)-.5)*.30;
     p.color ||= new B.Color4(1,1,1,1);p.color.a=Math.min(1,age*3)*Math.pow(Math.max(0,1-age/4.2),.75);
     return p;
   };
@@ -394,8 +412,14 @@ function peripheralLighting(B,scene) {
   return (beat,bpm,energy,strobing,cue)=>{
     time=cue.smokeTime;
     cloud.setEnabled(!calm.matches&&cue.smoke);if(cloud.isEnabled())smoke.setParticles();
+    const selected=new Map(realWashes.map(({side,light})=>{
+      const candidates=lamps.filter(lamp=>Math.sign(lamp.origin.x)===side);
+      const z=scene.activeCamera?.position.z||0;
+      const lamp=candidates.reduce((a,b)=>Math.abs(a.origin.z-z)<Math.abs(b.origin.z-z)?a:b);
+      light.intensity=0;return [lamp,light];
+    }));
     lamps.forEach((lamp,i)=>{
-      const {origin,cone,pool,ink,poolInk,body,rays,rayInk}=lamp;
+      const {origin,cone,pool,ink,poolInk,body,rays,rayInk,haloInk}=lamp;
       const phase=calm.matches?0:beat*.10+i*.8;
       const inward=origin.x>0?-1:1;
       target.set(origin.x+inward*(1.15+.45*Math.sin(phase)),.075,origin.z+.8*Math.sin(phase*.7));
@@ -405,14 +429,20 @@ function peripheralLighting(B,scene) {
       body.rotationQuaternion=cone.rotationQuaternion;
       pool.position.copyFrom(target);
       const strength=strobing?.10:1+.35*energy;
+      const real=selected.get(lamp);
+      if(real){real.position.copyFrom(origin);real.direction.copyFrom(direction);real.intensity=40*cue.wash*strength;}
       cone.setEnabled(cue.wash>.001);pool.setEnabled(cue.wash>.001);
       ink.alpha=.085*strength*cue.wash;poolInk.alpha=.18*strength*cue.wash;
       rayInk.alpha=cue.laser*strength*(.65+.35*energy);
-      for(const {ray,spread} of rays) {
-        ray.setEnabled(cue.laser>.001);if(!ray.isEnabled())continue;
-        target.set(origin.x*.35+spread*(2+3*Math.sin(phase)),1.1+1.8*(.5+.5*Math.sin(phase*.8+spread)),origin.z-4+7*Math.sin(phase*.65+spread));
+      haloInk.alpha=rayInk.alpha*.13;
+      for(const {ray,halo,spread} of rays) {
+        ray.setEnabled(cue.laser>.001);halo.setEnabled(cue.laser>.001);if(!ray.isEnabled())continue;
+        const fan=calm.matches?3:1.5+5*(.5-.5*Math.cos(beat*Math.PI/2));
+        target.set(origin.x*.35+spread*fan,1.1+1.8*(.5+.5*Math.sin(phase*.8+spread)),origin.z-4+7*Math.sin(phase*.65+spread));
         target.subtractToRef(origin,direction);ray.position.copyFrom(origin).addInPlace(direction.scale(.5));ray.scaling.y=direction.length();
         B.Quaternion.FromUnitVectorsToRef(B.Axis.Y,direction.normalize(),ray.rotationQuaternion);
+        halo.position.copyFrom(ray.position);halo.scaling.copyFrom(ray.scaling);halo.rotationQuaternion.copyFrom(ray.rotationQuaternion);
+        if(cue.laser>cue.wash&&spread===-1)body.rotationQuaternion=ray.rotationQuaternion;
       }
     });
   };
@@ -456,8 +486,8 @@ export function houseLights(B, scene) {
     return { side, ray, material, origin: new B.Vector3(side * 4.2, 4.7, -12.2) };
   });
   const delta = new B.Vector3();
-  return (beat, visible, release, bpm=120, energy=0, strobing=false,preview=null,playing=true) => {
-    const cue=peripheralCue(beat,bpm,preview,playing);
+  return (beat, visible, release, bpm=120, energy=0, strobing=false,preview=null,playing=true,arrangement=1) => {
+    const cue=peripheralCue(beat,bpm,preview,playing,arrangement);
     renderPeriphery(beat,bpm,energy,strobing,cue);
     rig.setEnabled(visible&&!cue.preview);
     if (!visible||cue.preview) return;

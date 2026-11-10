@@ -18,6 +18,15 @@ export function trackBeat(position, fallbackSeconds) {
   return (time - (track.firstBeat || 0)) * (track.bpm || 120) / 60;
 }
 
+export function musicDynamics(position) {
+  const sections=position?.track.energySections;
+  if(!sections?.length)return {level:1,bass:1};
+  const beat=Math.max(0,trackBeat(position,0)),index=Math.min(sections.length-1,Math.floor(beat/16));
+  const mix=Math.min(1,(beat%16)/1.5),previous=sections[Math.max(0,index-1)],current=sections[index];
+  const level=previous[0]+(current[0]-previous[0])*mix;
+  return {level:current[0]<.55?current[0]:level,bass:previous[1]+(current[1]-previous[1])*mix};
+}
+
 export function musicPlayer(notice, playing, failed) {
   let ctx, analyser, frequencies,
     source,

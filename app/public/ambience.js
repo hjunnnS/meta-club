@@ -21,6 +21,7 @@ export function clubAmbience(B, scene) {
     fragmentSource:'precision highp float;varying vec4 tint;void main(){gl_FragColor=vec4(tint.rgb*.85,1.);}'
   },{attributes:['position','color'],uniforms:['worldViewProjection']});
   const bars=new B.SolidParticleSystem('LED side equalizers',scene);
+  bars.computeBoundingBox=true;
   const cube=B.MeshBuilder.CreateBox('spectrum bar template',{width:.21,height:.23,depth:.12},scene);
   bars.addShape(cube,24*14);cube.dispose();
   const mesh=bars.buildMesh();mesh.material=ink;mesh.isPickable=false;
@@ -43,20 +44,20 @@ export function clubAmbience(B, scene) {
     else p.color.set(.65+.35*blend,1-.40*blend,.10,1);
     return p;
   };
-  return (beat,values,strobing=false,playing=false,bpm=120,previewAge=null,previewKind='transition')=>{
+  return (beat,values,strobing=false,playing=false,bpm=120,previewAge=null,previewKind='transition',arrangement=1)=>{
     bands=values;
     bars.setParticles();
     if (strobing || calm.matches) return 0;
     if (previewAge !== null) {
       return strobePattern(previewAge,previewKind);
     }
-    if (!playing) return 0;
+    if (!playing || arrangement<.55) return 0;
     const bass=((values[0]||0)+(values[1]||0)+(values[2]||0))/3;
     if (bass<.02) return 0;
     // Normal accent halfway through the phrase; the large accent owns its transition.
     const phase=((beat%32)+32)%32;
     const kind=phase<16?'transition':'normal';
     const elapsed=(phase<16?phase:phase-16)*60/Math.max(1,bpm);
-    return strobePattern(elapsed,kind)*(.7+.3*bass);
+    return strobePattern(elapsed,kind)*(.7+.3*bass)*Math.min(1,arrangement);
   };
 }
