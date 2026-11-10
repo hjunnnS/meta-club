@@ -92,6 +92,12 @@ export class EdmRoom extends Room {
         return this.notice(client, '열린 동선에서만 기차에 참여할 수 있습니다.');
       }
       Object.assign(actor, next);
+      if (command === 'start') {
+        const distance = a => Math.hypot(a.x - next.x, a.z - next.z);
+        const nearby = this.ai.filter(a => a.action !== 'sit').sort((a, b) => distance(a) - distance(b));
+        for (const guest of nearby.slice(0, 2)) this.train.board(guest, 'join');
+        this.refreshVisitors();
+      }
       client.send('place', actor);
       this.notice(client, command === 'start' ? '중앙 플로어에서 WASD로 기차를 이끄세요.' : '댄스 기차에 합류했습니다.');
       this.dirty = true;
@@ -154,6 +160,7 @@ export class EdmRoom extends Room {
   leaveTrain(id) {
     for (const rider of this.train.leave(id)) {
       const actor = this.members.get(rider);
+      if (!actor) continue; // AI resumes its usual pose on the next snapshot.
       actor.trainSlot = null;
       actor.action = 'idle';
       const client = this.clients.find(c => c.sessionId === rider);
@@ -192,7 +199,9 @@ export class EdmRoom extends Room {
   refreshVisitors() {
     const before = new Set(this.ai.map((a) => a.id));
     const elapsed = (Date.now() - this.epoch) / 1000;
-    for (let i = 0; i < 3; i++) this.ai[i] = background(i, elapsed);
+    for (let i = 0; i < 3; i++) {
+      if (!this.train.riders.has(this.ai[i].id)) this.ai[i] = background(i, elapsed);
+    }
     const extra = Math.min(extraGuestPlaces.length, extraVisitors, capacity - this.members.size);
     this.ai.length = 5 + extra;
     for (let i = 0; i < extra; i++) {
@@ -216,13 +225,16 @@ export class EdmRoom extends Room {
       }
       actor.wand = i === 3 || i === 4;
       before.delete(actor.id);
-      const { tier, group } = edmArea(actor);
+      const { tier, group } = edmArea(this.train.riders.has(actor.id) ? this.train.pose(actor.id) : actor);
       if (!this.zones.move('ai', actor.id, this.zones.location('ai', actor.id), tier, group)) {
         Object.assign(actor, { x: 0, y: 0.018, z: 0, action: 'dance' });
         this.zones.move('ai', actor.id, this.zones.location('ai', actor.id), 0, 'dancefloor');
       }
     }
-    for (const id of before) this.zones.move('ai', id, this.zones.location('ai', id), null);
+    for (const id of before) {
+      this.train.leave(id);
+      this.zones.move('ai', id, this.zones.location('ai', id), null);
+    }
   }
   react(member, action, explicit = false) {
     for (const ai of this.ai.slice(3, 5)) {
@@ -256,7 +268,8 @@ export class EdmRoom extends Room {
     return {
       ...(localTest && { stageEvent: this.stageEvent ?? null }),
       trainLeader: this.train.leader,
-      actors: [...this.members.values(), ...this.ai],
+      actors: [...this.members.values(), ...this.ai.map(a =>
+        this.train.riders.has(a.id) ? { ...a, ...this.train.pose(a.id) } : a)],
       epoch: this.epoch,
       zones: this.zoneStates(),
     };
@@ -289,6 +302,7 @@ export class EdmRoom extends Room {
       for (const id of this.train.riders.keys()) {
         if (id === m.id) continue;
         const rider = this.members.get(id);
+        if (!rider) continue; // AI poses are sampled directly from the train path.
         const next = this.train.pose(id);
         if (this.positionMember(id, rider, next)) Object.assign(rider, next);
         else this.leaveTrain(id);

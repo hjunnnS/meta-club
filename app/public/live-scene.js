@@ -4,6 +4,33 @@ import { eventPlayer, ledScreen, houseScreen, houseLights } from '/stage/festiva
 import { permittedPath } from './edm-layout.js';
 import { dances, danceCamera, animateDance } from './free-dance.js';
 import { avatarFactory, playerView } from './avatar.js';
+// Inlaid chevrons cross the arena rim before the closed side zone and end between the lounge sofas.
+function markLoungeWalk(B, scene) {
+  const start = new B.Vector3(-.8, .061, 6.9);
+  const end = new B.Vector3(9.9, .061, 16.35);
+  const along = end.subtract(start).normalize();
+  const across = new B.Vector3(-along.z, 0, along.x);
+  const positions = [], indices = [];
+  for (let d = 0; d <= B.Vector3.Distance(start, end); d += 1.4) {
+    const center = start.add(along.scale(d));
+    const base = positions.length / 3;
+    for (const [side, forward] of [[-.36,-.13],[0,.14],[.36,-.13],[.36,.01],[0,.30],[-.36,.01]]) {
+      positions.push(...center.add(across.scale(side)).add(along.scale(forward)).asArray());
+    }
+    indices.push(base,base+1,base+4, base,base+4,base+5, base+1,base+2,base+3, base+1,base+3,base+4);
+  }
+  const mesh = new B.Mesh('Lounge walkway arrows', scene);
+  const data = new B.VertexData();
+  data.positions = positions;
+  data.indices = indices;
+  data.applyToMesh(mesh);
+  const ink = new B.StandardMaterial('Lounge walkway amber', scene);
+  ink.disableLighting = true;
+  ink.emissiveColor = B.Color3.FromHexString('#ffca77');
+  ink.backFaceCulling = false;
+  mesh.material = ink;
+  mesh.isPickable = false;
+}
 export function startLiveScene({
   B,
   cam,
@@ -20,6 +47,7 @@ export function startLiveScene({
     make = avatarFactory(B, scene, glow);
   let epoch = Date.now(),
     offset = 0;
+  markLoungeWalk(B, scene);
   const renderFloor = rhythmFloor(B, scene);
   const renderHouseLights = houseLights(B, scene);
   const ambient = scene.getLightByName('ambient');

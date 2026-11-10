@@ -12,7 +12,7 @@ export class DanceTrain {
   path = [];
 
   board(actor, command) {
-    if (this.riders.has(actor.id) || actor.seat !== null) return false;
+    if (this.riders.has(actor.id) || actor.seat != null) return false;
     if (command === 'start' && !this.leader) {
       this.leader = actor.id;
       this.path = Array.from({ length: places + 1 }, (_, i) => {
