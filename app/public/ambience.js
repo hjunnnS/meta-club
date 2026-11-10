@@ -26,17 +26,17 @@ export function clubAmbience(B, scene) {
   const mesh=bars.buildMesh();mesh.material=ink;mesh.isPickable=false;
   const backing=new B.StandardMaterial('Equalizer dark contrast',scene);
   backing.disableLighting=true;backing.emissiveColor=new B.Color3(.012,.008,.022);
-  for(const x of [-5.405,14.295]) {
+  for(const x of [-7,7]) {
     const panel=B.MeshBuilder.CreateBox('Equalizer backing',{width:3.7,height:4.8,depth:.08},scene);
-    panel.position.set(x,4.8,-10.62);panel.material=backing;panel.isPickable=false;
+    panel.position.set(x,3.25,20.45);panel.material=backing;panel.isPickable=false;
   }
   let bands=[];
   bars.updateParticle=p=>{
     const column=Math.floor(p.idx/14),i=column%12,side=column<12?-1:1,level=p.idx%14;
     const energy=bands[i]||0;
     p.isVisible=level<Math.max(1,Math.round(energy*14));
-    // Forward of the screen and west deck, so the left bank clears the stairs.
-    p.position.set(side<0?-7+i*.29:12.7+i*.29,2.6+level*.32,-10.5);
+    // Face into the room from the entrance wall, clear of the central doorway.
+    p.position.set(side<0?-8.595+i*.29:5.405+i*.29,1.05+level*.32,20.32);
     p.color ||= new B.Color4();
     const blend=level/13;
     if(side<0)p.color.set(1,.64-.44*blend,.08+.38*blend,1);

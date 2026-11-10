@@ -325,7 +325,7 @@ function laserBlackouts(start) {
 function peripheralLighting(B,scene) {
   const calm=matchMedia('(prefers-reduced-motion: reduce)');
   const rig=new B.TransformNode('entry and wall lighting',scene);
-  const stations=[[-6,6.2,20],[6,6.2,20],[-20,6.8,-3],[20,6.8,-3],[-18,6.8,7],[18,6.8,7],[-17.8,6.8,16],[17.8,6.8,16]];
+  const stations=[[-6,7.0,19.2],[6,7.0,19.2],[-15.8,7.4,-2],[15.8,7.4,-2],[-14.8,7.4,8],[14.8,7.4,8],[-16.7,7.4,16],[16.7,7.4,16]];
   const housing=paint(B,scene,'peripheral fixture graphite','#252235');
   const lens=paint(B,scene,'peripheral fixture lens','#fff0d5');lens.disableLighting=true;
   const texture=new B.DynamicTexture('peripheral soft falloff',64,scene,false);
@@ -341,7 +341,7 @@ function peripheralLighting(B,scene) {
     const glass=attach(B.MeshBuilder.CreateSphere('wall downlight lens',{diameter:.25,segments:6},scene),rig,lens);
     glass.position.copyFrom(origin);
     const ink=paint(B,scene,'peripheral broad beam',i%2?'#d8d3ff':'#fff0d5');
-    ink.disableLighting=true;ink.alphaMode=B.Engine.ALPHA_ADD;ink.alpha=.045;
+    ink.disableLighting=true;ink.alphaMode=B.Engine.ALPHA_ADD;ink.alpha=.085;
     const cone=attach(B.MeshBuilder.CreateCylinder('wall downward light cone',{height:1,diameterBottom:.14,diameterTop:4.3,tessellation:16,cap:B.Mesh.NO_CAP},scene),rig,ink);
     cone.rotationQuaternion=new B.Quaternion();
     const poolInk=paint(B,scene,'peripheral floor glow','#fff0dc');
@@ -350,20 +350,20 @@ function peripheralLighting(B,scene) {
     return {origin,body,glass,cone,pool,ink,poolInk};
   });
   const smokeInk=paint(B,scene,'peripheral descending haze','#a8a6b8');
-  smokeInk.disableLighting=true;smokeInk.opacityTexture=texture;smokeInk.alpha=.19;smokeInk.backFaceCulling=false;
+  smokeInk.disableLighting=true;smokeInk.opacityTexture=texture;smokeInk.alpha=.27;smokeInk.backFaceCulling=false;
   const smoke=new B.SolidParticleSystem('entry wall and lounge haze',scene);
   const puff=B.MeshBuilder.CreatePlane('peripheral haze template',{size:1},scene);
-  smoke.addShape(puff,stations.length*24);puff.dispose();
+  smoke.addShape(puff,stations.length*32);puff.dispose();
   const cloud=smoke.buildMesh();cloud.parent=rig;cloud.material=smokeInk;cloud.isPickable=false;cloud.hasVertexAlpha=true;smoke.billboard=true;
   let time=0;
   const noise=(i,s)=>{const n=Math.sin(i*127.1+s*311.7)*43758.5453;return n-Math.floor(n);};
   smoke.updateParticle=p=>{
-    const station=Math.floor(p.idx/24),[x,y,z]=stations[station];
+    const station=Math.floor(p.idx/32),[x,y,z]=stations[station];
     const age=((time-station*.43-noise(p.idx,1)*3.4)%6+6)%6;
     p.isVisible=age<4.2;if(!p.isVisible)return p;
     const inward=x>0?-1:1;
-    p.position.set(x+inward*age*.20+(noise(p.idx,2)-.5)*(.4+age*.42),y-.12-age*.95,z+(noise(p.idx,3)-.5)*(.4+age*.55));
-    p.scaling.setAll(.45+age*.45);p.rotation.z=noise(p.idx,4)*6.28;
+    p.position.set(x+inward*age*.20+(noise(p.idx,2)-.5)*(.4+age*.42),y-.12-age*1.05,z+(noise(p.idx,3)-.5)*(.4+age*.55));
+    p.scaling.setAll(.65+age*.55);p.rotation.z=noise(p.idx,4)*6.28;
     p.color ||= new B.Color4(1,1,1,1);p.color.a=Math.min(1,age*2)*Math.max(0,1-age/4.2);
     return p;
   };
@@ -382,7 +382,7 @@ function peripheralLighting(B,scene) {
       body.rotationQuaternion=cone.rotationQuaternion;
       pool.position.copyFrom(target);
       const strength=strobing?.10:1+.35*energy;
-      ink.alpha=.045*strength;poolInk.alpha=.16*strength;
+      ink.alpha=.085*strength;poolInk.alpha=.18*strength;
     });
   };
 }

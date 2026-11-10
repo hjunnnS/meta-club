@@ -160,19 +160,7 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
     velvet=finish('Lounge jade velvet',(.075,.42,.33),0,.90,(.018,.07,.052))
     welt=finish('Lounge mint piping',(.53,.85,.65),0,.58,(.085,.18,.12))
     marble=finish('Lounge champagne stone',(.76,.52,.31),.12,.37,(.10,.065,.035))
-    # Mount lettering on the inner face of the existing east wall, above the booths.
-    signX=21.16
-    signStart, signEnd=10.15,18.55
-    signBottom,signTop=3.55,5.65
-    box('Lounge sign frame',brass,signX+.01,21.45,signStart-.06,signEnd+.06,signBottom-.06,signTop+.06)
-    signMat=finish('Lounge lettering',(.79,.83,.77),0,.95,(.29,.33,.29))
-    images[signMat]=(Path(__file__).with_name('lounge-sign.png').read_bytes(),
-                     lambda x,y,z:((z-signStart)/(signEnd-signStart),(signTop-y)/(signTop-signBottom)))
-    low=(signX,signBottom,signStart)
-    right=(signX,signBottom,signEnd)
-    high=(signX,signTop,signEnd)
-    tri('Lounge sign face',signMat,low,right,high)
-    tri('Lounge sign face',signMat,low,high,(signX,signTop,signStart))
+    # Keep the lounge wall clear; sofas and table groups remain below.
     for x in [11.1,16.9]:
         for z in [14.0,18.65]:
             octagon('Velvet sofa plinth',brass,x,z,3.9,1.52,.24,.08,.25)
