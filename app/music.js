@@ -33,14 +33,14 @@ function permitted(r, now) {
   );
 }
 const testTracks = [{
-  id: 'club-style-selected',
-  title: 'Club Style 02',
-  file: fileURLToPath(new URL('./fixtures/club-music/club_style_2_60s.mp3', import.meta.url)),
-  duration: 60,
-  bpm: 134,
-  firstBeat: 0,
+  id: 'neon-horizon-treblo',
+  title: 'Neon Horizon · Treblo',
+  file: fileURLToPath(new URL('./fixtures/club-music/neon-horizon-treblo.mp3', import.meta.url)),
+  duration: 208.752,
+  bpm: 132,
+  firstBeat: .23,
   until: null,
-  url: '/media/edm/club-style-selected',
+  url: '/media/edm/neon-horizon-treblo',
 }];
 export function playlist(now = Date.now()) {
   if (localTest) return testTracks.map(({file, ...track}) => track);
