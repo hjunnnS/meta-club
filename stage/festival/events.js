@@ -136,6 +136,11 @@ export function houseScreen(B, scene, broadcast) {
   screen.name = 'EDM house screen';
   screen.scaling.set(1.42, 1.21, 1);
   screen.position.set(3.2, 5.85, -13.95);
+  const flashInk=paint(B,scene,'screen synchronized flash','#fff3df');
+  flashInk.disableLighting=true;flashInk.backFaceCulling=false;
+  const flashPanel=B.MeshBuilder.CreatePlane('screen flash accent',{width:12.8,height:5.3},scene);
+  flashPanel.parent=screen;flashPanel.position.z=.025;flashPanel.material=flashInk;flashPanel.isPickable=false;
+  flashPanel.setEnabled(false);
   const texture = screen.material.emissiveTexture;
   const ctx = texture.getContext();
   if (broadcast) {
@@ -153,7 +158,9 @@ export function houseScreen(B, scene, broadcast) {
     screen.material = material;
   }
   let lastSegment = -1, lastPerformance, lastDim;
-  return (track, beats, visible, accent, gather, calm, phraseBeat, release, cueColor, performanceTitle = null, dimBackground = false) => {
+  return (track, beats, visible, accent, gather, calm, phraseBeat, release, cueColor, performanceTitle = null, dimBackground = false, roomPulse = 0) => {
+    flashInk.alpha=calm?0:roomPulse*.58;
+    flashPanel.setEnabled(visible&&!calm&&roomPulse>.001);
     screen.setEnabled(visible);
     if (!visible) return;
     const segment = track && !performanceTitle ? Math.floor(Math.max(0, phraseBeat) % 32 / 8) : -1;
@@ -597,7 +604,7 @@ export function eventPlayer(B, scene, now = Date.now, fastFlash = () => false) {
       ? hologram(B, scene, root, event.kind)
       : {led: marquee, laser: lasers, phoenix}[event.kind](B, scene, root, event, fastFlash);
     adorn = event.kind === 'led' ? null : celebration(B, scene, root, effects[event.kind].seconds,
-      !particlePreview && event.kind !== 'laser', particlePreview ? event.kind : 'both');
+      !particlePreview && event.kind !== 'laser', particlePreview ? event.kind : 'both', event.bpm || 120);
     tick();
   }
   function tick() {

@@ -36,26 +36,30 @@ export function danceCamera(B, scene) {
 }
 
 // One unit is a musical beat. The supporting leg and the reaching arm alternate every beat.
-export function animateDance(model, action, beats, style) {
+export function animateDance(model, action, beats, style, energy) {
+  const musical=Number.isFinite(energy),drive=musical?Math.max(0,Math.min(1,energy)):0;
   const pointHold = action === 'disco-point';
   const lead = style === 1 ? (pointHold ? 2 : 1) : 0;
   const facing = style === 0 ? -0.23 : style === 1 ? 0.21 : 0;
   const cycle = (beats + lead) * Math.PI;
-  const weight = Math.sin(cycle);
+  const weight = musical?Math.tanh(2.2*Math.sin(cycle))/Math.tanh(2.2):Math.sin(cycle);
   const lift = Math.abs(weight);
   const rebound = Math.sin(2 * cycle - 0.45);
   const side = action === 'side-step', point = action === 'disco-point';
   const accent = Math.tanh(3.6 * Math.sin(cycle / 2));
   model.near.position.x = side ? 0.40 * weight : point ? 0.12 * accent : 0.13 * weight;
   model.near.position.y = side ? -0.065 * lift : point ? 0.065 * lift : 0.11 * rebound;
+  const footPhase=((beats+lead)%1+1)%1;
+  const landing=musical?Math.exp(-footPhase/.13)*(.035+.035*drive):0;
+  model.near.position.y-=landing;
   model.near.rotation.z = side ? -0.18 * weight : point ? -0.19 * accent : 0.2 * weight;
   model.near.rotation.y = facing + (point ? 0.34 : 0.19) * Math.sin(cycle - 0.35);
-  model.torso.rotation.z = 0.11 * Math.sin(cycle - 0.5);
+  model.torso.rotation.z = (0.11+drive*.035) * Math.sin(cycle - (musical?.70:.5));
   model.limbs.forEach((joint, i) => {
     const sign = i < 2 ? -1 : 1;
     const raised = Math.max(0, sign * weight);
     if (i % 2 === 0) {
-      joint.rotation.x = side ? -0.48 + sign * 0.69 * weight : -0.48 + 0.48 * rebound;
+      joint.rotation.x = side ? -0.48 + sign * 0.69 * weight : -0.48 + 0.48 * (musical?Math.sin(2*cycle-.65):rebound);
       joint.rotation.z = sign * (point ? 0.18 + 2.66 * (1 + sign * accent) / 2
         : side ? 0.30 + 0.32 * raised : 0.8 + 0.56 * Math.sin(2 * cycle - sign * 0.42));
     } else {

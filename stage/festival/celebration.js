@@ -1,12 +1,12 @@
 // Deterministic particles share the channel event's elapsed time, including late joins.
-export function celebration(B, scene, root, seconds, holographic = false, selection = 'both') {
+export function celebration(B, scene, root, seconds, holographic = false, selection = 'both', bpm = 120) {
   const ink = new B.StandardMaterial('celebration particles', scene);
   ink.disableLighting = true;
   ink.emissiveColor = B.Color3.White();
   ink.backFaceCulling = false;
   const sparks = new B.SolidParticleSystem('stage fountain sparks', scene);
-  const sparkShape = B.MeshBuilder.CreateSphere('spark template', {diameter: .10, segments: 3}, scene);
-  sparks.addShape(sparkShape, 480);
+  const sparkShape = B.MeshBuilder.CreateSphere('spark template', {diameter: .04, segments: 3}, scene);
+  sparks.addShape(sparkShape, 720);
   sparkShape.dispose();
   const sparkMesh = sparks.buildMesh();
   sparkMesh.parent = root;
@@ -45,18 +45,19 @@ export function celebration(B, scene, root, seconds, holographic = false, select
   }
   let time = 0;
   sparks.updateParticle = p => {
-    const i = p.idx, emitter = Math.floor(i / 80);
-    const age = time - (i % 80) / 80 * 1.10;
+    const i = p.idx, emitter = Math.floor(i / 120), core = i%5!==0;
+    const age = time - (i % 120) / 120 * 1.10;
     const life = 1.10 + noise(i,1)*.50;
     p.isVisible = age >= 0 && age < life;
     if (!p.isVisible) return p;
     const angle = noise(i,2)*Math.PI*2;
     const velocity = 8.5 + noise(i,3)*2.7;
-    p.position.set([-6.3,-4.2,-2.1,2.1,4.2,6.3][emitter] + Math.cos(angle)*age*.90,
+    const spread=core?.18:.90;
+    p.position.set([-6.3,-4.2,-2.1,2.1,4.2,6.3][emitter] + Math.cos(angle)*age*spread,
       1.4 + velocity*age - 4*age*age, -10.05 + Math.sin(angle)*age*.65);
     p.scaling.setAll(.65+noise(i,4));
-    p.scaling.y *= 2.4;
-    p.color = new B.Color4(1, .76+noise(i,5)*.24, .43+noise(i,6)*.55, Math.min(1,(life-age)*5));
+    p.scaling.y *= (core?13:4)*(.85+.15*Math.cos(time*bpm/60*Math.PI*2));
+    p.color = new B.Color4(1, core?.94:.76+noise(i,5)*.24, core?.80:.43+noise(i,6)*.55, Math.min(1,(life-age)*5));
     return p;
   };
   confetti.updateParticle = p => {

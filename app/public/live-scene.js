@@ -314,10 +314,12 @@ export function startLiveScene({
     const beats = trackBeat(playback, t);
     const celebrating = stageEvents.kind === 'led';
     const strobing = stageEvents.strobing;
-    renderCeiling(beats,strobing);
+    const audioBands = performance.now()-spectrumAt<350 && audibleTrack ? spectrum : [];
+    const musicEnergy = Math.min(1,((audioBands[0]||0)+(audioBands[1]||0)+(audioBands[2]||0))/3);
+    renderCeiling(beats,strobing,musicEnergy);
     const previewAge = (performance.now()-strobePreviewStarted)/1000;
     // After either test, leave a normal-light gap before automatic accents resume.
-    const roomPulse = renderAmbience(beats, performance.now()-spectrumAt<350 && audibleTrack ? spectrum : [], strobing, Boolean(audibleTrack), playback?.track.bpm || 120, previewAge<strobeDurations[strobePreviewPattern]+1.6 ? previewAge : null, strobePreviewPattern);
+    const roomPulse = renderAmbience(beats, audioBands, strobing, Boolean(audibleTrack), playback?.track.bpm || 120, previewAge<strobeDurations[strobePreviewPattern]+1.6 ? previewAge : null, strobePreviewPattern);
     if (ambient) ambient.intensity = .52 + roomPulse * 1.65;
     const playing = playback && playback.track.id === audibleTrack;
     // The first beat of each four-beat bar accents both surfaces on the same frame.
@@ -341,12 +343,12 @@ export function startLiveScene({
     for (const end of boothEnds) illuminate(end, cue.rgb, endGlow);
     const lipGlow = ramp(cueBeat - 1.22, .28) * ramp(2.95 - cueBeat, .75);
     for (const lip of stageLips) illuminate(lip, cue.rgb, lipGlow);
-    renderFloor(beats, celebrating, accent, cueBeat, cue.rgb, stageEvents.kind === 'laser' ? 1 : ['phoenix','whale','dragon','jellyfish','butterflies'].includes(stageEvents.kind) ? 2 : 0);
-    updateBoard(playing ? playback.track.title : null, beats, !preview && !celebrating, accent, gather, calmBeats.matches, phraseBeat, wallRelease, cue.hex, stageEvents.kind && stageEvents.kind !== 'led' ? effects[stageEvents.kind].label : null, strobing);
+    renderFloor(beats, celebrating, accent, cueBeat, cue.rgb, stageEvents.kind === 'laser' ? 1 : ['phoenix','whale','dragon','jellyfish','butterflies'].includes(stageEvents.kind) ? 2 : 0, roomPulse);
+    updateBoard(playing ? playback.track.title : null, beats, !preview && !celebrating, accent, gather, calmBeats.matches, phraseBeat, wallRelease, cue.hex, stageEvents.kind && stageEvents.kind !== 'led' ? effects[stageEvents.kind].label : null, strobing, roomPulse);
     const phase = beats * Math.PI * 2,
       beatWave = Math.sin(phase);
     washes.forEach(({ light, base }, i) => {
-      light.intensity = base * (strobing ? .20 : 1) * (dancers ? 1 + 0.38 * Math.sin(phase / 4 + (i * Math.PI) / 2) : 1);
+      light.intensity = base * (strobing ? .20 : 1+roomPulse*1.5) * (dancers ? 1 + 0.38 * Math.sin(phase / 4 + (i * Math.PI) / 2) : 1);
     });
     strips.forEach(({ material, base }, i) => {
       base.scaleToRef(strobing ? .16 : dancers ? 1 + 0.26 * Math.sin(phase / 4 + i * 2) : 1, material.emissiveColor);
@@ -381,7 +383,7 @@ export function startLiveScene({
       if (dances.has(dance)) {
         if (articulated) {
           animateDance(m, dance, response ? .85 + release * .6 : beats,
-            response ? responders.indexOf(a.id) : a.ai && a.trainSlot == null ? a.danceStyle : undefined);
+            response ? responders.indexOf(a.id) : a.ai && a.trainSlot == null ? a.danceStyle : undefined, musicEnergy);
           if (liftWand) {
             const reach = Math.min(1, (gather - .48) * 4);
             const arm = m.limbs[2];
@@ -429,7 +431,7 @@ export function startLiveScene({
       });
     }
     const segment = playing ? Math.floor(phase32 / 8) : -1;
-    animateDance(dj, 'groove', beats);
+    animateDance(dj, 'groove', beats, undefined, musicEnergy);
     if ((segment === 1 || segment === 2) && !preview && !celebrating && now >= nextBroadcast) {
       if (segment === 1) {
         broadcastCamera.position.set(0, 3.03, -13.65);

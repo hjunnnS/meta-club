@@ -21,9 +21,14 @@ export function ceilingLights(B, scene) {
     return ring;
   });
   const calm=matchMedia('(prefers-reduced-motion: reduce)');
-  return (beat,strobing) => {
+  return (beat,strobing,energy=0) => {
     rig.setEnabled(!strobing);
     rings.forEach((ring,i)=>{
+      const phase=((beat%32)+32)%32;
+      const hit=!calm.matches&&beat>=32&&phase<4?Math.sin(phase*Math.PI)*Math.exp(-phase*.9)*energy:0;
+      ring.position.y=7.65+i*.24-hit*.28;
+      ring.rotation.z=hit*.09*(i%2?-1:1);
+      ring.rotation.x=hit*.06;
       ring.rotation.y=calm.matches?0:beat*.035*(i%2?-1:1);
       materials[i].alpha=.34+.14*(.5+.5*Math.sin(beat*Math.PI/2+i));
     });
