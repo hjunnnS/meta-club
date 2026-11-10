@@ -129,6 +129,9 @@ for side in (-1,1):
         beam("Pylon trim",violet,(side*x,1.1,-14.65),(side*(x+.65),h,-16.65),.09)
 
 for side, label in [(-1,"West"),(1,"East")]:
+    # The festival east side is an open floor, without the old raised dance pad.
+    if festival and side > 0:
+        continue
     x=side*14.6
     octagon(label+" dance zone",deck,x,6,10.2,11,1.6,0,.045,True)
     for dz in [-3.65,-1.85,0,1.85,3.65]:
@@ -137,8 +140,6 @@ for side, label in [(-1,"West"),(1,"East")]:
     for z in [1.7,10.3]:
         box(label+" threshold",violet,x-3.65,x+3.65,z,z+.13,.055,.07)
     box(label+" zone edge",violet,x+side*4.65-.08,x+side*4.65+.08,2.6,9.4,.05,.09)
-    if festival and side > 0:
-        continue
     # Approach is behind each side zone. A broad opening connects to its upper deck.
     rect(label+" deck ramp",deck,x-1.55,x+1.55,-8,0,4,0,-.01,True)
     for edge in [x-1.5,x+1.5]:
