@@ -1,17 +1,20 @@
 // Music spectrum plus short whole-room lighting pulses; no sparkle particles.
-export const strobeDurations = {normal:1.2, transition:2.3};
+import {strobeDurations,strobeSchedule} from '../../stage/festival/events.js';
+export {strobeDurations};
 export function strobePattern(elapsed, kind = 'transition') {
   if (!Object.hasOwn(strobeDurations,kind) || !Number.isFinite(elapsed) || elapsed < 0 || elapsed >= strobeDurations[kind]) return 0;
   const ms = Math.floor(elapsed * 1000 + .000001);
   if (kind === 'normal') {
-    // Two fast flashes, a gap, repeated in three groups.
-    const groupTime=ms%500;
+    // Paired flashes with breathing gaps for the full five-second look.
+    const groupTime=ms%650;
     return groupTime<200 && Math.floor(groupTime/50)%2===0 ? 1 : 0;
   }
-  if (ms>=1800) return ms>=2100 ? 1 : 0;
-  const start = ms < 600 ? 0 : ms < 1200 ? 600 : 1200;
-  const interval = start === 0 ? 150 : start === 600 ? 100 : 50;
-  return Math.floor((ms-start)/interval)%2 === 0 ? 1 : 0;
+  if(ms<1000)return Math.floor(ms/250)%2===0?1:0;
+  if(ms<2000)return Math.floor((ms-1000)/125)%2===0?1:0;
+  if(ms<4000)return Math.floor((ms-2000)/50)%2===0?1:0;
+  if(ms<5000)return 0;
+  if(ms>=6700)return 1;
+  return (ms-5000)%600<200?1:0;
 }
 
 export function clubAmbience(B, scene) {
@@ -55,9 +58,7 @@ export function clubAmbience(B, scene) {
     const bass=((values[0]||0)+(values[1]||0)+(values[2]||0))/3;
     if (bass<.02) return 0;
     // Normal accent halfway through the phrase; the large accent owns its transition.
-    const phase=((beat%32)+32)%32;
-    const kind=phase<16?'transition':'normal';
-    const elapsed=(phase<16?phase:phase-16)*60/Math.max(1,bpm);
+    const {kind,elapsed}=strobeSchedule(beat,bpm);
     return strobePattern(elapsed,kind)*(.7+.3*bass)*Math.min(1,arrangement);
   };
 }

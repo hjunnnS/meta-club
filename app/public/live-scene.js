@@ -58,7 +58,8 @@ export function startLiveScene({
   function activePeripheralPreview() {
     if(!peripheralPreview)return null;
     const age=(performance.now()-peripheralPreview.start)/1000;
-    if(age>=peripheralTests[peripheralPreview.kind]+.5){peripheralPreview=null;return null;}
+    const duration=peripheralPreview.kind==='strobe-hold'?peripheralPreview.duration:peripheralTests[peripheralPreview.kind];
+    if(age>=duration+.5){peripheralPreview=null;return null;}
     return {kind:peripheralPreview.kind,age};
   }
   let spectrum = [], spectrumAt = 0;
@@ -214,6 +215,8 @@ export function startLiveScene({
     if (kind === 'strobe-preview' && Object.hasOwn(strobeDurations,data)) {
       strobePreviewPattern = data;
       strobePreviewStarted = performance.now();
+      peripheralPreview={kind:'strobe-hold',start:strobePreviewStarted,duration:strobeDurations[data]};
+      stageEvents.stop();
     }
     if (kind === 'music-spectrum' && Array.isArray(data) && data.length === 12) {
       spectrum = data.map(value => Number.isFinite(value) ? Math.max(0,Math.min(1,value)) : 0);
@@ -334,7 +337,8 @@ export function startLiveScene({
     const previewAge = (performance.now()-strobePreviewStarted)/1000;
     // After either test, leave a normal-light gap before automatic accents resume.
     const smokeProtection=peripheralPlan.protectSmoke&&previewAge>=strobeDurations[strobePreviewPattern];
-    const roomPulse = renderAmbience(beats, audioBands, strobing||Boolean(effectPreview)||Boolean(smokeProtection), Boolean(audibleTrack), playback?.track.bpm || 120, previewAge<strobeDurations[strobePreviewPattern]+1.6 ? previewAge : null, strobePreviewPattern,dynamics.level);
+    const effectBlocksStrobe=effectPreview&&effectPreview.kind!=='strobe-hold';
+    const roomPulse = renderAmbience(beats, audioBands, strobing||Boolean(effectBlocksStrobe)||Boolean(smokeProtection), Boolean(audibleTrack), playback?.track.bpm || 120, previewAge<strobeDurations[strobePreviewPattern]+1.6 ? previewAge : null, strobePreviewPattern,dynamics.level);
     if (ambient) ambient.intensity = (smokeProtection?.42:.52) + roomPulse * 1.65;
     // The first beat of each four-beat bar accents both surfaces on the same frame.
     const barPhase = ((beats % 4) + 4) % 4;
