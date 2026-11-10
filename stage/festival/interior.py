@@ -166,11 +166,11 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
             x=-18.15+k*.36+rng.uniform(-.045,.045);h=rng.uniform(.23,.39);m=rng.choice(bottleMats)
             bar_post('Backbar bottles',m,x,y+.08,14.24,.073,h)
             bar_post('Bottle necks',m,x,y+.08+h,14.24,.035,.14)
-    # Extend the open east-wall booth row toward the entrance, keeping the first four IDs.
+    # Extend the open east-wall booth row toward the entrance, numbered from the entrance toward the stage.
     booth=finish('Booth midnight plum',(.17,.065,.25),0,.88,(.015,.005,.025))
     piping=finish('Booth muted cyan',(.08,.52,.64),.15,.5,(.025,.22,.28))
     top=finish('Booth smoked stone',(.10,.08,.17),.28,.32)
-    for index,z in enumerate([-2.0,-6.8,-11.6,-16.2,2.8,7.4,12.0,16.6], start=1):
+    for index,z in enumerate([16.6,12.0,7.4,2.8,-2.0,-6.8,-11.6,-16.2], start=1):
         # Back bench, two returns and an unobstructed central opening toward -X.
         octagon('Wall booth base',ink,19.0,z,3.8,4.4,.20,.01,.17)
         octagon('Wall booth seat',booth,20.05,z,1.12,4.05,.12,.17,.57)
@@ -200,6 +200,29 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
             return [24,12,39]
         images[number]=(png(128,128,number_pixel),lambda x,y,zz,center=z+1.65:((zz-center+.14)/.28,(.49-y)/.26))
         box('Table number '+str(index),number,17.325,17.345,z+1.51,z+1.79,.23,.49)
+    # Full-size speaker stacks on the west pad; the stair approach stays open.
+    for z in [3.6,8.3]:
+        box('West speaker plinth',ink,-19.65,-17.25,z-1.38,z+1.38,.055,.26)
+        box('West speaker cabinet',black,-19.45,-17.55,z-1.18,z+1.18,.26,3.65)
+        for yy in [.29,3.60]:
+            beam('West speaker trim',cyan,(-17.53,yy,z-1.13),(-17.53,yy,z+1.13),.025)
+        for zz in [z-1.15,z+1.15]:
+            beam('West speaker trim',ink,(-17.51,.30,zz),(-17.51,3.6,zz),.055)
+        for yy in [1.0,2.20]:
+            for j in range(32):
+                a,b=j*2*pi/32,(j+1)*2*pi/32
+                edge_a=(-17.47,yy+.53*math.cos(a),z+.53*math.sin(a))
+                edge_b=(-17.47,yy+.53*math.cos(b),z+.53*math.sin(b))
+                beam('West speaker woofer rim',silver,edge_a,edge_b,.025)
+                tri('West speaker woofer',indigo,(-17.52,yy,z),edge_a,edge_b)
+                cap_a=(-17.49,yy+.17*math.cos(a),z+.17*math.sin(a))
+                cap_b=(-17.49,yy+.17*math.cos(b),z+.17*math.sin(b))
+                tri('West speaker dust cap',black,(-17.40,yy,z),cap_a,cap_b)
+        box('West speaker horn',silver,-17.54,-17.50,z-.88,z+.88,2.91,3.38)
+        box('West speaker horn mouth',black,-17.49,-17.47,z-.75,z+.75,2.99,3.30)
+        for j in range(7):
+            zz=z-.66+j*.22
+            beam('West speaker horn grille',ink,(-17.45,3.01,zz),(-17.45,3.28,zz),.018)
     # Rotate the existing bar pendants with the counter and bottle display.
     for x,z in [(-17,15),(-11,15)]:
         bar_post('Pendant cable',ink,x,3.3,z,.022,4.3)

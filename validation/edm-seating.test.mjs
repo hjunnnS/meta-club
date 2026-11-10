@@ -24,6 +24,7 @@ test('numbered booths synchronize seating, protect occupied seats and exit to th
     const booths=edmSeats.map((s,index)=>({...s,index})).filter(s=>s.table);
     assert.equal(booths.length,24);
     assert.deepEqual([...new Set(booths.map(s=>s.table))],[1,2,3,4,5,6,7,8]);
+    assert.deepEqual(booths.filter(s=>s.x===20.05).map(s=>s.z),[16.6,12,7.4,2.8,-2,-6.8,-11.6,-16.2]);
     assert.equal(edmArea({x:14.6,y:0,z:6}).tier,1);
     assert(permittedPath({x:16.6,y:0,z:-1},{x:16.6,y:0,z:18.25},['CLOSED','CLOSED']));
     // Reject a forged long-distance target before moving any actor.
