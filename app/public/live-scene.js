@@ -59,13 +59,26 @@ export function startLiveScene({
   const cueColors = ['#e587ff', '#54ffe1', '#ff82cb', '#80b8ff'].map(hex => ({
     hex, rgb: B.Color3.FromHexString(hex),
   }));
-  const boothBand = B.MeshBuilder.CreateBox('DJ booth phrase band', { width: 6, height: .47, depth: .016 }, scene);
-  boothBand.position.set(0, 1.98, -14.85);
-  boothBand.isPickable = false;
-  const boothInk = new B.StandardMaterial('DJ booth phrase color', scene);
-  boothInk.disableLighting = true;
-  boothBand.material = boothInk;
-  boothBand.setEnabled(false);
+  // Overlays follow the existing booth face and the two lips flanking its access ramp.
+  function lightStrip(name, x, y, z, width, height) {
+    const mesh = B.MeshBuilder.CreateBox(name, {width, height, depth: .032}, scene);
+    mesh.position.set(x, y, z);
+    mesh.isPickable = false;
+    const ink = new B.StandardMaterial(name, scene);
+    ink.disableLighting = true;
+    mesh.material = ink;
+    mesh.setEnabled(false);
+    return mesh;
+  }
+  const boothFace = lightStrip('Booth center fill', 0, 1.91, -14.84, 5.98, .79);
+  const boothEnds = [-1, 1].map(side => lightStrip('Booth end glow', side*2.77, 1.91, -14.79, .45, .79));
+  const stageLips = [-1, 1].map(side => lightStrip('Stage lip cue', side*4.225, 1.15, -9.985, 4.05, .34));
+  function illuminate(mesh, color, level) {
+    mesh.setEnabled(level > 0);
+    if (level <= 0) return;
+    mesh.material.emissiveColor.copyFrom(color);
+    mesh.material.alpha = level * (calmBeats.matches ? .4 : .92);
+  }
   const stageEvents = eventPlayer(B, scene, () => Date.now() + offset, () => fastFlash);
   const view = playerView(B, scene, cam, canvas, eyeHeight, document.body, { followDistance: 7.1, followLift: 0.47, followFov: 1.23, maxDistance: 24 });
   const viewDance = danceCamera(B, scene);
@@ -264,13 +277,16 @@ export function startLiveScene({
     // Pick the upcoming phrase's color during the pickup and keep it through the release.
     const cue = cueColors[Math.floor((Math.max(0, phraseBeat) + 2) / 32) % cueColors.length];
     const wallRelease = preview || celebrating ? -1 : release;
-    const bandLevel = Math.max(0, 1 - Math.abs(wallRelease - .28) / .22);
-    boothBand.setEnabled(bandLevel > 0);
-    if (bandLevel > 0) {
-      boothInk.emissiveColor.copyFrom(cue.rgb);
-      boothInk.alpha = bandLevel * (calmBeats.matches ? .38 : .88);
-    }
-    renderFloor(beats, celebrating, accent, release, cue.rgb);
+    // Times are measured in beats after the wall opens. Let neighboring surfaces overlap.
+    const cueBeat = playing && phraseBeat >= 32 && !preview && !celebrating ? phase32 : -1;
+    const ramp = (value, span) => Math.max(0, Math.min(1, value / span));
+    boothFace.scaling.x = Math.max(.001, ramp(cueBeat - .10, .90));
+    illuminate(boothFace, cue.rgb, ramp(cueBeat - .10, .18) * ramp(1.85 - cueBeat, .8));
+    const endGlow = ramp(cueBeat - .86, .16) * ramp(4.2 - cueBeat, .75);
+    for (const end of boothEnds) illuminate(end, cue.rgb, endGlow);
+    const lipGlow = ramp(cueBeat - 1.22, .28) * ramp(2.95 - cueBeat, .75);
+    for (const lip of stageLips) illuminate(lip, cue.rgb, lipGlow);
+    renderFloor(beats, celebrating, accent, cueBeat, cue.rgb);
     updateBoard(playing ? playback.track.title : null, beats, !preview && !celebrating, accent, gather, calmBeats.matches, phraseBeat, wallRelease, cue.hex);
     const phase = beats * Math.PI * 2,
       beatWave = Math.sin(phase);
