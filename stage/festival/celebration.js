@@ -6,7 +6,7 @@ export function celebration(B, scene, root, seconds, holographic = false, select
   ink.backFaceCulling = false;
   const sparks = new B.SolidParticleSystem('stage fountain sparks', scene);
   const sparkShape = B.MeshBuilder.CreateSphere('spark template', {diameter: .10, segments: 3}, scene);
-  sparks.addShape(sparkShape, 240);
+  sparks.addShape(sparkShape, 480);
   sparkShape.dispose();
   const sparkMesh = sparks.buildMesh();
   sparkMesh.parent = root;
@@ -14,7 +14,7 @@ export function celebration(B, scene, root, seconds, holographic = false, select
   sparkMesh.isPickable = false;
   const confetti = new B.SolidParticleSystem('audience confetti', scene);
   const paper = B.MeshBuilder.CreatePlane('paper template', {width: .15, height: .24}, scene);
-  confetti.addShape(paper, 260);
+  confetti.addShape(paper, 520);
   paper.dispose();
   const paperMesh = confetti.buildMesh();
   paperMesh.parent = root;
@@ -45,29 +45,30 @@ export function celebration(B, scene, root, seconds, holographic = false, select
   }
   let time = 0;
   sparks.updateParticle = p => {
-    const i = p.idx, emitter = Math.floor(i / 60);
-    const age = time - (i % 60) / 60 * 1.45;
-    const life = .65 + noise(i,1)*.55;
+    const i = p.idx, emitter = Math.floor(i / 80);
+    const age = time - (i % 80) / 80 * 1.10;
+    const life = 1.10 + noise(i,1)*.50;
     p.isVisible = age >= 0 && age < life;
     if (!p.isVisible) return p;
     const angle = noise(i,2)*Math.PI*2;
-    const velocity = 4.6 + noise(i,3)*2.4;
-    p.position.set([-5.6,-2.8,2.8,5.6][emitter] + Math.cos(angle)*age*.55,
-      1.4 + velocity*age - 4*age*age, -10.05 + Math.sin(angle)*age*.55);
+    const velocity = 8.5 + noise(i,3)*2.7;
+    p.position.set([-6.3,-4.2,-2.1,2.1,4.2,6.3][emitter] + Math.cos(angle)*age*.90,
+      1.4 + velocity*age - 4*age*age, -10.05 + Math.sin(angle)*age*.65);
     p.scaling.setAll(.65+noise(i,4));
+    p.scaling.y *= 2.4;
     p.color = new B.Color4(1, .76+noise(i,5)*.24, .43+noise(i,6)*.55, Math.min(1,(life-age)*5));
     return p;
   };
   confetti.updateParticle = p => {
     const i=p.idx;
     const age = time - (seconds - 7) - noise(i,7)*1.1;
-    const y = 6.7 - age*(.85+noise(i,8)*.30);
+    const y = 7.6 - age*(.95+noise(i,8)*.30);
     p.isVisible = age >= 0 && y > .15;
     if (!p.isVisible) return p;
-    // Keep the east lounge wall and its sign clear; confetti falls over the audience circle.
-    const angle=noise(i,9)*Math.PI*2, radius=1.3+noise(i,10)*5.8;
-    p.position.set(Math.cos(angle)*radius + .45*Math.sin(age*1.7+i),
-      y, 2+Math.sin(angle)*radius + age*.27);
+    // Cover the floor and its open approaches, short of the lounge sign at x=21.16.
+    const angle=noise(i,9)*Math.PI*2, radius=Math.sqrt(noise(i,10));
+    p.position.set(Math.cos(angle)*radius*12 + .65*Math.sin(age*1.7+i),
+      y, 2+Math.sin(angle)*radius*10 + age*.22);
     p.rotation.set(age*(1+noise(i,11)*3), age*.9+i, age*1.4+i);
     const c=palette[i%palette.length];
     p.color=new B.Color4(c.r,c.g,c.b,Math.min(1,age*3,y*2));
@@ -79,7 +80,7 @@ export function celebration(B, scene, root, seconds, holographic = false, select
       glitterMesh.setEnabled(elapsed<2.3 || elapsed>seconds-2.8);
       if(glitterMesh.isEnabled())glitter.setParticles();
     }
-    sparkMesh.setEnabled(selection !== 'confetti' && elapsed < 2.7);
+    sparkMesh.setEnabled(selection !== 'confetti' && elapsed < 2.9);
     if (sparkMesh.isEnabled()) sparks.setParticles();
     paperMesh.setEnabled(selection !== 'fountain' && elapsed >= seconds-7);
     if (paperMesh.isEnabled()) confetti.setParticles();

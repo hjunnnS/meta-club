@@ -161,12 +161,14 @@ for side, label in [(-1,"West"),(1,"East")]:
 # Frame the side rooms on their outer edges; their inner thresholds stay open.
 for side in (-1,1):
     x=side*19.6
-    for z in [2.6,5.0,7.4,9.8]:
-        box("Side room fins",metal,x-.20,x+.20,z-.20,z+.20,0,2.2)
-    beam("Side room header",violet,(x,2.2,2.6),(x,2.2,9.8),.13)
-    box("Side room parapet",wall,x-.12,x+.12,2.6,9.8,.05,.82)
-    for z in [2.6,9.8]:
-        beam("Side room return",rim,(x,2.2,z),(x-side*2.4,1.45,z),.13)
+    # The east lounge stays open; retain its floor and route inlays below.
+    if not (festival and side > 0):
+        for z in [2.6,5.0,7.4,9.8]:
+            box("Side room fins",metal,x-.20,x+.20,z-.20,z+.20,0,2.2)
+        beam("Side room header",violet,(x,2.2,2.6),(x,2.2,9.8),.13)
+        box("Side room parapet",wall,x-.12,x+.12,2.6,9.8,.05,.82)
+        for z in [2.6,9.8]:
+            beam("Side room return",rim,(x,2.2,z),(x-side*2.4,1.45,z),.13)
     for r in [9.5,10.1]:
         start=-.9 if side==1 else P-.9
         ring("Arena apron",violet,r,r+.12,start,start+1.8,.002,.028,32)
