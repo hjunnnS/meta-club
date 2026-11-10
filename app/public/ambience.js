@@ -1,13 +1,12 @@
 // Music spectrum plus short whole-room lighting pulses; no sparkle particles.
-import {strobeDurations,strobeSchedule} from '../../stage/festival/events.js';
+import {strobeDurations,strobeSchedule,pairedFlash} from '../../stage/festival/events.js';
 export {strobeDurations};
 export function strobePattern(elapsed, kind = 'transition') {
   if (!Object.hasOwn(strobeDurations,kind) || !Number.isFinite(elapsed) || elapsed < 0 || elapsed >= strobeDurations[kind]) return 0;
   const ms = Math.floor(elapsed * 1000 + .000001);
   if (kind === 'normal') {
     // Paired flashes with breathing gaps for the full five-second look.
-    const groupTime=ms%650;
-    return groupTime<200 && Math.floor(groupTime/50)%2===0 ? 1 : 0;
+    return pairedFlash(elapsed);
   }
   if(ms<1000)return Math.floor(ms/250)%2===0?1:0;
   if(ms<2000)return Math.floor((ms-1000)/125)%2===0?1:0;

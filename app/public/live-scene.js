@@ -150,7 +150,7 @@ export function startLiveScene({
     .filter((l) => l.name.startsWith('Stage wash'))
     .map((light) => ({ light, base: light.intensity }));
   const strips = scene.materials
-    .filter((m) => ['Orchid LED', 'Ice LED', 'Rose LED', 'Ultraviolet guide', 'Glacier guide', 'Fuchsia guide', 'Muted violet truss strip', 'LED / chromatic vortex'].includes(m.name))
+    .filter((m) => ['Orchid LED', 'Ice LED', 'Rose LED', 'Ultraviolet guide', 'Glacier guide', 'Fuchsia guide', 'LED / chromatic vortex'].includes(m.name))
     .map((material) => ({ material, base: material.emissiveColor.clone() }));
   // The west-side reactive guest already carries a wand beside the entry group.
   const wandGuest = 'ai-3';
@@ -333,12 +333,12 @@ export function startLiveScene({
     const strobing = stageEvents.strobing;
     const audioBands = performance.now()-spectrumAt<350 && audibleTrack ? spectrum : [];
     const musicEnergy = Math.min(1,((audioBands[0]||0)+(audioBands[1]||0)+(audioBands[2]||0))/3);
-    renderCeiling(beats,strobing,musicEnergy);
     const previewAge = (performance.now()-strobePreviewStarted)/1000;
     // After either test, leave a normal-light gap before automatic accents resume.
     const smokeProtection=peripheralPlan.protectSmoke&&previewAge>=strobeDurations[strobePreviewPattern];
     const effectBlocksStrobe=effectPreview&&effectPreview.kind!=='strobe-hold';
     const roomPulse = renderAmbience(beats, audioBands, strobing||Boolean(effectBlocksStrobe)||Boolean(smokeProtection), Boolean(audibleTrack), playback?.track.bpm || 120, previewAge<strobeDurations[strobePreviewPattern]+1.6 ? previewAge : null, strobePreviewPattern,dynamics.level);
+    renderCeiling(beats,strobing,musicEnergy,roomPulse);
     if (ambient) ambient.intensity = (smokeProtection?.42:.52) + roomPulse * 1.65;
     // The first beat of each four-beat bar accents both surfaces on the same frame.
     const barPhase = ((beats % 4) + 4) % 4;

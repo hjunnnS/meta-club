@@ -5,6 +5,7 @@ export function celebration(B, scene, root, seconds, holographic = false, select
   ink.emissiveColor = B.Color3.White();
   ink.backFaceCulling = false;
   const sparks = new B.SolidParticleSystem('stage fountain sparks', scene);
+  sparks.computeBoundingBox=true;
   const sparkShape = B.MeshBuilder.CreateSphere('spark template', {diameter: .04, segments: 3}, scene);
   sparks.addShape(sparkShape, 720);
   sparkShape.dispose();
@@ -13,6 +14,7 @@ export function celebration(B, scene, root, seconds, holographic = false, select
   sparkMesh.material = ink;
   sparkMesh.isPickable = false;
   const confetti = new B.SolidParticleSystem('audience confetti', scene);
+  confetti.computeBoundingBox=true;
   const paper = B.MeshBuilder.CreatePlane('paper template', {width: .15, height: .24}, scene);
   confetti.addShape(paper, 520);
   paper.dispose();
@@ -65,14 +67,15 @@ export function celebration(B, scene, root, seconds, holographic = false, select
   };
   confetti.updateParticle = p => {
     const i=p.idx;
-    const age = time - (seconds - 7) - noise(i,7)*1.1;
-    const y = 7.6 - age*(.95+noise(i,8)*.30);
+    const age = time - (seconds - 7) - noise(i,7)*.18;
+    const y = 7.4+1.8*Math.min(age,.5)-1.35*Math.max(0,age-.5);
     p.isVisible = age >= 0 && y > .15;
     if (!p.isVisible) return p;
-    // Cover the floor and its open approaches, short of the lounge sign at x=21.16.
-    const angle=noise(i,9)*Math.PI*2, radius=Math.sqrt(noise(i,10));
-    p.position.set(Math.cos(angle)*radius*12 + .65*Math.sin(age*1.7+i),
-      y, 2+Math.sin(angle)*radius*10 + age*.22);
+    // Eight bursts around the ceiling rings: outward launch, then flutter down.
+    const emitter=(i%8)*Math.PI/4,angle=emitter+(noise(i,9)-.5)*.8;
+    const travel=(2+noise(i,10)*3.6)*(1-Math.exp(-age*3))+age*.15;
+    p.position.set(6*Math.cos(emitter)+Math.cos(angle)*travel+.35*Math.sin(age*1.7+i),
+      y,1+6*Math.sin(emitter)+Math.sin(angle)*travel+.35*Math.sin(age*1.3+i));
     p.rotation.set(age*(1+noise(i,11)*3), age*.9+i, age*1.4+i);
     const c=palette[i%palette.length];
     p.color=new B.Color4(c.r,c.g,c.b,Math.min(1,age*3,y*2));

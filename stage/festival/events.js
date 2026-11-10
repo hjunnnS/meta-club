@@ -322,6 +322,15 @@ function laserBlackouts(start) {
 }
 
 export const strobeDurations={normal:5,transition:7};
+export function pairedFlash(elapsed) {
+  const ms=Math.floor(elapsed*1000+.000001),phase=((ms%650)+650)%650;
+  return phase<200&&Math.floor(phase/50)%2===0?1:0;
+}
+export function washLook(elapsed,flashTime=elapsed-1) {
+  if(elapsed<0||elapsed>=4)return 0;
+  if(elapsed>=1&&elapsed<3)return pairedFlash(flashTime);
+  return Math.min(1,elapsed/.25,(4-elapsed)/.6);
+}
 export function strobeSchedule(beat,bpm=120) {
   const period=32*60/Math.max(1,bpm),cycle=Math.floor(beat/32);
   const seconds=(((beat%32)+32)%32)*60/Math.max(1,bpm);
@@ -337,17 +346,17 @@ export function peripheralCue(beat,bpm=120,preview=null,playing=true,arrangement
   if(preview) {
     const {kind,age}=preview,seconds=peripheralTests[kind];
     const active=Number.isFinite(age)&&age>=0&&age<seconds;
-    const level=active?fade(age,0,.25)*(1-fade(age,seconds-.6,seconds)):0;
+    const level=kind==='wash'?washLook(age):active?fade(age,0,.25)*(1-fade(age,seconds-.6,seconds)):0;
     return {smokeTime:age,smoke:active&&kind==='smoke',laser:kind==='laser'?level:0,wash:kind==='wash'?level:0,preview:true,protectSmoke:active&&kind==='smoke'};
   }
   if(!playing||beat<0)return {smokeTime:0,smoke:false,laser:0,wash:0,preview:false};
   const phase=((beat%32)+32)%32;
-  const {smokeTime}=strobeSchedule(beat,bpm);
+  const timing=strobeSchedule(beat,bpm),{smokeTime}=timing;
   if(arrangement<.55)return {smokeTime:0,smoke:false,laser:0,wash:.16+.10*(.5+.5*Math.sin(beat*Math.PI/8)),preview:false,protectSmoke:false};
   const strong=arrangement>=.82;
   return {smokeTime,smoke:strong&&smokeTime>=0&&smokeTime<5.5,
     laser:fade(phase,9,11)*(1-fade(phase,20,24))*(strong?1:.40),
-    wash:(.15+.85*fade(phase,18,22)*(1-fade(phase,28,32)))*(strong?1:.65),preview:false,
+    wash:washLook((phase-18)*60/Math.max(1,bpm),timing.elapsed)*(strong?1:.65),preview:false,
     protectSmoke:strong&&smokeTime>=-.15&&smokeTime<2.0};
 }
 
@@ -401,8 +410,8 @@ function peripheralLighting(B,scene) {
     const nozzle=attach(B.MeshBuilder.CreateCylinder('arena smoke nozzle',{height:.12,diameter:.17,tessellation:8},scene),rig,housing);
     nozzle.position.set(position[0],.06,position[2]);return position;
   });
-  const smokeInk=paint(B,scene,'arena upward smoke','#d5d8df',.4);
-  smokeInk.disableLighting=true;smokeInk.opacityTexture=texture;smokeInk.alpha=.18;smokeInk.backFaceCulling=false;
+  const smokeInk=paint(B,scene,'arena upward smoke','#ffffff',.95);
+  smokeInk.disableLighting=true;smokeInk.opacityTexture=texture;smokeInk.alpha=.30;smokeInk.backFaceCulling=false;
   const smoke=new B.SolidParticleSystem('arena upward smoke jets',scene);
   smoke.computeBoundingBox=true;
   const puff=B.MeshBuilder.CreatePlane('peripheral haze template',{size:1},scene);
@@ -421,7 +430,7 @@ function peripheralLighting(B,scene) {
     const jet=age<.7;
     p.scaling.set(jet?.40+age*.4:.68+age*.60,jet?1.9:1.2+age*.3,1);
     p.rotation.z=(noise(p.idx,4)-.5)*.30;
-    p.color ||= new B.Color4(1,1,1,1);p.color.a=Math.min(1,age*3)*Math.pow(Math.max(0,1-age/4.2),.75);
+    p.color ||= new B.Color4(1,1,1,1);p.color.a=Math.min(1,age*3)*Math.pow(Math.max(0,1-age/4.2),.75)*Math.exp(-age*.55);
     return p;
   };
   const target=new B.Vector3(),direction=new B.Vector3();
