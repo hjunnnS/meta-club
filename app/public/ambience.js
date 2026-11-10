@@ -25,7 +25,7 @@ export function clubAmbience(B, scene) {
     bars.setParticles();
     if (strobing || calm.matches) return 0;
     if (previewAge !== null) {
-      return previewAge>=0 && previewAge<1.6 && Math.floor(previewAge/.1)%2===0 ? 1 : 0;
+      return previewAge>=0 && previewAge<1.6 && Math.floor(previewAge/.05)%2===0 ? 1 : 0;
     }
     if (!playing) return 0;
     const bass=((values[0]||0)+(values[1]||0)+(values[2]||0))/3;
@@ -34,6 +34,6 @@ export function clubAmbience(B, scene) {
     const phase=((beat%32)+32)%32;
     const elapsed=phase*60/Math.max(1,bpm);
     if (elapsed>=1.6) return 0;
-    return Math.floor(elapsed/.1)%2===0 ? .7+.3*bass : 0;
+    return Math.floor(elapsed/.05)%2===0 ? .7+.3*bass : 0;
   };
 }
