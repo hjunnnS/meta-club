@@ -1,4 +1,5 @@
 import { ceilingLights } from './ceiling-lights.js';
+import { clubAmbience } from './ambience.js';
 import { rhythmFloor } from './rhythm-floor.js';
 import { playlistPosition, trackBeat } from './music.js';
 import { effects, eventPlayer, ledScreen, houseScreen, houseLights } from '/stage/festival/events.js';
@@ -50,6 +51,8 @@ export function startLiveScene({
     offset = 0;
   markLoungeWalk(B, scene);
   const renderCeiling = ceilingLights(B,scene);
+  const renderAmbience = clubAmbience(B,scene);
+  let spectrum = [], spectrumAt = 0;
   const renderFloor = rhythmFloor(B, scene);
   const renderHouseLights = houseLights(B, scene);
   const ambient = scene.getLightByName('ambient');
@@ -196,6 +199,10 @@ export function startLiveScene({
       offset = data.offset;
     }
     if (kind === 'audible-track') audibleTrack = data;
+    if (kind === 'music-spectrum' && Array.isArray(data) && data.length === 12) {
+      spectrum = data.map(value => Number.isFinite(value) ? Math.max(0,Math.min(1,value)) : 0);
+      spectrumAt = performance.now();
+    }
     if (kind === 'other-wands') otherWands = data;
     if (kind === 'fast-flash') fastFlash = data === true;
     if (kind === 'led-preview') showPreview(data);
@@ -302,6 +309,7 @@ export function startLiveScene({
     const celebrating = stageEvents.kind === 'led';
     const strobing = stageEvents.strobing;
     renderCeiling(beats,strobing);
+    renderAmbience(performance.now()/1000, performance.now()-spectrumAt<350 && audibleTrack ? spectrum : [], strobing);
     const playing = playback && playback.track.id === audibleTrack;
     // The first beat of each four-beat bar accents both surfaces on the same frame.
     const barPhase = ((beats % 4) + 4) % 4;

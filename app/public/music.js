@@ -19,7 +19,7 @@ export function trackBeat(position, fallbackSeconds) {
 }
 
 export function musicPlayer(notice, playing, failed) {
-  let ctx,
+  let ctx, analyser, frequencies,
     source,
     started = 0,
     offset = 0,
@@ -120,7 +120,7 @@ export function musicPlayer(notice, playing, failed) {
       source = ctx.createBufferSource();
       source.buffer = buffer;
       source.loop = true;
-      source.connect(ctx.destination);
+      source.connect(analyser);
       started = correctionEnd = ctx.currentTime;
       offset = actual.time;
       rate = 1;
@@ -146,6 +146,13 @@ export function musicPlayer(notice, playing, failed) {
     async start() {
       try {
         ctx ??= new AudioContext();
+        if (!analyser) {
+          analyser = ctx.createAnalyser();
+          analyser.fftSize = 512;
+          analyser.smoothingTimeConstant = .72;
+          frequencies = new Uint8Array(analyser.frequencyBinCount);
+          analyser.connect(ctx.destination);
+        }
         await ctx.resume();
         enabled = true;
         await sync();
@@ -160,6 +167,19 @@ export function musicPlayer(notice, playing, failed) {
       sync();
     },
     tick: sync,
+    spectrum() {
+      const bands = Array(12).fill(0);
+      if (!source || !current || ctx?.state !== 'running' || lastFailure) return bands;
+      analyser.getByteFrequencyData(frequencies);
+      // Logarithmic bands from bass through treble, measured from the audible source.
+      const edges = [1,2,3,5,8,12,18,27,40,60,90,140,256];
+      for (let i=0;i<12;i++) {
+        let energy=0;
+        for(let j=edges[i];j<edges[i+1];j++) energy+=frequencies[j];
+        bands[i]=energy/((edges[i+1]-edges[i])*255);
+      }
+      return bands;
+    },
     beat: () => trackBeat(target(), (Date.now() + clockOffset - epoch) / 1000),
     reset() {
       stop();
