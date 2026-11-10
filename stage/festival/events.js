@@ -122,7 +122,7 @@ function playWall(ctx, beat) {
   ctx.fillRect(0,0,1024,384);
 }
 
-export function houseScreen(B, scene) {
+export function houseScreen(B, scene, broadcast) {
   let title, overlay, lastFrame = -1;
   const screen = ledScreen(B, scene, 'EDM CLUB');
   screen.name = 'EDM house screen';
@@ -130,13 +130,31 @@ export function houseScreen(B, scene) {
   screen.position.set(3.2, 5.85, -13.95);
   const texture = screen.material.emissiveTexture;
   const ctx = texture.getContext();
+  if (broadcast) {
+    const material = new B.ShaderMaterial('EDM program screen', scene, {
+      vertexSource: 'precision highp float; attribute vec3 position; attribute vec2 uv; uniform mat4 worldViewProjection; varying vec2 vUV; void main(){vUV=uv;gl_Position=worldViewProjection*vec4(position,1.);}',
+      fragmentSource: `precision highp float; varying vec2 vUV; uniform sampler2D artwork; uniform sampler2D feed; uniform float live;
+        void main(){vec4 bg=texture2D(artwork,vUV);vec4 video=texture2D(feed,vUV);
+        float edge=smoothstep(.08,.18,vUV.x)*(1.-smoothstep(.82,.92,vUV.x));
+        gl_FragColor=vec4(mix(bg.rgb,video.rgb,live*edge*video.a),1.);}`
+    }, {attributes:['position','uv'],uniforms:['worldViewProjection','live'],samplers:['artwork','feed']});
+    material.setTexture('artwork', texture);
+    material.setTexture('feed', broadcast);
+    material.backFaceCulling = false;
+    screen.material.dispose();
+    screen.material = material;
+  }
+  let lastSegment = -1;
   return (track, beats, visible, accent, gather, calm, phraseBeat, release, cueColor) => {
     screen.setEnabled(visible);
     if (!visible) return;
+    const segment = track ? Math.floor(Math.max(0, phraseBeat) % 32 / 8) : -1;
+    if (broadcast) screen.material.setFloat('live', segment === 1 || segment === 2 ? 1 : 0);
     const frame = Math.floor(beats * 12);
-    if (title !== track) {
+    if (title !== track || lastSegment !== segment) {
       title = track;
-      overlay = track ? lettering(track, 'EDM CLUB') : lettering('EDM CLUB');
+      lastSegment = segment;
+      overlay = segment === 1 || segment === 2 ? null : track ? lettering(track, 'EDM CLUB') : lettering('EDM CLUB');
     } else if (lastFrame === frame) return;
     lastFrame = frame;
     if (track) playWall(ctx, calm ? 0 : Math.max(0, phraseBeat));
@@ -189,7 +207,7 @@ export function houseScreen(B, scene) {
     }
     const contraction = release >= 0 ? Math.min(1, (1 - release) / .55) : gather;
     const scale = 1 - (calm ? .18 : .56) * contraction;
-    ctx.drawImage(overlay, 512*(1-scale), 192*(1-scale), 1024*scale, 384*scale);
+    if (overlay) ctx.drawImage(overlay, 512*(1-scale), 192*(1-scale), 1024*scale, 384*scale);
     texture.update();
   };
 }

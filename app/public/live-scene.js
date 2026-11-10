@@ -55,7 +55,41 @@ export function startLiveScene({
   let tracks = [], audibleTrack = null;
   const calmBeats = matchMedia('(prefers-reduced-motion: reduce)');
   let fastFlash = false, otherWands = true;
-  const updateBoard = houseScreen(B, scene);
+  // One small broadcast target films the existing animated models, excluding the screen itself.
+  const broadcastCamera = new B.FreeCamera('EDM broadcast camera', B.Vector3.Zero(), scene);
+  broadcastCamera.minZ = .08;
+  broadcastCamera.fov = .72;
+  const broadcast = new B.RenderTargetTexture('EDM live broadcast', {width: 768, height: 288}, scene);
+  broadcast.activeCamera = broadcastCamera;
+  broadcast.clearColor = new B.Color4(.025, .012, .065, 0);
+  broadcast.renderList = [];
+  broadcast.refreshRate = 0;
+  scene.customRenderTargets.push(broadcast);
+  const dj = make({id:'house-dj', ai:true, avatar:'indigo', nickname:'DJ', x:0, y:1.35, z:-15.4, yaw:0});
+  dj.label.setEnabled(false);
+  dj.far.setEnabled(false);
+  // Eyes and headphones keep the same block proportions as the default guests.
+  const headphoneInk = new B.StandardMaterial('DJ headphones', scene);
+  headphoneInk.diffuseColor = B.Color3.FromHexString('#211839');
+  const eyeInk = new B.StandardMaterial('DJ eyes', scene);
+  eyeInk.diffuseColor = B.Color3.FromHexString('#20162c');
+  for (const side of [-1,1]) {
+    const eye = B.MeshBuilder.CreateBox('DJ eye', {width:.035,height:.055,depth:.012}, scene);
+    eye.parent = dj.near;
+    eye.position.set(side*.075,1.59,.167);
+    eye.material = eyeInk;
+    const ear = B.MeshBuilder.CreateBox('DJ headphone ear', {width:.065,height:.18,depth:.21}, scene);
+    ear.parent = dj.near;
+    ear.position.set(side*.195,1.56,0);
+    ear.material = headphoneInk;
+  }
+  const headband = B.MeshBuilder.CreateBox('DJ headphone band', {width:.43,height:.055,depth:.12},scene);
+  headband.parent = dj.near;
+  headband.position.set(0,1.74,0);
+  headband.material = headphoneInk;
+  const updateBoard = houseScreen(B, scene, broadcast);
+  let nextBroadcast = 0;
+
   const cueColors = ['#e587ff', '#54ffe1', '#ff82cb', '#80b8ff'].map(hex => ({
     hex, rgb: B.Color3.FromHexString(hex),
   }));
@@ -372,6 +406,29 @@ export function startLiveScene({
               : sign * 0.12
           : 0;
       });
+    }
+    const segment = playing ? Math.floor(phase32 / 8) : -1;
+    animateDance(dj, 'groove', beats);
+    if ((segment === 1 || segment === 2) && !preview && !celebrating && now >= nextBroadcast) {
+      if (segment === 1) {
+        broadcastCamera.position.set(0, 3.03, -13.65);
+        broadcastCamera.setTarget(new B.Vector3(0, 2.88, -15.4));
+        broadcastCamera.fov = .43;
+        broadcast.renderList = dj.near.getChildMeshes();
+      } else {
+        const caller = models.get(wandGuest);
+        const guests = [caller, ...responders.map(id => models.get(id))].filter(m => m && m.actor.trainSlot == null);
+        if (guests.length) {
+          const center = guests.reduce((p,m) => p.add(m.root.position), B.Vector3.Zero()).scale(1/guests.length);
+          center.y += .95;
+          broadcastCamera.position.copyFrom(center).addInPlace(new B.Vector3(11, 1.4, 3.7));
+          broadcastCamera.setTarget(center);
+          broadcastCamera.fov = .65;
+        }
+        broadcast.renderList = guests.flatMap(m => m.near.getChildMeshes());
+      }
+      broadcast.resetRefreshCounter();
+      nextBroadcast = now + 1000/12;
     }
     if (own && now - lastSent > 100 && activeSeat === null && !riding) {
       const pos = {
