@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 process.env.CLUB_DB=join(mkdtempSync(join(tmpdir(),'edm-seating-')),'club.sqlite');
 const {EdmRoom}=await import('../app/club-room.js');
-const {edmSeats}=await import('../app/edm-layout.js');
+const {edmSeats,edmArea,permittedPath}=await import('../app/edm-layout.js');
 
 test('numbered booths synchronize seating, protect occupied seats and exit to the open aisle',()=>{
   const room=new EdmRoom(),handlers=new Map();
@@ -22,8 +22,10 @@ test('numbered booths synchronize seating, protect occupied seats and exit to th
     for(const c of clients)room.onJoin(c,{identity:'local-test:seating-'+c.sessionId});
     const [a,b]=clients,seat=handlers.get('seat');
     const booths=edmSeats.map((s,index)=>({...s,index})).filter(s=>s.table);
-    assert.equal(booths.length,12);
-    assert.deepEqual([...new Set(booths.map(s=>s.table))],[1,2,3,4]);
+    assert.equal(booths.length,24);
+    assert.deepEqual([...new Set(booths.map(s=>s.table))],[1,2,3,4,5,6,7,8]);
+    assert.equal(edmArea({x:14.6,y:0,z:6}).tier,1);
+    assert(permittedPath({x:16.6,y:0,z:-1},{x:16.6,y:0,z:18.25},['CLOSED','CLOSED']));
     // Reject a forged long-distance target before moving any actor.
     seat(a,booths[0].index);assert.equal(room.member(a).seat,null);
     for(const target of booths){

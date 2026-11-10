@@ -166,11 +166,11 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
             x=-18.15+k*.36+rng.uniform(-.045,.045);h=rng.uniform(.23,.39);m=rng.choice(bottleMats)
             bar_post('Backbar bottles',m,x,y+.08,14.24,.073,h)
             bar_post('Bottle necks',m,x,y+.08+h,14.24,.035,.14)
-    # Four open U-shaped booths face the arena from the stair-free east wall.
+    # Extend the open east-wall booth row toward the entrance, keeping the first four IDs.
     booth=finish('Booth midnight plum',(.17,.065,.25),0,.88,(.015,.005,.025))
     piping=finish('Booth muted cyan',(.08,.52,.64),.15,.5,(.025,.22,.28))
     top=finish('Booth smoked stone',(.10,.08,.17),.28,.32)
-    for index,z in enumerate([-2.0,-6.8,-11.6,-16.2], start=1):
+    for index,z in enumerate([-2.0,-6.8,-11.6,-16.2,2.8,7.4,12.0,16.6], start=1):
         # Back bench, two returns and an unobstructed central opening toward -X.
         octagon('Wall booth base',ink,19.0,z,3.8,4.4,.20,.01,.17)
         octagon('Wall booth seat',booth,20.05,z,1.12,4.05,.12,.17,.57)
@@ -189,7 +189,9 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
         # Small number plaques attach to the aisle-facing lower front of each return seat.
         number=finish('Table number '+str(index),(1,1,1),0,.65,(.72,.72,.72))
         digits={1:['010','110','010','010','111'],2:['111','001','111','100','111'],
-                3:['111','001','111','001','111'],4:['101','101','111','001','001']}
+                3:['111','001','111','001','111'],4:['101','101','111','001','001'],5:['111','100','111','001','111'],
+                6:['111','100','111','101','111'],7:['111','001','010','010','010'],
+                8:['111','101','111','101','111']}
         glyph=digits[index]
         def number_pixel(x,y,glyph=glyph):
             if x<5 or x>122 or y<5 or y>122:return [80,196,218]

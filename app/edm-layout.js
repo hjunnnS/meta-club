@@ -25,6 +25,9 @@ export function edmArea({ x, y, z }) {
   )) {
     return { tier: 2, group: side + '-deck' };
   }
+  // The reclaimed east-wall sofa row and its open aisle remain accessible.
+  if (x >= 16.1 && z >= -19 && z <= 19 && y >= -.08 && y < .7)
+    return { tier: 0, group: 'east-tables' };
   if (octagon(dx, Math.abs(z - 6), 5.1, 5.5, 1.6)) return { tier: 1, group: side + '-dance' };
   let group = 'arena';
   if (z > 20.5) group = 'entry';
@@ -59,7 +62,7 @@ export const edmSeats = [-17.6,-15.65,-13.7,-11.75,-9.8].map(oldX=>{
   const x=-27.3-oldX;
   return {x,y:.44,z:14.45,yaw:-Math.atan2(-x,28.65)};
 });
-for (const [i,z] of [-2,-6.8,-11.6,-16.2].entries()) {
+for (const [i,z] of [-2,-6.8,-11.6,-16.2,2.8,7.4,12,16.6].entries()) {
   for (const [x,dz,yaw] of [[20.05,0,-Math.PI/2],[18.55,1.65,Math.PI],[18.55,-1.65,0]])
     edmSeats.push({x,y:.10,z:z+dz,yaw,table:i+1,exit:{x:16.6,y:0,z:z+dz,yaw:-Math.PI/2}});
 }
