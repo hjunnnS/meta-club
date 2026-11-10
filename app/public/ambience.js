@@ -1,4 +1,12 @@
 // Music spectrum plus short whole-room lighting pulses; no sparkle particles.
+export function strobePattern(elapsed) {
+  if (!Number.isFinite(elapsed) || elapsed < 0 || elapsed >= 2.6) return 0;
+  const ms = Math.floor(elapsed * 1000 + .000001);
+  const start = ms < 800 ? 0 : ms < 1800 ? 800 : 1800;
+  const interval = start === 800 ? 50 : 100;
+  return Math.floor((ms-start)/interval)%2 === 0 ? 1 : 0;
+}
+
 export function clubAmbience(B, scene) {
   const calm = matchMedia('(prefers-reduced-motion: reduce)');
   const ink=new B.ShaderMaterial('Music spectrum neon',scene,{
@@ -25,15 +33,14 @@ export function clubAmbience(B, scene) {
     bars.setParticles();
     if (strobing || calm.matches) return 0;
     if (previewAge !== null) {
-      return previewAge>=0 && previewAge<1.6 && Math.floor(previewAge/.05)%2===0 ? 1 : 0;
+      return strobePattern(previewAge);
     }
     if (!playing) return 0;
     const bass=((values[0]||0)+(values[1]||0)+(values[2]||0))/3;
     if (bass<.02) return 0;
-    // One 1.6-second strobe burst at each eight-bar transition, then normal lighting.
+    // Four slow flashes, ten fast, four slow at each eight-bar transition.
     const phase=((beat%32)+32)%32;
     const elapsed=phase*60/Math.max(1,bpm);
-    if (elapsed>=1.6) return 0;
-    return Math.floor(elapsed/.05)%2===0 ? .7+.3*bass : 0;
+    return strobePattern(elapsed)*(.7+.3*bass);
   };
 }

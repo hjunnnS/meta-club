@@ -312,8 +312,8 @@ export function startLiveScene({
     const strobing = stageEvents.strobing;
     renderCeiling(beats,strobing);
     const previewAge = (performance.now()-strobePreviewStarted)/1000;
-    // After the 1.6s test, leave a normal-light gap before automatic accents resume.
-    const roomPulse = renderAmbience(beats, performance.now()-spectrumAt<350 && audibleTrack ? spectrum : [], strobing, Boolean(audibleTrack), playback?.track.bpm || 120, previewAge<3.2 ? previewAge : null);
+    // After the 2.6s test, leave a normal-light gap before automatic accents resume.
+    const roomPulse = renderAmbience(beats, performance.now()-spectrumAt<350 && audibleTrack ? spectrum : [], strobing, Boolean(audibleTrack), playback?.track.bpm || 120, previewAge<4.2 ? previewAge : null);
     if (ambient) ambient.intensity = .52 + roomPulse * 1.65;
     const playing = playback && playback.track.id === audibleTrack;
     // The first beat of each four-beat bar accents both surfaces on the same frame.
