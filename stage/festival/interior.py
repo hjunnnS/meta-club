@@ -156,26 +156,38 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
             x=-18.15+k*.36+rng.uniform(-.045,.045);h=rng.uniform(.23,.39);m=rng.choice(bottleMats)
             post('Backbar bottles',m,x,y+.08,14.24,.073,h)
             post('Bottle necks',m,x,y+.08+h,14.24,.035,.14)
-    # Four open U-shaped booths face the arena from the west wall.
+    # Four open U-shaped booths face the arena from the stair-free east wall.
     booth=finish('Booth midnight plum',(.17,.065,.25),0,.88,(.015,.005,.025))
     piping=finish('Booth muted cyan',(.08,.52,.64),.15,.5,(.025,.22,.28))
     top=finish('Booth smoked stone',(.10,.08,.17),.28,.32)
-    for index,z in enumerate([-16.2,-11.6,-6.8,-2.0]):
-        # Back bench, two returns and an unobstructed central opening toward +X.
-        octagon('Wall booth base',ink,-19.0,z,3.8,4.4,.20,.01,.17)
-        octagon('Wall booth seat',booth,-20.05,z,1.12,4.05,.12,.17,.57)
-        box('Wall booth back',booth,-20.82,-20.52,z-2.08,z+2.08,.42,1.36)
+    for index,z in enumerate([-2.0,-6.8,-11.6,-16.2], start=1):
+        # Back bench, two returns and an unobstructed central opening toward -X.
+        octagon('Wall booth base',ink,19.0,z,3.8,4.4,.20,.01,.17)
+        octagon('Wall booth seat',booth,20.05,z,1.12,4.05,.12,.17,.57)
+        box('Wall booth back',booth,20.52,20.82,z-2.08,z+2.08,.42,1.36)
         for side in [-1,1]:
             zz=z+side*1.65
-            octagon('Wall booth seat',booth,-18.55,zz,2.38,.92,.12,.17,.57)
-            box('Wall booth back',booth,-19.85,-17.35,zz+side*.46-.10,zz+side*.46+.10,.42,1.24)
-            beam('Wall booth cyan piping',piping,(-20.45,1.31,z+side*1.98),(-17.42,1.18,z+side*1.98),.025)
-        beam('Wall booth back piping',piping,(-20.49,1.36,z-1.98),(-20.49,1.36,z+1.98),.025)
-        octagon('Wall booth table',top,-18.5,z,1.35,1.4,.16,.62,.72)
-        for xx in [-18.95,-18.05]:
+            octagon('Wall booth seat',booth,18.55,zz,2.38,.92,.12,.17,.57)
+            box('Wall booth back',booth,17.35,19.85,zz+side*.46-.10,zz+side*.46+.10,.42,1.24)
+            beam('Wall booth cyan piping',piping,(20.45,1.31,z+side*1.98),(17.42,1.18,z+side*1.98),.025)
+        beam('Wall booth back piping',piping,(20.49,1.36,z-1.98),(20.49,1.36,z+1.98),.025)
+        octagon('Wall booth table',top,18.5,z,1.35,1.4,.16,.62,.72)
+        for xx in [18.95,18.05]:
             for zz in [z-.46,z+.46]:post('Wall booth leg',brass,xx,.04,zz,.045,.58)
-        beam('Wall booth table glow',purple,(-17.82,.69,z-.49),(-17.82,.69,z+.49),.022)
-        post('Wall booth lantern',gold,-18.5,.73,z,.065,.18)
+        beam('Wall booth table glow',purple,(17.82,.69,z-.49),(17.82,.69,z+.49),.022)
+        post('Wall booth lantern',gold,18.5,.73,z,.065,.18)
+        # Individually baked number plaques remain visible in any GLB viewer.
+        number=finish('Table number '+str(index),(1,1,1),0,.65,(.72,.72,.72))
+        digits={1:['010','110','010','010','111'],2:['111','001','111','100','111'],
+                3:['111','001','111','001','111'],4:['101','101','111','001','001']}
+        glyph=digits[index]
+        def number_pixel(x,y,glyph=glyph):
+            if x<5 or x>122 or y<5 or y>122:return [80,196,218]
+            col=(x-37)//18;row=(y-19)//18
+            if 0<=col<3 and 0<=row<5 and glyph[row][col]=='1':return [246,235,255]
+            return [24,12,39]
+        images[number]=(png(128,128,number_pixel),lambda x,y,zz,center=z:((zz-center+.39)/.78,(1.44-y)/.74))
+        box('Table number '+str(index),number,17.78,17.82,z-.39,z+.39,.70,1.44)
     # Retain the existing bar pendants; the removed east lounge has none.
     for x,z in [(-17,15),(-11,15)]:
         post('Pendant cable',ink,x,3.3,z,.022,4.3)

@@ -6,10 +6,10 @@ import { effects, eventPlayer, ledScreen, houseScreen, houseLights, peripheralTe
 import { permittedPath, edmCameraDistance } from './edm-layout.js';
 import { dances, danceCamera, animateDance } from './free-dance.js';
 import { avatarFactory, playerView } from './avatar.js';
-// Floor chevrons lead toward the west booths without changing the walking surfaces.
+// Floor chevrons lead toward the east booths without changing the walking surfaces.
 function markLoungeWalk(B, scene) {
   const start = new B.Vector3(-.8, .061, 6.9);
-  const end = new B.Vector3(-9, .061, -10);
+  const end = new B.Vector3(14.8, .061, -7.8);
   const along = end.subtract(start).normalize();
   const across = new B.Vector3(-along.z, 0, along.x);
   const positions = [], indices = [];
