@@ -244,10 +244,37 @@ export function houseLights(B, scene) {
       beams.push({ mesh, side, i, origin });
     }
   }
+  // A single pair opens out above the audience during the phrase release.
+  const pair = [-1, 1].map(side => {
+    const material = paint(B, scene, 'phrase laser', side < 0 ? '#55e7ff' : '#fb6bcf', 1);
+    material.disableLighting = true;
+    material.alphaMode = B.Engine.ALPHA_ADD;
+    material.alpha = 0;
+    const ray = attach(B.MeshBuilder.CreateCylinder('phrase laser ray', {
+      height: 1, diameterTop: .12, diameterBottom: .065, tessellation: 8, cap: B.Mesh.NO_CAP
+    }, scene), rig, material);
+    ray.rotationQuaternion = new B.Quaternion();
+    ray.setEnabled(false);
+    return { side, ray, material, origin: new B.Vector3(side * 4.2, 4.7, -12.2) };
+  });
   const delta = new B.Vector3();
-  return (beat, visible) => {
+  return (beat, visible, release) => {
     rig.setEnabled(visible);
     if (!visible) return;
+    const sweeping = release >= 0 && !calm.matches;
+    for (const {side, ray, material, origin} of pair) {
+      ray.setEnabled(sweeping);
+      if (!sweeping) continue;
+      // Reach the acoustic wall before fading, short of the lounge sign at z=10.15.
+      const t = Math.min(1, release / .78);
+      const spread = t * t * (3 - 2 * t);
+      delta.set(side * (4.5 + 17 * spread), 3.45 + 2.8 * spread, -5 + 13 * spread);
+      delta.subtractInPlace(origin);
+      ray.position.copyFrom(delta).scaleInPlace(.5).addInPlace(origin);
+      ray.scaling.y = delta.length();
+      B.Quaternion.FromUnitVectorsToRef(B.Axis.Y, delta.normalize(), ray.rotationQuaternion);
+      material.alpha = .9 * Math.min(1, release / .12, (1 - release) / .22);
+    }
     const phase = calm.matches ? 0 : beat * Math.PI / 16;
     for (const {mesh, side, i, origin} of beams) {
       delta.set(side * (i * 3.3 - 6 + 4 * Math.sin(phase + i * .22)), 3.8 + i * .32, 9 + i * 1.8);

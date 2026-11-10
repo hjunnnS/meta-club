@@ -241,7 +241,6 @@ export function startLiveScene({
     const playback = playlistPosition(tracks, epoch, Date.now() + offset);
     const beats = trackBeat(playback, t);
     const celebrating = stageEvents.kind === 'led';
-    renderHouseLights(beats, !stageEvents.kind);
     const playing = playback && playback.track.id === audibleTrack;
     // The first beat of each four-beat bar accents both surfaces on the same frame.
     const barPhase = ((beats % 4) + 4) % 4;
@@ -251,6 +250,7 @@ export function startLiveScene({
     const phase32 = phraseBeat % 32;
     const gather = phase32 >= 30 ? (phase32 - 30) / 2 : 0;
     const release = phraseBeat >= 32 && phase32 < 3 ? phase32 / 3 : -1;
+    renderHouseLights(beats, !stageEvents.kind, preview ? -1 : release);
     renderFloor(beats, celebrating, accent, release);
     updateBoard(playing ? playback.track.title : null, beats, !preview && !celebrating, accent, gather, calmBeats.matches);
     const phase = beats * Math.PI * 2,
