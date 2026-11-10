@@ -331,7 +331,5 @@ setInterval(() => {
   }
 }, 5000);
 setInterval(() => music.tick(), 200);
-setInterval(() => {
-  if(ready&&!document.hidden){frame('music-spectrum',music.spectrum());frame('music-waveform',music.waveform());}
-},50);
+setInterval(() => { if (ready && !document.hidden) frame('music-spectrum', music.spectrum()); }, 50);
 enter(new URLSearchParams(location.search).get('channel') || undefined);

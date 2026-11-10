@@ -33,7 +33,7 @@ async function open(){
  finally{URL.revokeObjectURL(model);}
  for(const m of scene.materials)if('maxSimultaneousLights' in m)m.maxSimultaneousLights=10;
  const glow=new B.GlowLayer('light diffusion',scene,{blurKernelSize:48});glow.intensity=.53;
- const views={'입구':[[0,1.65,25],[0,3.4,-16]],'발코니':[[-10.1,5.65,-13],[0,.4,0]],'바': [[-7.8,1.65,19.7],[-14,1.6,14]],'라운지':[[8,1.65,13.5],[15,.85,17]],'무대':[[0,1.67,3],[0,3.6,-17]]};
+ const views={'입구':[[0,1.65,25],[0,3.4,-16]],'발코니':[[-10.1,5.65,-13],[0,.4,0]],'바': [[-7.8,1.65,19.7],[-14,1.6,14]],'테이블':[[-16.5,1.9,1.5],[-19.3,.9,-10]],'무대':[[0,1.67,3],[0,3.6,-17]]};
  const nav=document.querySelector('nav'), tour=document.querySelector('.tour');
  const play=document.querySelector('#play'), slider=tour.querySelector('input'), locationLabel=document.querySelector('#location');
  const points=reviewRoute.map(p=>B.Vector3.FromArray(p));
@@ -165,7 +165,7 @@ async function open(){
    playing=false;onRoute=true;distance=end*Number(slider.value)/1000;
    markView(distance>=end?'발코니':null);placeOnRoute(true);
  };
- select('입구');await scene.whenReadyAsync();
+ select(new URLSearchParams(location.search).get('view')==='booths'?'테이블':'입구');await scene.whenReadyAsync();
  engine.runRenderLoop(()=>{
    if(walking&&!seated)walkFrame();
    if(playing){

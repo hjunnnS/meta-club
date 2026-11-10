@@ -1,5 +1,4 @@
 import { ceilingLights } from './ceiling-lights.js';
-import { wallNeon } from './wall-neon.js';
 import { clubAmbience, strobeDurations } from './ambience.js';
 import { rhythmFloor } from './rhythm-floor.js';
 import { playlistPosition, trackBeat, musicDynamics } from './music.js';
@@ -52,8 +51,6 @@ export function startLiveScene({
     offset = 0;
   markLoungeWalk(B, scene);
   const renderCeiling = ceilingLights(B,scene);
-  const renderWallNeon=wallNeon(B,scene);
-  let wallWave=[],wallWaveAt=0;
   const renderAmbience = clubAmbience(B,scene);
   let strobePreviewStarted = -Infinity;
   let strobePreviewPattern = 'transition';
@@ -225,10 +222,6 @@ export function startLiveScene({
       spectrum = data.map(value => Number.isFinite(value) ? Math.max(0,Math.min(1,value)) : 0);
       spectrumAt = performance.now();
     }
-    if(kind==='music-waveform'&&Array.isArray(data)&&data.length===64){
-      wallWave=data.map(value=>Number.isFinite(value)?Math.max(-1,Math.min(1,value)):0);
-      wallWaveAt=performance.now();
-    }
     if (kind === 'other-wands') otherWands = data;
     if (kind === 'fast-flash') fastFlash = data === true;
     if (kind === 'led-preview') showPreview(data);
@@ -346,7 +339,6 @@ export function startLiveScene({
     const effectBlocksStrobe=effectPreview&&effectPreview.kind!=='strobe-hold';
     const roomPulse = renderAmbience(beats, audioBands, strobing||Boolean(effectBlocksStrobe)||Boolean(smokeProtection), Boolean(audibleTrack), playback?.track.bpm || 120, previewAge<strobeDurations[strobePreviewPattern]+1.6 ? previewAge : null, strobePreviewPattern,dynamics.level);
     renderCeiling(beats,strobing,musicEnergy,roomPulse);
-    renderWallNeon(playing&&performance.now()-wallWaveAt<350?wallWave:[],strobing||roomPulse>.1||Boolean(smokeProtection));
     if (ambient) ambient.intensity = (smokeProtection?.42:.52) + roomPulse * 1.65;
     // The first beat of each four-beat bar accents both surfaces on the same frame.
     const barPhase = ((beats % 4) + 4) % 4;

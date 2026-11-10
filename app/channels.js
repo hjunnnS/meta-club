@@ -184,7 +184,6 @@ export async function startChannels(app, { origin, secret, port }) {
   app.get('/clubs/edm/edm-layout.js', serveFile('./edm-layout.js'));
   app.get('/clubs/edm/scene.js', serveFile('./public/live-scene.js'));
   app.get('/clubs/edm/ambience.js', serveFile('./public/ambience.js'));
-  app.get('/clubs/edm/wall-neon.js', serveFile('./public/wall-neon.js'));
   app.get('/stage/festival/celebration.js', serveFile('../stage/festival/celebration.js'));
   app.get('/stage/festival/holograms.js', serveFile('../stage/festival/holograms.js'));
   app.get('/stage/festival/events.js', serveFile('../stage/festival/events.js'));
