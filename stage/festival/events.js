@@ -1,8 +1,13 @@
-// Durations belong to the button preview, not to a purchased item.
+import { hologram } from './holograms.js';
+// Channel performances and local previews share the same durations.
 export const effects = {
   led: { label: 'LED 전광판', seconds: 15 },
   laser: { label: '레이저 쇼', seconds: 16 },
-  phoenix: { label: '불사조 소환', seconds: 14 },
+  phoenix: { label: '불사조', seconds: 14 },
+  whale: { label: '대형 고래', seconds: 14 },
+  dragon: { label: '네온 용', seconds: 14 },
+  jellyfish: { label: '우주 해파리', seconds: 14 },
+  butterflies: { label: '나비 군집', seconds: 14 },
 };
 
 function lettering(message, nickname) {
@@ -144,17 +149,18 @@ export function houseScreen(B, scene, broadcast) {
     screen.material.dispose();
     screen.material = material;
   }
-  let lastSegment = -1;
-  return (track, beats, visible, accent, gather, calm, phraseBeat, release, cueColor) => {
+  let lastSegment = -1, lastPerformance;
+  return (track, beats, visible, accent, gather, calm, phraseBeat, release, cueColor, performanceTitle = null) => {
     screen.setEnabled(visible);
     if (!visible) return;
-    const segment = track ? Math.floor(Math.max(0, phraseBeat) % 32 / 8) : -1;
+    const segment = track && !performanceTitle ? Math.floor(Math.max(0, phraseBeat) % 32 / 8) : -1;
     if (broadcast) screen.material.setFloat('live', segment === 1 || segment === 2 ? 1 : 0);
     const frame = Math.floor(beats * 12);
-    if (title !== track || lastSegment !== segment) {
+    if (title !== track || lastSegment !== segment || lastPerformance !== performanceTitle) {
       title = track;
       lastSegment = segment;
-      overlay = segment === 1 || segment === 2 ? null : track ? lettering(track, 'EDM CLUB') : lettering('EDM CLUB');
+      lastPerformance = performanceTitle;
+      overlay = performanceTitle ? lettering(performanceTitle) : segment === 1 || segment === 2 ? null : track ? lettering(track, 'EDM CLUB') : lettering('EDM CLUB');
     } else if (lastFrame === frame) return;
     lastFrame = frame;
     if (track) playWall(ctx, calm ? 0 : Math.max(0, phraseBeat));
@@ -526,7 +532,7 @@ function phoenix(B, scene, root) {
   return t => {
     const u = t / effects.phoenix.seconds;
     bird.scaling.setAll(1.48 * Math.max(0.01, Math.min(1, t/1.2, (1-u)*9)));
-    bird.position.set(3.5*Math.sin(2*Math.PI*u),4.2+1.4*Math.sin(Math.PI*u),-10+4*Math.sin(Math.PI*u));
+    bird.position.set(2+2*Math.sin(2*Math.PI*u),4.4+.4*Math.sin(Math.PI*u),-2+2*Math.sin(Math.PI*u));
     bird.rotation.y = 0.7*Math.cos(2*Math.PI*u);
     bird.rotation.z = -0.12*Math.sin(2*Math.PI*u);
     for (const {wing,sign} of wings) wing.rotation.z = sign*(0.18+0.5*Math.sin(t*3.7));
@@ -545,7 +551,9 @@ export function eventPlayer(B, scene, now = Date.now, fastFlash = () => false) {
     stop();
     current = event;
     root = new B.TransformNode('stage event', scene);
-    animate = {led: marquee, laser: lasers, phoenix}[event.kind](B, scene, root, event, fastFlash);
+    animate = ['whale','dragon','jellyfish','butterflies'].includes(event.kind)
+      ? hologram(B, scene, root, event.kind)
+      : {led: marquee, laser: lasers, phoenix}[event.kind](B, scene, root, event, fastFlash);
     tick();
   }
   function tick() {
