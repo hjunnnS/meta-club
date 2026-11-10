@@ -130,7 +130,7 @@ export function houseScreen(B, scene) {
   screen.position.set(3.2, 5.85, -13.95);
   const texture = screen.material.emissiveTexture;
   const ctx = texture.getContext();
-  return (track, beats, visible, accent, gather, calm, phraseBeat) => {
+  return (track, beats, visible, accent, gather, calm, phraseBeat, release, cueColor) => {
     screen.setEnabled(visible);
     if (!visible) return;
     const frame = Math.floor(beats * 12);
@@ -167,7 +167,29 @@ export function houseScreen(B, scene) {
       ctx.fillRect(0, 14, 1024, 18);
       ctx.fillRect(0, 352, 1024, 18);
     }
-    ctx.drawImage(overlay, 0, 0);
+    if (release >= 0 && release < .60) {
+      const progress = release / .60;
+      const radius = calm ? 185 : 34 + 890 * (1 - (1 - progress) ** 2);
+      ctx.save();
+      ctx.translate(512, 192);
+      ctx.scale(1, .62);
+      ctx.beginPath();
+      ctx.moveTo(0, -radius);
+      ctx.lineTo(radius, 0);
+      ctx.lineTo(0, radius);
+      ctx.lineTo(-radius, 0);
+      ctx.closePath();
+      ctx.fillStyle = ctx.strokeStyle = cueColor;
+      ctx.globalAlpha = (1 - progress) * (calm ? .14 : .40);
+      ctx.fill();
+      ctx.globalAlpha = (1 - progress) * .95;
+      ctx.lineWidth = 28;
+      ctx.stroke();
+      ctx.restore();
+    }
+    const contraction = release >= 0 ? Math.min(1, (1 - release) / .55) : gather;
+    const scale = 1 - (calm ? .18 : .56) * contraction;
+    ctx.drawImage(overlay, 512*(1-scale), 192*(1-scale), 1024*scale, 384*scale);
     texture.update();
   };
 }

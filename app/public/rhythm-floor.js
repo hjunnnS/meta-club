@@ -6,7 +6,7 @@ export function rhythmFloor(B, scene) {
   const material = new B.ShaderMaterial('rhythm tiles', scene, {
     vertexSource: 'precision highp float; attribute vec3 position; uniform mat4 worldViewProjection; varying vec2 p; void main(){p=position.xz;gl_Position=worldViewProjection*vec4(position,1.);}',
     fragmentSource: `precision highp float;
-      varying vec2 p; uniform float beat; uniform float intensity; uniform float celebration; uniform float accent; uniform float release;
+      varying vec2 p; uniform float beat; uniform float intensity; uniform float celebration; uniform float accent; uniform float release; uniform vec3 cueColor;
       void main(){
         float radius=length(p); if(radius>8.2 || radius<0.85) discard;
         float band=(radius-.85)/2.45;
@@ -25,18 +25,19 @@ export function rhythmFloor(B, scene) {
         lit=max(lit,accent*(.35+.30*(1.-fract(band))));
         color=mix(color,vec3(.55,1.,.91),accent*.65);
         if(release>=0.){
-          float front=mix(8.,27.,release);
+          float front=mix(0.,27.,release);
           float wave=1.-smoothstep(.3,2.1,abs(length(p-vec2(0.,-17.))-front));
-          color=mix(color,vec3(1.,.69,.36),wave);
+          color=mix(color,cueColor,wave);
           lit=max(lit,wave);
         }
         gl_FragColor=vec4(mix(vec3(.12,.12,.24),color,lit),intensity*(.18+.82*lit));
       }`
-  }, { attributes:['position'], uniforms:['worldViewProjection','beat','intensity','celebration','accent','release'], needAlphaBlending:true });
+  }, { attributes:['position'], uniforms:['worldViewProjection','beat','intensity','celebration','accent','release','cueColor'], needAlphaBlending:true });
   material.backFaceCulling = false;
   mesh.material = material;
   const calm = matchMedia('(prefers-reduced-motion: reduce)');
-  return (beat, celebrating, accent, release) => {
+  return (beat, celebrating, accent, release, cueColor) => {
+    material.setColor3('cueColor', cueColor);
     material.setFloat('release', release);
     material.setFloat('accent', accent);
     material.setFloat('celebration', celebrating ? 1 : 0);

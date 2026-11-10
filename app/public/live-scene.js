@@ -56,6 +56,16 @@ export function startLiveScene({
   const calmBeats = matchMedia('(prefers-reduced-motion: reduce)');
   let fastFlash = false, otherWands = true;
   const updateBoard = houseScreen(B, scene);
+  const cueColors = ['#e587ff', '#54ffe1', '#ff82cb', '#80b8ff'].map(hex => ({
+    hex, rgb: B.Color3.FromHexString(hex),
+  }));
+  const boothBand = B.MeshBuilder.CreateBox('DJ booth phrase band', { width: 6, height: .47, depth: .016 }, scene);
+  boothBand.position.set(0, 1.98, -14.85);
+  boothBand.isPickable = false;
+  const boothInk = new B.StandardMaterial('DJ booth phrase color', scene);
+  boothInk.disableLighting = true;
+  boothBand.material = boothInk;
+  boothBand.setEnabled(false);
   const stageEvents = eventPlayer(B, scene, () => Date.now() + offset, () => fastFlash);
   const view = playerView(B, scene, cam, canvas, eyeHeight, document.body, { followDistance: 7.1, followLift: 0.47, followFov: 1.23, maxDistance: 24 });
   const viewDance = danceCamera(B, scene);
@@ -251,8 +261,17 @@ export function startLiveScene({
     const gather = phase32 >= 30 ? (phase32 - 30) / 2 : 0;
     const release = phraseBeat >= 32 && phase32 < 3 ? phase32 / 3 : -1;
     renderHouseLights(beats, !stageEvents.kind, preview ? -1 : release);
-    renderFloor(beats, celebrating, accent, release);
-    updateBoard(playing ? playback.track.title : null, beats, !preview && !celebrating, accent, gather, calmBeats.matches, phraseBeat);
+    // Pick the upcoming phrase's color during the pickup and keep it through the release.
+    const cue = cueColors[Math.floor((Math.max(0, phraseBeat) + 2) / 32) % cueColors.length];
+    const wallRelease = preview || celebrating ? -1 : release;
+    const bandLevel = Math.max(0, 1 - Math.abs(wallRelease - .28) / .22);
+    boothBand.setEnabled(bandLevel > 0);
+    if (bandLevel > 0) {
+      boothInk.emissiveColor.copyFrom(cue.rgb);
+      boothInk.alpha = bandLevel * (calmBeats.matches ? .38 : .88);
+    }
+    renderFloor(beats, celebrating, accent, release, cue.rgb);
+    updateBoard(playing ? playback.track.title : null, beats, !preview && !celebrating, accent, gather, calmBeats.matches, phraseBeat, wallRelease, cue.hex);
     const phase = beats * Math.PI * 2,
       beatWave = Math.sin(phase);
     washes.forEach(({ light, base }, i) => {
