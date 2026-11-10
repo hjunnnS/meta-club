@@ -4,6 +4,8 @@ import { hologram } from './holograms.js';
 export const effects = {
   led: { label: 'LED 전광판', seconds: 15 },
   laser: { label: '레이저 쇼', seconds: 16 },
+  fountain: { label: '분수 불꽃 시험', seconds: 3 },
+  confetti: { label: '종이조각 시험', seconds: 7 },
   phoenix: { label: '불사조', seconds: 14 },
   whale: { label: '대형 고래', seconds: 14 },
   dragon: { label: '네온 용', seconds: 14 },
@@ -556,10 +558,12 @@ export function eventPlayer(B, scene, now = Date.now, fastFlash = () => false) {
     stop();
     current = event;
     root = new B.TransformNode('stage event', scene);
-    animate = ['whale','dragon','jellyfish','butterflies'].includes(event.kind)
+    const particlePreview = ['fountain','confetti'].includes(event.kind);
+    animate = particlePreview ? null : ['whale','dragon','jellyfish','butterflies'].includes(event.kind)
       ? hologram(B, scene, root, event.kind)
       : {led: marquee, laser: lasers, phoenix}[event.kind](B, scene, root, event, fastFlash);
-    adorn = event.kind === 'led' ? null : celebration(B, scene, root, effects[event.kind].seconds, event.kind !== 'laser');
+    adorn = event.kind === 'led' ? null : celebration(B, scene, root, effects[event.kind].seconds,
+      !particlePreview && event.kind !== 'laser', particlePreview ? event.kind : 'both');
     tick();
   }
   function tick() {

@@ -324,7 +324,7 @@ export function startLiveScene({
     for (const end of boothEnds) illuminate(end, cue.rgb, endGlow);
     const lipGlow = ramp(cueBeat - 1.22, .28) * ramp(2.95 - cueBeat, .75);
     for (const lip of stageLips) illuminate(lip, cue.rgb, lipGlow);
-    renderFloor(beats, celebrating, accent, cueBeat, cue.rgb, stageEvents.kind === 'laser' ? 1 : stageEvents.kind && !celebrating ? 2 : 0);
+    renderFloor(beats, celebrating, accent, cueBeat, cue.rgb, stageEvents.kind === 'laser' ? 1 : ['phoenix','whale','dragon','jellyfish','butterflies'].includes(stageEvents.kind) ? 2 : 0);
     updateBoard(playing ? playback.track.title : null, beats, !preview && !celebrating, accent, gather, calmBeats.matches, phraseBeat, wallRelease, cue.hex, stageEvents.kind && stageEvents.kind !== 'led' ? effects[stageEvents.kind].label : null, strobing);
     const phase = beats * Math.PI * 2,
       beatWave = Math.sin(phase);

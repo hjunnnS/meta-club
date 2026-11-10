@@ -1,5 +1,5 @@
 // Deterministic particles share the channel event's elapsed time, including late joins.
-export function celebration(B, scene, root, seconds, holographic = false) {
+export function celebration(B, scene, root, seconds, holographic = false, selection = 'both') {
   const ink = new B.StandardMaterial('celebration particles', scene);
   ink.disableLighting = true;
   ink.emissiveColor = B.Color3.White();
@@ -79,9 +79,9 @@ export function celebration(B, scene, root, seconds, holographic = false) {
       glitterMesh.setEnabled(elapsed<2.3 || elapsed>seconds-2.8);
       if(glitterMesh.isEnabled())glitter.setParticles();
     }
-    sparkMesh.setEnabled(elapsed < 2.7);
+    sparkMesh.setEnabled(selection !== 'confetti' && elapsed < 2.7);
     if (sparkMesh.isEnabled()) sparks.setParticles();
-    paperMesh.setEnabled(elapsed >= seconds-7);
+    paperMesh.setEnabled(selection !== 'fountain' && elapsed >= seconds-7);
     if (paperMesh.isEnabled()) confetti.setParticles();
   };
 }
