@@ -205,9 +205,9 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
         box('West speaker plinth',ink,-19.65,-17.25,z-1.38,z+1.38,.055,.26)
         box('West speaker cabinet',black,-19.45,-17.55,z-1.18,z+1.18,.26,3.65)
         for yy in [.29,3.60]:
-            beam('West speaker trim',cyan,(-17.53,yy,z-1.13),(-17.53,yy,z+1.13),.045)
+            beam('West speaker trim',cyan,(-17.53,yy,z-1.13),(-17.53,yy,z+1.13),.0225)
         for zz in [z-1.15,z+1.15]:
-            beam('West speaker trim',cyan,(-17.51,.30,zz),(-17.51,3.6,zz),.045)
+            beam('West speaker trim',cyan,(-17.51,.30,zz),(-17.51,3.6,zz),.0225)
         for yy in [1.0,2.20]:
             for j in range(32):
                 a,b=j*2*pi/32,(j+1)*2*pi/32
