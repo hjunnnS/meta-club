@@ -7,11 +7,16 @@ import {blockedMessage} from './trial-message-filter.js';
 // Personal presentation adapter only. No sockets, database or shared identity.
 export class PersonalRoom {
  constructor(tracks){
-  this.tracks=tracks;this.epoch=Date.now();this.sessionId=crypto.randomUUID();this.roomId='personal';this.handlers=new Map();
-  this.self={id:this.sessionId,ai:false,nickname:'체험자',avatar:'indigo',x:-1.8,y:.018,z:6.4,yaw:-1,action:'idle',seat:null,table:null,wand:false};
+  this.tracks=tracks;this.epoch=Date.now();this.musicStarted=false;this.sessionId=crypto.randomUUID();this.roomId='personal';this.handlers=new Map();
+  this.self={id:this.sessionId,ai:false,nickname:'체험자',avatar:'indigo',x:-1.8,y:.018,z:6.4,yaw:-.08,action:'idle',seat:null,table:null,wand:false};
   this.reactive=[-1,1].map((side,i)=>({id:'ai-'+(i+3),ai:true,nickname:'AI 손님 '+(i+4),avatar:i?'rose':'teal',x:side*4,y:.018,z:1,yaw:side*.2,action:'groove',wand:true}));
   this.extra=extraGuestPlaces.map((p,i)=>({id:'floor-dancer-'+i,ai:true,nickname:'AI 손님 '+(i+6),avatar:['teal','rose','gold','indigo'][i%4],...p}));
   this.timer=setInterval(()=>this.publish(),100);this.sequence=0;this.lastMove=0;this.preview=null;
+ }
+ startMusic(epoch){
+  if(this.musicStarted||!Number.isFinite(epoch))return;
+  this.musicStarted=true;this.epoch=epoch;
+  this.send('clock',Date.now());this.publish();
  }
  onMessage(type,fn){this.handlers.set(type,fn);}
  onLeave(fn){this.onExit=fn;}
@@ -22,10 +27,10 @@ export class PersonalRoom {
   return [...Array.from({length:3},(_,i)=>background(i,time)),...this.reactive,...this.extra];
  }
  snapshot(){
-  const now=Date.now(),show=performanceStatus(this.epoch,now,this.tracks);
+  const now=Date.now(),show=this.musicStarted?performanceStatus(this.epoch,now,this.tracks):{active:null,next:null};
   if(this.preview&&now>=this.preview.start+effects[this.preview.kind].seconds*1000)this.preview=null;
   return {actors:[{...this.self},...this.ai().map(a=>({...a}))],zones:['OPEN','OPEN'],
-   trainLeader:null,stageEvent:this.preview||show.active,nextPerformance:show.next,performanceNow:now};
+   waitingForMusic:!this.musicStarted,trainLeader:null,stageEvent:this.preview||show.active,nextPerformance:show.next,performanceNow:now};
  }
  publish(){
   if(this.self.action==='walk'&&Date.now()-this.lastMove>300)this.self.action='idle';

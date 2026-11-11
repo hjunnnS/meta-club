@@ -96,7 +96,7 @@ export function startLiveScene({
     mesh.material.alpha = level * (calmBeats.matches ? .4 : .92);
   }
   const stageEvents = eventPlayer(B, scene, () => Date.now() + offset, () => fastFlash);
-  const view = playerView(B, scene, cam, canvas, eyeHeight, document.body, { followDistance: 7.1, followLift: 0.47, followFov: 1.23, maxDistance: 24, cameraLimit: edmCameraDistance, arrivalSeconds: 2.5, independentLook: true });
+  const view = playerView(B, scene, cam, canvas, eyeHeight, document.body, { followDistance: 7.1, followLift: 0.47, followFov: 1.23, maxDistance: 24, cameraLimit: edmCameraDistance, arrivalSeconds: 2.5, independentLook: true, entryTarget: [edmStage.dj.x,edmStage.dj.y,edmStage.dj.z] });
   const viewDance = danceCamera(B, scene);
   let own,
     mode = 'auto',
@@ -483,7 +483,7 @@ export function startLiveScene({
     const floorFocus=Boolean(playing)&&phrasePhase>=2&&phrasePhase<6;
     const supportTarget=stageFocus?.68:boardFocus?.72:floorFocus?.82:1;
     supportLevel+=(supportTarget-supportLevel)*blend;
-    const roomPulse = renderAmbience(beats, audioBands, strobing||Boolean(effectBlocksStrobe)||Boolean(smokeProtection)||((stageFocus||boardFocus)&&!effectPreview&&phrasePhase<1.5), Boolean(audibleTrack), playback?.track.bpm || 120, previewAge<strobeDurations[strobePreviewPattern]+1.6 ? previewAge : null, strobePreviewPattern,dynamics.level);
+    const roomPulse = renderAmbience(beats, audioBands, openingActive||strobing||Boolean(effectBlocksStrobe)||Boolean(smokeProtection)||((stageFocus||boardFocus)&&!effectPreview&&phrasePhase<1.5), Boolean(audibleTrack), playback?.track.bpm || 120, previewAge<strobeDurations[strobePreviewPattern]+1.6 ? previewAge : null, strobePreviewPattern,dynamics.level);
     const boardSegment=playing?Math.floor(Math.max(0,beats)%32/8):-1;
     const look=sceneLook(beats,Boolean(playing),dynamics.level,boardSegment===1||boardSegment===2);
     if(openingActive){
@@ -512,9 +512,10 @@ export function startLiveScene({
       protectSmoke:Boolean(smokeProtection),reduced:calmBeats.matches,arrangement:dynamics.level});
     if(openingActive){
       // Four bars each: wall chase, overhead fan, then moving floor/wall patterns.
-      const beds=[{curtain:.78,fan:.18,gobo:.40},{curtain:.28,fan:.78,gobo:.46},{curtain:.32,fan:.24,gobo:.90}];
+      const beds=[{curtain:.92,fan:.04,gobo:.10},{curtain:.08,fan:.90,gobo:.12},{curtain:.08,fan:.06,gobo:1}];
       const bed=beds[openingSection],gain=(smokeProtection?.40:1)*(calmBeats.matches?.38:1);
-      for(const kind of ['curtain','fan','gobo'])accentCue[kind]=bed[kind]*gain;
+      const gathering={curtain:.40,fan:.18,gobo:.16};
+      for(const kind of ['curtain','fan','gobo'])accentCue[kind]=(bed[kind]*(1-openingGather)+gathering[kind]*openingGather)*gain;
       if(smokeProtection){accentCue.curtain=0;accentCue.fan=0;}
       accentCue.variant=openingSection;accentCue.gather=openingGather;accentCue.travel=0;
     }
@@ -529,14 +530,14 @@ export function startLiveScene({
     // Every visual phrase restarts with the selected song at its loop boundary.
     const phraseBeat = playing ? (playback.phraseTime - (playback.track.firstBeat || 0)) * (playback.track.bpm || 120) / 60 : -1;
     const phase32 = phraseBeat % 32;
-    const gather = Math.max(openingGather,phase32 >= 30 ? (phase32 - 30) / 2 : 0);
-    const release = phraseBeat >= 32 && phase32 < 3 ? phase32 / 3 : -1;
+    const gather = openingActive?openingGather:phase32 >= 30 ? (phase32 - 30) / 2 : 0;
+    const release = !openingActive && phraseBeat >= 32 && phase32 < 3 ? phase32 / 3 : -1;
     renderHouseLights(beats, !stageEvents.kind, preview||accentPreview ? -1 : release, playback?.track.bpm || 120, musicEnergy, strobing, effectPreview, Boolean(playing),dynamics.level,look);
     // Pick the upcoming phrase's color during the pickup and keep it through the release.
     const cue = {hex:look.primary,rgb:lookPrimary};
     const wallRelease = preview || celebrating ? -1 : release;
     // Times are measured in beats after the wall opens. Let neighboring surfaces overlap.
-    const cueBeat = startBeat>=0&&startBeat<5.2?startBeat:playing && phraseBeat >= 32 && !preview && !celebrating ? phase32 : -1;
+    const cueBeat = startBeat>=0&&startBeat<5.2?startBeat:!openingActive&&playing && phraseBeat >= 32 && !preview && !celebrating ? phase32 : -1;
     const ramp = (value, span) => Math.max(0, Math.min(1, value / span));
     boothFace.scaling.x = Math.max(.001, ramp(cueBeat - .10, .90));
     illuminate(boothFace, cue.rgb, ramp(cueBeat - .10, .18) * ramp(1.85 - cueBeat, .8));
@@ -564,7 +565,7 @@ export function startLiveScene({
         light.excludedMeshes=excluded.filter(mesh=>!djMeshes.includes(mesh));
         light.position.copyFrom(origin);light.diffuse.copyFrom(tint);
         // Controlled absolute intensity avoids clipping from the original high-output room washes.
-        light.intensity=(i===0?6.5:0)+[21.5,20,14][i]*djLightLevel;
+        light.intensity=(i===0?9:0)+[19,20,14][i]*djLightLevel;
         beam.setEnabled(true);material.alpha=(i===0?.008:0)+.018*djLightLevel;
       }else{
         light.includedOnlyMeshes=included;light.excludedMeshes=excluded;
@@ -579,19 +580,22 @@ export function startLiveScene({
     display?.computeWorldMatrix(true);
     const bounds=display?.getBoundingInfo().boundingBox;
     const screenRect=display?.isEnabled()&&bounds?protectedRectangle(bounds.minimumWorld.asArray(),bounds.maximumWorld.asArray(),viewport):null;
+    const djRect=protectedRectangle([edmStage.dj.x-.65,edmStage.dj.y+.55,edmStage.dj.z-.45],[edmStage.dj.x+.65,edmStage.dj.y+2.1,edmStage.dj.z+.45],viewport);
     const hologramRect=stageFocus&&stageEvents.kind!=='laser'?protectedRectangle([-3,2,-6],[9,7,6],viewport):null;
     for(const mesh of scene.meshes){
       const houseBeam=/^(peripheral laser (ray|soft edge)|wall downward light cone|house fan|phrase laser ray)$/.test(mesh.name);
-      const fineBeam=/^(peripheral laser (ray|soft edge)|house fan|phrase laser ray|Strobe overhead fan beam)$/.test(mesh.name);
+      const fineBeam=/^(peripheral laser (ray|soft edge)|house fan|phrase laser ray|Strobe overhead fan beam|Strobe wall curtain beam|overhead shaft|overhead core|scanning fan)$/.test(mesh.name);
       if(!houseBeam&&!fineBeam)continue;
-      const base=houseBeam?look.beams*(performancePriority?.65:1):1;
+      const showBeam=/^(overhead shaft|overhead core|scanning fan)$/.test(mesh.name);
+      const accentBeam=/^Strobe (overhead fan|wall curtain) beam$/.test(mesh.name);
+      const base=showBeam||accentBeam?mesh.visibility:houseBeam?look.beams*(performancePriority?.65:1):1;
       if(effectPreview||accentTest){mesh.visibility=1;continue;}
       let targetGain=1;
       if(fineBeam&&mesh.isEnabled()&&(screenRect||hologramRect)){
         const world=mesh.computeWorldMatrix(true);
         const a=B.Vector3.Project(new B.Vector3(0,-.5,0),world,scene.getTransformMatrix(),viewport);
         const b=B.Vector3.Project(new B.Vector3(0,.5,0),world,scene.getTransformMatrix(),viewport);
-        if(crossesRectangle(a,b,screenRect)||crossesRectangle(a,b,hologramRect))targetGain=.12;
+        if(crossesRectangle(a,b,screenRect)||crossesRectangle(a,b,djRect)||crossesRectangle(a,b,hologramRect))targetGain=.12;
       }
       const previous=beamClearance.get(mesh)??1,gain=previous+(targetGain-previous)*blend;
       beamClearance.set(mesh,gain);mesh.visibility=base*gain;

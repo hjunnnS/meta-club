@@ -531,8 +531,8 @@ export function houseLights(B, scene) {
     const cue=peripheralCue(beat,bpm,preview,playing,arrangement);
     if(!preview&&look){cue.laser*=look.support??1;cue.wash*=look.support??1;}
     if(!preview&&Number.isInteger(look?.openingSection)){
-      cue.laser=Math.max(cue.laser,[.50,.28,.38][look.openingSection]);
-      cue.wash=Math.max(cue.wash,[.26,.42,.30][look.openingSection]);
+      cue.laser=[.15,.24,.05][look.openingSection]*(1-(look.openingGather||0)*.65);
+      cue.wash=[.16,.20,.12][look.openingSection];
       cue.gather=look.openingGather||0;
     }
     renderPeriphery(beat,bpm,energy,strobing,cue);
@@ -607,11 +607,11 @@ function lasers(B, scene, root, event, fastFlash) {
     const light = paint(B, scene, 'shaft glow', '#ffffff');
     light.disableLighting = true;
     light.alphaMode = B.Engine.ALPHA_ADD;
-    light.alpha = 0.15;
+    light.alpha = 0.065;
     const core = paint(B, scene, 'beam core', '#ffffff');
     core.disableLighting = true;
-    const shaft = beam('overhead shaft', 0.375, 0.05, light);
-    const ray = beam('overhead core', 0.065, 0.025, core);
+    const shaft = beam('overhead shaft', 0.24, 0.035, light);
+    const ray = beam('overhead core', 0.045, 0.018, core);
     const lens = attach(B.MeshBuilder.CreateSphere('moving head lens', {diameter: 0.28, segments: 8}, scene), root, core);
     lens.position.copyFrom(origin);
     const casing=paint(B,scene,'moving head housing','#242033');

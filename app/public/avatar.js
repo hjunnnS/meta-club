@@ -209,7 +209,7 @@ export function avatarFactory(B, scene, glow) {
 }
 
 // The walking camera stays at the player's eyes for input, collisions and network movement.
-export function playerView(B, scene, cam, canvas, eyeHeight, controls, { followDistance = 3.4, followLift = 0.32, followFov = cam.fov, maxDistance = 9, cameraLimit = null, arrivalSeconds = 0, independentLook = false } = {}) {
+export function playerView(B, scene, cam, canvas, eyeHeight, controls, { followDistance = 3.4, followLift = 0.32, followFov = cam.fov, maxDistance = 9, cameraLimit = null, arrivalSeconds = 0, independentLook = false, entryTarget = null } = {}) {
   const follow = new B.FreeCamera('third person', B.Vector3.Zero(), scene);
   const seatedEye = new B.FreeCamera('activity eyes', B.Vector3.Zero(), scene);
   seatedEye.minZ = cam.minZ;
@@ -328,7 +328,7 @@ export function playerView(B, scene, cam, canvas, eyeHeight, controls, { followD
     if(arrivalStart!==null) {
       const progress=Math.min(1,(performance.now()-arrivalStart)/(arrivalSeconds*1000));
       const remaining=1-progress*progress*(3-2*progress);
-      direction.y+=remaining*.85;direction.normalize();
+      direction.y+=remaining*(entryTarget?.30:.85);direction.normalize();
       length+=(Math.max(defaultDistance*1.2,length)-length)*remaining;
       if(progress>=1)arrivalStart=null;
     }
@@ -347,7 +347,14 @@ export function playerView(B, scene, cam, canvas, eyeHeight, controls, { followD
         orbitYaw=next.actor.yaw;orbitPitch=.18;orbitReady=true;cancelArrival();
       }
       framedSeat=nextSeat;
-      if(model&&!arrivalSeen){arrivalSeen=true;if(arrivalSeconds>0&&!calmArrival.matches)arrivalStart=performance.now();}
+      if(model&&!arrivalSeen){
+        if(independentLook&&entryTarget){
+          const aim=B.Vector3.FromArray(entryTarget).subtract(model.root.position);
+          orbitYaw=Math.atan2(-aim.x,-aim.z);orbitPitch=.03;orbitReady=true;
+          cam.rotation.y=orbitYaw;cam.rotation.x=orbitPitch;
+        }
+        arrivalSeen=true;if(arrivalSeconds>0&&!calmArrival.matches)arrivalStart=performance.now();
+      }
       activity = activityCamera;
       if (activity) activity.offset = activity.camera.position.subtract(activity.target);
       fixed = stationary;

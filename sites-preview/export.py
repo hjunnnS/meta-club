@@ -79,6 +79,8 @@ async function enter(){
 ''' +client[b:]
 client=client.replace("el('zones').textContent =\n      '사이드존 '","el('zones').textContent =\n      '체험용 전체 개방 · 사이드존 '")
 client=client.replace("if (memberId?.startsWith('local-test:')) shop.channel(room.roomId, memberId);",'')
+client=client.replace("  reason => { showMusic(null); firstVisitFailure(reason); },\n);", "  reason => { showMusic(null); firstVisitFailure(reason); },\n  {personalTimeline:true,onStart:epoch=>room?.startMusic(epoch)},\n);")
+client=client.replace("const countdown = next ?", "const countdown = data.waitingForMusic ? '음악 시작 후 첫 레이저 · 약 0:30' : next ?")
 put('clubs/edm/client.js',client)
 landing='''<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>메타 클럽 · 화면 체험</title>
 <style>*{box-sizing:border-box}body{margin:0;background:#100e18;color:#f2edff;font:16px system-ui;min-height:100dvh;display:grid;place-items:center}main{width:min(720px,92vw);padding:32px 20px}h1{font-size:30px}p{line-height:1.7;color:#c8c0d7}a{color:#aff7ea}.enter{display:inline-block;background:#b9f4e7;color:#11221f;padding:13px 24px;border-radius:24px;text-decoration:none;font-weight:700}section{margin:26px 0;border-top:1px solid #393044;padding:16px 0}.clubs{display:flex;gap:18px;flex-wrap:wrap}.clubs span{color:#aaa0b8}small{line-height:1.7;color:#aaa0b8}</style>

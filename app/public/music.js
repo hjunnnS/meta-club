@@ -47,7 +47,8 @@ export function prepareTrackBuffer(ctx,decoded,track) {
   return buffer;
 }
 
-export function musicPlayer(notice, playing, failed) {
+export function musicPlayer(notice, playing, failed, {personalTimeline=false,onStart=()=>{}}={}) {
+  let personalStarted=false;
   let ctx, analyser, frequencies,
     source,
     started = 0,
@@ -141,6 +142,9 @@ export function musicPlayer(notice, playing, failed) {
         cache.set(id, buffer);
       }
       if (ticket !== generation) return;
+      const firstPersonalStart=personalTimeline&&!personalStarted;
+      // Decode first. Independent trials start at the beginning, not at page-load time.
+      if(firstPersonalStart){epoch=Date.now();clockOffset=0;}
       const actual = target();
       if (!actual || actual.track.id !== id) {
         pendingId = null;
@@ -161,6 +165,11 @@ export function musicPlayer(notice, playing, failed) {
       current = id;
       pendingId = null;
       lastFailure = null;
+      if(firstPersonalStart){
+        personalStarted=true;
+        epoch=Date.now()+Math.max(0,ctx.outputLatency||ctx.baseLatency||0)*1000;
+        onStart(epoch);
+      }
       notice(actual.track.title);
       playing(id);
     } catch {
@@ -216,6 +225,7 @@ export function musicPlayer(notice, playing, failed) {
       const audible=stamp&&stamp.contextTime>0
         ? stamp.contextTime+(at-stamp.performanceTime)/1000
         : ctx.currentTime-(ctx.outputLatency||ctx.baseLatency||0)+(at-performance.now())/1000;
+      if(audible<started)return {playing:false};
       const raw=position(Math.max(0,Math.min(ctx.currentTime,audible))),length=source.buffer.duration;
       const time=((raw%length)+length)%length;
       const expected=next.cycle*next.track.duration+next.time;
@@ -225,6 +235,7 @@ export function musicPlayer(notice, playing, failed) {
     },
     beat: () => trackBeat(target(), (Date.now() + clockOffset - epoch) / 1000),
     reset() {
+      personalStarted=false;
       stop();
       epoch = 0;
       tracks = [];
