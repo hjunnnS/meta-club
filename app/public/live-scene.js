@@ -1,4 +1,4 @@
-import { ceilingLights, musicSpeakers } from './ceiling-lights.js';
+import { ceilingLights, musicSpeakers, strobeAccents, strobeAccentCue, accentDurations } from './ceiling-lights.js';
 import { clubAmbience, strobeDurations } from './ambience.js';
 import { rhythmFloor } from './rhythm-floor.js';
 import { playlistPosition, trackBeat, musicDynamics } from './music.js';
@@ -52,6 +52,8 @@ export function startLiveScene({
   markLoungeWalk(B, scene);
   const renderCeiling = ceilingLights(B,scene);
   const renderSpeakers = musicSpeakers(B,scene);
+  const renderAccents = strobeAccents(B,scene);
+  let accentPreview=null;
   const renderAmbience = clubAmbience(B,scene);
   let strobePreviewStarted = -Infinity;
   let strobePreviewPattern = 'transition';
@@ -206,10 +208,17 @@ export function startLiveScene({
     if (kind === 'audible-track') audibleTrack = data;
     if (kind === 'speaker-view') speakerView();
     if (kind === 'staff-view' && ['dj','bartender'].includes(data)) speakerView(data);
+    if(kind==='accent-preview'&&Object.hasOwn(accentDurations,data)){
+      accentPreview={kind:data,start:performance.now()};
+      peripheralPreview={kind:'strobe-hold',start:accentPreview.start,duration:accentDurations[data]};
+      stageEvents.stop();strobePreviewStarted=-Infinity;
+    }
     if(kind==='peripheral-preview'&&Object.hasOwn(peripheralTests,data)){
+      accentPreview=null;
       peripheralPreview={kind:data,start:performance.now()};stageEvents.stop();strobePreviewStarted=-Infinity;
     }
     if (kind === 'strobe-preview' && Object.hasOwn(strobeDurations,data)) {
+      accentPreview=null;
       strobePreviewPattern = data;
       strobePreviewStarted = performance.now();
       peripheralPreview={kind:'strobe-hold',start:strobePreviewStarted,duration:strobeDurations[data]};
@@ -361,6 +370,14 @@ export function startLiveScene({
     const roomPulse = renderAmbience(beats, audioBands, strobing||Boolean(effectBlocksStrobe)||Boolean(smokeProtection), Boolean(audibleTrack), playback?.track.bpm || 120, previewAge<strobeDurations[strobePreviewPattern]+1.6 ? previewAge : null, strobePreviewPattern,dynamics.level);
     renderCeiling(beats,strobing,musicEnergy,roomPulse);
     renderSpeakers(beats,audioBands,Boolean(playing),dt,calmBeats.matches);
+    const accentAge=accentPreview?(performance.now()-accentPreview.start)/1000:0;
+    if(accentPreview&&accentAge>=accentDurations[accentPreview.kind])accentPreview=null;
+    const accentTest=accentPreview?{kind:accentPreview.kind,age:accentAge}:null;
+    const accentCue=strobeAccentCue({beat:beats,bpm:playback?.track.bpm||120,playing:Boolean(playing),
+      preview:accentTest,strobePreview:previewAge<strobeDurations[strobePreviewPattern]?{kind:strobePreviewPattern,age:previewAge}:null,
+      overlap:stageEvents.kind&&stageEvents.kind!=='led'||peripheralPlan.laser>.5,
+      protectSmoke:Boolean(smokeProtection),reduced:calmBeats.matches,arrangement:dynamics.level});
+    renderAccents(accentCue,beats,accentTest?.75:musicEnergy,calmBeats.matches);
     if (ambient) ambient.intensity = (smokeProtection?.42:.52) + roomPulse * 1.65;
     // The first beat of each four-beat bar accents both surfaces on the same frame.
     const barPhase = ((beats % 4) + 4) % 4;

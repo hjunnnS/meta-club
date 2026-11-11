@@ -285,6 +285,8 @@ window.addEventListener('message', (event) => {
   }
 });
 el('particle-tests').onclick = el('event-controls').onclick = event => {
+  const accent=event.target.closest('[data-accent-preview]');
+  if(ready&&accent){frame('accent-preview',accent.dataset.accentPreview);return;}
   const effect=event.target.closest('[data-peripheral-preview]');
   if(ready&&effect){frame('peripheral-preview',effect.dataset.peripheralPreview);return;}
   const strobe = event.target.closest('[data-strobe-preview]');

@@ -205,6 +205,25 @@ async function open(){
      staff.forEach(({role,model})=>animateStaff(model,role,seconds*2,seconds,0,matchMedia('(prefers-reduced-motion: reduce)').matches));
    });
  }
+ if(new URLSearchParams(location.search).get('view')==='accents'){
+   const {strobeAccents,strobeAccentCue,accentDurations}=await import('/clubs/edm/ceiling-lights.js');
+   const render=strobeAccents(B,scene),panel=document.querySelector('#event-panel'),buttons=document.querySelector('#event-buttons');
+   const state=document.querySelector('#effect-state');let active=null;
+   panel.querySelector('h1').textContent='싸이키 보조 연출 시험';
+   panel.querySelectorAll('label').forEach(label=>label.hidden=true);
+   function stop(){active=null;state.textContent='효과를 선택하세요';for(const button of buttons.children)button.setAttribute('aria-pressed','false');}
+   for(const [kind,label] of Object.entries({curtain:'양쪽 벽 레이저 커튼',fan:'객석 위 부채꼴 빛',gobo:'회전 무늬 조명'})){
+     const button=document.createElement('button');button.textContent=label+' · '+accentDurations[kind]+'초';
+     button.onclick=()=>{stop();active={kind,start:performance.now()};state.textContent=label+' 시험 중';button.setAttribute('aria-pressed','true');};buttons.append(button);
+   }
+   document.querySelector('#stop-effect').onclick=stop;panel.hidden=false;
+   scene.onBeforeRenderObservable.add(()=>{
+     const seconds=performance.now()/1000,age=active?(performance.now()-active.start)/1000:0;
+     if(active&&age>=accentDurations[active.kind])stop();
+     const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+     render(strobeAccentCue({beat:seconds*132/60,preview:active?{kind:active.kind,age}:null,reduced}),seconds*132/60,.75,reduced);
+   });
+ }
  if(window.festivalAssets?.events || location.search==='?events'){
    const {effects,eventPlayer}=await import(sources.events || './events.js');
    const panel=document.querySelector('#event-panel'), buttons=document.querySelector('#event-buttons');
