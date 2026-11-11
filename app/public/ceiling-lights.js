@@ -213,7 +213,15 @@ export function strobeAccents(B,scene) {
     }
     for(const {mesh,material,wall,sign} of patterns){
       material.alpha=cue.gobo*(.65+hit*.22);material.opacityTexture=textures[((Math.floor(Math.max(0,beat)/4)%3)+3)%3];
-      if(wall)mesh.rotation.z=motion*.10*sign;else mesh.rotation.y=motion*.10*sign;
+      if(wall){
+        mesh.rotation.z=motion*.10*sign;
+        mesh.position.y=5.05+.55*Math.sin(motion*.13+sign);
+        mesh.position.z=6+3.4*Math.sin(motion*.10+sign*.7);
+      }else{
+        mesh.rotation.y=motion*.10*sign;
+        mesh.position.x=sign*(9.4+1.2*Math.sin(motion*.16));
+        mesh.position.z=6+2.6*Math.sin(motion*.12+sign*.6);
+      }
     }
   };
 }

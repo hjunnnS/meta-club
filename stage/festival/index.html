@@ -11,6 +11,7 @@
 <label><input id="fast-flash" type="checkbox" checked>빠른 점멸 (0.1초)</label>
 <button id="stop-effect">중단</button><span id="effect-state" role="status">이벤트를 선택하세요</span></section>
 <script type="module">
+import {planWalk} from '/clubs/edm/click-walk.js';
 const sources=window.festivalAssets||{engine:'../../dance/node_modules/babylonjs/babylon.js',loader:'../../dance/node_modules/babylonjs-loaders/babylonjs.loaders.min.js',map:'edm-festival.glb'};
 const canvas=document.querySelector('canvas'), status=document.querySelector('output');
 let activeEngine;
@@ -81,6 +82,8 @@ async function open(){
  walker.ellipsoidOffset=new B.Vector3(0,walker.ellipsoid.y,0);
  walker.isPickable=false;
  let walking=false, allowedStep=()=>true;
+ let walkRoute=[], walkArrival=null, stalled=0;
+ function cancelWalk(){walkRoute=[];walkArrival=null;stalled=0;}
  let joystick={x:0,y:0}, seated=false;
  const down=new B.Vector3(0,-1,0);
  function groundAt(x,z,foot){
@@ -88,7 +91,7 @@ async function open(){
    return hit?.hit?hit.pickedPoint.y:null;
  }
  function walkMode(active){
-   walking=active;keys.clear();walk.setAttribute('aria-pressed',String(active));
+   cancelWalk();walking=active;keys.clear();walk.setAttribute('aria-pressed',String(active));
    if(active){
      playing=false;onRoute=false;markView(null);canvas.focus();
      walker.position.copyFrom(cam.position);walker.position.y+=walker.ellipsoid.y-eyeHeight+.12;
@@ -100,37 +103,77 @@ async function open(){
    if(!walking||event.altKey||event.ctrlKey||event.metaKey)return;
    if(event.code==='Escape'&&!tour.hidden){walkMode(false);walk.focus();return;}
    if(document.activeElement!==canvas||!movementKeys.has(event.code))return;
-   event.preventDefault();keys.add(event.code);
+   cancelWalk();event.preventDefault();keys.add(event.code);
  }
  window.addEventListener('keydown',walkKeyDown);
  window.addEventListener('keyup',event=>keys.delete(event.code));
- window.addEventListener('blur',()=>keys.clear());
+ window.addEventListener('blur',()=>{keys.clear();cancelWalk();});
  canvas.addEventListener('blur',()=>keys.clear());
  function walkFrame(){
    const pressed=(a,b)=>Number(keys.has(a)||keys.has(b));
    const forward=pressed('KeyW','ArrowUp')-pressed('KeyS','ArrowDown')+joystick.y;
    const side=pressed('KeyD','ArrowRight')-pressed('KeyA','ArrowLeft')+joystick.x;
-   if(!forward&&!side)return;
+   if(seated){cancelWalk();return;}
    const look=cam.getForwardRay().direction;
    const heading=new B.Vector3(look.x,0,look.z).normalize();
    const right=new B.Vector3(-heading.z,0,heading.x);
-   const delta=heading.scale(forward).add(right.scale(side)).normalize().scale(3*Math.min(engine.getDeltaTime(),50)/1000);
+   const stride=3*Math.min(engine.getDeltaTime(),50)/1000;
+   let delta;
+   if(forward||side){cancelWalk();delta=heading.scale(forward).add(right.scale(side)).normalize().scale(stride);}
+   else if(walkRoute.length){
+     const target=walkRoute[0],dx=target.x-walker.position.x,dz=target.z-walker.position.z,length=Math.hypot(dx,dz);
+     if(length<.06){walkRoute.shift();if(!walkRoute.length){const arrive=walkArrival;cancelWalk();arrive?.();}return;}
+     delta=new B.Vector3(dx,0,dz).scale(Math.min(stride,length)/length);
+     cam.rotation.y=Math.atan2(-dx,-dz);
+   }else return;
    const foot=cam.position.y-eyeHeight;
    const before=walker.position.clone();
    // Low parapets and thin handrails must stop the walker before its centre crosses them.
    const direction=delta.normalizeToNew(), reach=delta.length()+walker.ellipsoid.x;
    for(const height of [.45,1]){
      const origin=new B.Vector3(before.x,foot+height,before.z);
-     if(scene.pickWithRay(new B.Ray(origin,direction,reach),mesh=>barriers.has(mesh),true)?.hit)return;
+     if(scene.pickWithRay(new B.Ray(origin,direction,reach),mesh=>barriers.has(mesh),true)?.hit){cancelWalk();return;}
    }
    const nextGround=groundAt(before.x+delta.x,before.z+delta.z,foot);
-   if(nextGround===null)return;
+   if(nextGround===null){cancelWalk();return;}
    delta.y=nextGround-foot;
    walker.moveWithCollisions(delta);
    const y=groundAt(walker.position.x,walker.position.z,foot);
-   if(y===null || !allowedStep({x:before.x,y:foot,z:before.z},{x:walker.position.x,y,z:walker.position.z})){walker.position.copyFrom(before);return;}
+   if(y===null || !allowedStep({x:before.x,y:foot,z:before.z},{x:walker.position.x,y,z:walker.position.z})){walker.position.copyFrom(before);cancelWalk();return;}
+   if(walkRoute.length){
+     stalled=B.Vector3.DistanceSquared(before,walker.position)<.000001?stalled+engine.getDeltaTime():0;
+     if(stalled>350)cancelWalk();
+   }
    walker.position.y=y+walker.ellipsoid.y+.12;
    cam.position.set(walker.position.x,y+eyeHeight,walker.position.z);
+ }
+ function navigate(goal,onArrival,permit=()=>true){
+   cancelWalk();if(seated)return false;
+   const start={x:walker.position.x,y:cam.position.y-eyeHeight,z:walker.position.z};
+   const cache=new Map();
+   const step=(from,to)=>{
+     if(Math.abs(to.x)>22||to.z < -21||to.z>26.5)return null;
+     const key=to.x.toFixed(3)+','+to.z.toFixed(3)+','+from.y.toFixed(2);
+     let y=cache.get(key);
+     if(y===undefined){
+       const hit=scene.pickWithRay(new B.Ray(new B.Vector3(to.x,from.y+.4,to.z),down,.8),m=>floors.has(m));
+       y=hit?.hit?hit.pickedPoint.y:null;cache.set(key,y);
+     }
+     if(y===null||Math.abs(y-from.y)>.31)return null;
+     const at={x:to.x,y,z:to.z};if(!permit(from,at))return null;
+     const delta=new B.Vector3(at.x-from.x,at.y-from.y,at.z-from.z),length=delta.length();
+     if(length>.001){
+       const direction=delta.scale(1/length),across=new B.Vector3(-direction.z,0,direction.x);
+       for(const lateral of [-.29,0,.29])for(const height of [.32,.8,1.35]){
+         const origin=new B.Vector3(from.x,from.y+height,from.z).add(across.scale(lateral));
+         if(scene.pickWithRay(new B.Ray(origin,direction,length+.04),m=>m.checkCollisions&&!floors.has(m),true)?.hit)return null;
+       }
+     }
+     return at;
+   };
+   const path=planWalk(start,goal,step);
+   if(!path)return false;
+   walkRoute=path;walkArrival=onArrival;return true;
  }
  function pointAt(d){
    let i=1;
@@ -188,7 +231,7 @@ async function open(){
  };
  select(({booths:'테이블',bar:'바',speakers:'스피커',bartender:'바 직원',dj:'DJ'})[new URLSearchParams(location.search).get('view')]||'입구');await scene.whenReadyAsync();
  engine.runRenderLoop(()=>{
-   if(walking&&!seated)walkFrame();
+   if(walking)walkFrame();
    if(playing){
      distance=Math.min(end,distance+Math.min(engine.getDeltaTime(),100)*.003);
      if(distance>=end){playing=false;markView('발코니');}
@@ -280,8 +323,11 @@ async function open(){
    owner.addEventListener('keyup', event=>keys.delete(event.code), {signal:listeners.signal});
    window.addEventListener('pagehide',()=>listeners.abort(),{once:true});
    allowedStep=startLiveScene({B,cam,scene,engine,canvas,glow,eyeHeight,
-     joystick:(x,y)=>{joystick={x,y};},
+     joystick:(x,y)=>{if(x||y)cancelWalk();joystick={x,y};},
+     navigate,cancelWalk,
+     pickDestination(x,y){return scene.pick(x,y,m=>floors.has(m)||m.checkCollisions);},
      place(actor){
+       cancelWalk();
        seated=actor.seat!=null || actor.trainSlot>0;
        cam.position.set(actor.x,actor.y+eyeHeight-(actor.seat != null ? .35 : 0),actor.z);
        walker.position.set(actor.x,actor.y+walker.ellipsoid.y+.12,actor.z);

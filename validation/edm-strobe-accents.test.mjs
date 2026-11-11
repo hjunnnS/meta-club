@@ -30,6 +30,10 @@ test('effect geometry never blocks paths and all three rigs stop cleanly',()=>{
   render({curtain:1,fan:1,gobo:1},4,.8);
   assert.equal(scene.meshes.filter(mesh=>mesh.isEnabled()).length,60);
   assert(scene.meshes.every(mesh=>Number.isFinite(mesh.position.x)&&Number.isFinite(mesh.scaling.y)));
+  const moving=scene.meshes.filter(m=>m.name==='Strobe gobo floor'||m.name==='Strobe gobo wall');
+  const before=moving.map(m=>m.position.clone());
+  render({curtain:0,fan:0,gobo:1},12,.8);
+  assert(moving.every((m,i)=>!m.position.equalsWithEpsilon(before[i],.01)));
   render({curtain:0,fan:0,gobo:0},4,0);
   assert(scene.meshes.every(mesh=>!mesh.isEnabled()));
  }finally{scene.dispose();engine.dispose();}

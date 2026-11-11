@@ -22,6 +22,7 @@ let needsPlace = true,
   room,
   snapshot,
   ready = false,
+  sceneLoaded = false,
   joining = false,
   manual = false,
   retryTimer,
@@ -77,7 +78,6 @@ function display(data) {
   el('wand').textContent = self?.wand ? '무드봉 내리기' : '무드봉 들기';
   el('wand').setAttribute('aria-pressed', String(Boolean(self?.wand)));
   const riding = self?.trainSlot != null;
-  el('train-start').hidden = Boolean(data.trainLeader);
   el('train-join').hidden = !data.trainLeader || riding;
   el('train-leave').hidden = !riding;
   el('train-leave').textContent = data.trainLeader === self?.id ? '기차 종료' : '기차 내리기';
@@ -118,10 +118,12 @@ function disconnected(message, reconnect) {
   snapshot = null;
   ready = false;
   showMusic(null);
-  map.hidden = true;
-  map.removeAttribute('src');
+  // Keep the last rendered club visible during a temporary channel outage.
+  frame('connection-state', false);
+  frame('audible-track', null);
+  if (!sceneLoaded) map.hidden = true;
   el('seat').hidden = true;
-  for (const id of ['train-start', 'train-join', 'train-leave']) el(id).hidden = true;
+  for (const id of ['train-join', 'train-leave']) el(id).hidden = true;
   el('train-hint').textContent = '채널 연결을 기다리는 중입니다.';
   el('performance').textContent = '';
   el('population').textContent = message;
@@ -129,7 +131,9 @@ function disconnected(message, reconnect) {
   el('retry').textContent = loginRequired ? '시험 회원 다시 로그인' : '다시 입장';
   if (reconnect && !loginRequired && !manual && attempts < 4) {
     clearTimeout(retryTimer);
-    retryTimer = setTimeout(() => enter(), 1000 * ++attempts);
+    retryTimer = setTimeout(() => enter(), 1000 * 2 ** attempts++);
+  } else if (reconnect && attempts >= 4) {
+    el('population').textContent = '연결을 복구하지 못했습니다. 다시 입장을 눌러 주세요.';
   }
 }
 async function list() {
@@ -219,7 +223,13 @@ async function enter(channelId) {
     next.send('occupancy');
     next.send('snapshot');
     next.send('clock', Date.now());
-    map.src = '/stage/festival/index.html?live';
+    if (!sceneLoaded) map.src = '/stage/festival/index.html?live';
+    else {
+      ready = true;frame('connection-state', true);
+      el('event-controls').hidden = !memberId?.startsWith('local-test:');
+      el('particle-tests').hidden = !memberId?.startsWith('local-test:');
+      if (memberId?.startsWith('local-test:')) shop.channel(room.roomId, memberId);
+    }
     map.hidden = false;
     el('guide-guest').hidden = Boolean(memberId);
     guide('entry');
@@ -228,7 +238,7 @@ async function enter(channelId) {
     if (old && room === old) {
       firstVisitFailure(error.message);
       note(error.message);
-    } else disconnected(error.message, false);
+    } else disconnected(error.message === 'Failed to fetch' ? '서버에 다시 연결하는 중입니다.' : error.message, error instanceof TypeError);
   } finally {
     joining = false;
   }
@@ -239,11 +249,14 @@ window.addEventListener('message', (event) => {
   if (kind === 'gate-notice') note(data);
   if (kind === 'seat-request' && ready && Number.isInteger(data)) room.send('seat',data);
   if (kind === 'scene-error') {
+    sceneLoaded = false;
     ready = false;
     needsPlace = true;
     note('공간을 불러오지 못했습니다. 화면의 ‘장면 다시 열기’를 눌러 주세요. ' + String(data));
   }
   if (kind === 'scene-ready') {
+    sceneLoaded = true;
+    frame('connection-state', true);
     note('');
     ready = true;
     showMusic(audibleTrack);
@@ -314,7 +327,7 @@ el('music').onclick = () => {
 };
 el('fast-flash').onchange = e => frame('fast-flash', e.target.checked);
 el('quality').onchange = (e) => frame('quality', e.target.value);
-for (const action of ['start','join','leave'])
+for (const action of ['join','leave'])
   el('train-' + action).onclick = () => room?.send('train', action);
 el('wand').onclick = () => room?.send('wand', el('wand').getAttribute('aria-pressed') !== 'true');
 el('other-wands').onchange = e => frame('other-wands', e.target.checked);

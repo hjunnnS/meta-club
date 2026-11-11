@@ -15,6 +15,9 @@ export function startLiveScene({
   glow,
   eyeHeight,
   joystick,
+  navigate,
+  cancelWalk,
+  pickDestination,
   place,
 }) {
   const send = (kind, data) => parent.postMessage({ kind, data }, location.origin);
@@ -129,7 +132,7 @@ export function startLiveScene({
       model.actor = a;
       if (a.id === self) {
         riding = a.trainSlot > 0;
-        if (riding) place(a);
+        if (riding) {cancelWalk();place(a);}
         const activity = a.trainSlot == null && dances.has(a.action) ? viewDance(a) : null;
         view.actor(model, activity, a.seat != null);
       }
@@ -140,9 +143,10 @@ export function startLiveScene({
       models.delete(id);
     }
   }
-  let preview, speakerCamera;
+  let preview, speakerCamera, connected=true;
   function speakerView(kind='speakers'){
     if(speakerCamera)return;
+    cancelWalk();
     const positions={speakers:[[-8.5,2.6,11.8],[-18.5,1.8,5.8]],
       bartender:[[-11.3,1.95,14],[-13.6,1.4,17.4]],dj:[[3.9,4.0,-9.2],[0,2.75,-12.9]]};
     const [eye,target]=positions[kind]||positions.speakers;
@@ -156,6 +160,7 @@ export function startLiveScene({
     close.onclick=()=>{view.preview(null);speakerCamera.dispose();speakerCamera=null;close.remove();canvas.focus();};
   }
   function showPreview(data) {
+    cancelWalk();
     if (preview) {
       view.preview(null);
       preview.camera.dispose();
@@ -205,6 +210,10 @@ export function startLiveScene({
     if (kind === 'fast-flash') fastFlash = data === true;
     if (kind === 'led-preview') showPreview(data);
     if (kind === 'actors') onSnapshot(data);
+    if (kind === 'connection-state') {
+      connected=data===true;
+      if(!connected){cancelWalk();joystick(0,0);stageEvents.stop();}
+    }
     if (kind === 'place') {
       activeSeat = data.seat;
       place(data);
@@ -278,19 +287,33 @@ export function startLiveScene({
   canvas.addEventListener('pointercancel', ()=>seatTap=null);
   canvas.addEventListener('pointerup', e=>{
     const tap=seatTap;seatTap=null;
-    if(!tap||tap.id!==e.pointerId||tap.drag||activeSeat!==null||riding)return;
+    if(!tap||tap.id!==e.pointerId||tap.drag||activeSeat!==null||riding||speakerCamera||preview||!connected)return;
     const bounds=canvas.getBoundingClientRect();
-    const hit=scene.pick(e.clientX-bounds.left,e.clientY-bounds.top,
-      mesh=>[mesh.name,mesh.parent?.name].includes('Wall booth seat'));
+    const hit=pickDestination((e.clientX-bounds.left)*engine.getRenderWidth()/bounds.width,
+      (e.clientY-bounds.top)*engine.getRenderHeight()/bounds.height);
     if(!hit?.hit)return;
-    const point=hit.pickedPoint;
-    let selected=-1,distance=Infinity;
-    edmSeats.forEach((seat,index)=>{
-      if(!seat.table)return;
-      const d=Math.hypot(seat.x-point.x,seat.z-point.z);
-      if(d<distance){distance=d;selected=index;}
-    });
-    if(selected>=0)send('seat-request',selected);
+    const point=hit.pickedPoint,names=[hit.pickedMesh.name,hit.pickedMesh.parent?.name];
+    const booth=names.some(name=>/^Wall booth (seat|table|back|base)$/.test(name));
+    let selected=-1;
+    if(booth){
+      let distance=Infinity;
+      edmSeats.forEach((seat,index)=>{
+        if(!seat.table)return;
+        const d=Math.hypot(seat.x-point.x,seat.z-point.z);
+        if(d<distance){distance=d;selected=index;}
+      });
+      if([...models.values()].some(m=>m.actor.seat===selected)){
+        send('gate-notice','이미 앉아 있는 자리입니다. 다른 의자를 선택해 주세요.');return;
+      }
+    }else if(!['Arena floor','Entry floor','Dance floor','DJ platform','DJ access','West dance zone','West deck ramp','West upper deck'].some(name=>names.includes(name)))return;
+    const goal=selected>=0?edmSeats[selected].exit:point;
+    const arrived=selected<0?null:()=>{
+      send('move',{x:cam.position.x,y:cam.position.y-eyeHeight,z:cam.position.z,yaw:cam.rotation.y});
+      send('seat-request',selected);
+    };
+    if(!navigate(goal,arrived,(from,to)=>permittedPath(from,to,states)))
+      send('gate-notice','걸어갈 수 있는 경로가 없습니다. 가까운 열린 바닥을 선택해 주세요.');
+
   });
   window.addEventListener('blur', () => joystick(0, 0));
   window.addEventListener('resize', () => engine.resize());
@@ -517,7 +540,7 @@ export function startLiveScene({
   send('scene-ready', true);
   let lastGateNotice = -Infinity;
   return (from, to) => {
-    if(speakerCamera)return false;
+    if(speakerCamera||!connected)return false;
     const allowed = permittedPath(from, to, states);
     if (!allowed && performance.now() - lastGateNotice > 4000) {
       send('gate-notice', '아직 열리지 않은 구역입니다. 오른쪽 테이블 구역은 중앙 플로어에서 바로 이동할 수 있습니다.');
