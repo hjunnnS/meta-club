@@ -96,7 +96,7 @@ export function startLiveScene({
     mesh.material.alpha = level * (calmBeats.matches ? .4 : .92);
   }
   const stageEvents = eventPlayer(B, scene, () => Date.now() + offset, () => fastFlash);
-  const view = playerView(B, scene, cam, canvas, eyeHeight, document.body, { followDistance: 7.1, followLift: 0.47, followFov: 1.23, maxDistance: 24, cameraLimit: edmCameraDistance, arrivalSeconds: 2.5 });
+  const view = playerView(B, scene, cam, canvas, eyeHeight, document.body, { followDistance: 7.1, followLift: 0.47, followFov: 1.23, maxDistance: 24, cameraLimit: edmCameraDistance, arrivalSeconds: 2.5, independentLook: true });
   const viewDance = danceCamera(B, scene);
   let own,
     mode = 'auto',

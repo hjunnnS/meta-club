@@ -131,21 +131,21 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
             beam('Roof ribs',ink,(s*7.5,11,z),(0,11.25,z),.10)
         if s > 0:
             continue
-        # Three open, stage-facing lounge groups stay outboard of the ramp and the approved route.
+        # Three stage-facing lounge groups sit near the inner rail, clear of the ramp and cross-deck route.
         velvet=finish('VIP plum velvet',(.22,.075,.31),0,.96)
         cushion=finish('VIP lilac cushions',(.33,.14,.42),0,.96)
         table=finish('VIP smoked stone',(.075,.060,.105),.22,.40)
         rug=finish('VIP woven rug',(.065,.052,.085),0,.98)
         cove=finish('VIP warm cove',(.52,.26,.10),0,.72,(.55,.29,.12))
         soft=finish('VIP violet cove',(.18,.08,.28),0,.78,(.26,.10,.38))
-        for j,z in enumerate([-17.4,-14.4,-11.4]):
-            x=-18.15
-            octagon('VIP rug',rug,-17.8,z,4.0,2.72,.22,4.006,4.016)
+        for j,z in enumerate([-17.8,-15.0,-10.7]):
+            x=-12.65
+            octagon('VIP rug',rug,-11.9,z,4.0,2.72,.22,4.006,4.016)
             octagon('VIP sofa base',ink,x,z,1.70,2.40,.15,4.10,4.28)
             for dz in [-.72,0,.72]:
                 octagon('VIP sofa cushion',velvet,x+.06,z+dz,1.45,.69,.12,4.28,4.49)
                 beam('VIP cushion seam',cushion,(x+.70,4.48,z+dz-.25),(x+.70,4.48,z+dz+.25),.012)
-            # Backrest on the outer wall side: the open seat faces the DJ stage to the east.
+            # Backrest faces the central walking lane; the open seat faces the stage beyond the inner rail.
             octagon('VIP sofa back',velvet,x-.75,z,.22,2.42,.08,4.28,4.91)
             for dz in [-.72,0,.72]:
                 box('VIP back upholstery',cushion,x-.625,x-.60,z+dz-.29,z+dz+.29,4.51,4.82)
@@ -155,8 +155,8 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
             beam('VIP sofa brass reveal',brass,(x+.84,4.24,z-1.04),(x+.84,4.24,z+1.04),.018)
             beam('VIP sofa underglow',cove,(x+.85,4.13,z-1.02),(x+.85,4.13,z+1.02),.022)
             beam('VIP outer floor glow',soft,(x-.83,4.04,z-1.08),(x-.83,4.04,z+1.08),.018)
-            # A low table sits beside the group, leaving the central x=-14.6 route clear.
-            tx=-16.25
+            # Low tables leave about .9m before the inner rail; z=-13 remains a clear cross-deck route.
+            tx=-10.75
             octagon('VIP low table top',table,tx,z+.22,1.10,1.28,.16,4.43,4.51)
             for dx in [-.36,.36]:
                 for dz in [-.44,.44]:post('VIP table leg',brass,tx+dx,4.04,z+.22+dz,.034,.39)

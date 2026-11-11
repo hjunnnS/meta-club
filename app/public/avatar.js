@@ -209,7 +209,7 @@ export function avatarFactory(B, scene, glow) {
 }
 
 // The walking camera stays at the player's eyes for input, collisions and network movement.
-export function playerView(B, scene, cam, canvas, eyeHeight, controls, { followDistance = 3.4, followLift = 0.32, followFov = cam.fov, maxDistance = 9, cameraLimit = null, arrivalSeconds = 0 } = {}) {
+export function playerView(B, scene, cam, canvas, eyeHeight, controls, { followDistance = 3.4, followLift = 0.32, followFov = cam.fov, maxDistance = 9, cameraLimit = null, arrivalSeconds = 0, independentLook = false } = {}) {
   const follow = new B.FreeCamera('third person', B.Vector3.Zero(), scene);
   const seatedEye = new B.FreeCamera('activity eyes', B.Vector3.Zero(), scene);
   seatedEye.minZ = cam.minZ;
@@ -232,6 +232,27 @@ export function playerView(B, scene, cam, canvas, eyeHeight, controls, { followD
   const keyArrival=event=>{if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(event.code))cancelArrival();};
   canvas.addEventListener('pointerdown',cancelArrival);
   window.addEventListener('keydown',keyArrival);
+  let orbitYaw=0,orbitPitch=0,orbitReady=false,orbitDrag=null;
+  function orbitDown(event){
+    if(!independentLook||!thirdPerson||preview||![0,2].includes(event.button))return;
+    orbitDrag={id:event.pointerId,x:event.clientX,y:event.clientY};
+  }
+  function orbitMove(event){
+    if(!orbitDrag||event.pointerId!==orbitDrag.id||!thirdPerson||preview)return;
+    const dx=event.clientX-orbitDrag.x,dy=event.clientY-orbitDrag.y;
+    orbitDrag.x=event.clientX;orbitDrag.y=event.clientY;
+    if(!orbitReady){orbitYaw=cam.rotation.y;orbitPitch=cam.rotation.x;orbitReady=true;}
+    const handedness=scene.useRightHandedSystem?-1:1;
+    const sensitivity=Math.max(300,cam.angularSensibility*.18);
+    orbitYaw+=dx*handedness/sensitivity;
+    orbitPitch=Math.max(-.65,Math.min(.80,orbitPitch+dy*handedness/sensitivity));
+  }
+  const orbitUp=()=>{orbitDrag=null;};
+  canvas.addEventListener('pointerdown',orbitDown);
+  canvas.addEventListener('pointermove',orbitMove);
+  window.addEventListener('pointerup',orbitUp);
+  window.addEventListener('pointercancel',orbitUp);
+  window.addEventListener('blur',orbitUp);
   function wheel(event) {
     if (!thirdPerson || preview || event.ctrlKey || !event.deltaY) return;
     event.preventDefault();
@@ -244,10 +265,12 @@ export function playerView(B, scene, cam, canvas, eyeHeight, controls, { followD
     canvas.removeEventListener('wheel', wheel);
     canvas.removeEventListener('pointerdown',cancelArrival);
     window.removeEventListener('keydown',keyArrival);
+    canvas.removeEventListener('pointerdown',orbitDown);canvas.removeEventListener('pointermove',orbitMove);
+    window.removeEventListener('pointerup',orbitUp);window.removeEventListener('pointercancel',orbitUp);window.removeEventListener('blur',orbitUp);
   });
 
   function select() {
-    scene.activeCamera = preview || (!model ? cam : thirdPerson ? activity?.camera || follow : fixed ? seatedEye : cam);
+    scene.activeCamera = preview || (!model ? cam : thirdPerson ? (independentLook ? follow : activity?.camera || follow) : fixed ? seatedEye : cam);
     if (model) model.root.setEnabled(thirdPerson);
     button.disabled = Boolean(preview);
   }
@@ -256,7 +279,11 @@ export function playerView(B, scene, cam, canvas, eyeHeight, controls, { followD
   }
   button.onclick = () => {
     cancelArrival();
-    thirdPerson = !thirdPerson;
+    if(independentLook){
+      if(thirdPerson&&orbitReady){cam.rotation.x=orbitPitch;cam.rotation.y=orbitYaw;cam.cameraRotation.set(0,0);}
+      else {orbitYaw=cam.rotation.y;orbitPitch=cam.rotation.x;orbitReady=true;}
+    }
+    orbitDrag=null;thirdPerson = !thirdPerson;
     label();
     select();
     canvas.focus();
@@ -277,10 +304,19 @@ export function playerView(B, scene, cam, canvas, eyeHeight, controls, { followD
       seatedEye.position.y += eyeHeight - (model.actor.seat != null ? 0.35 : 0);
     }
     if (!thirdPerson || preview) return;
-    const camera = activity?.camera || follow;
-    const target = activity?.target || model.root.position.add(new B.Vector3(0, 1.25, 0));
+    const camera = independentLook?follow:activity?.camera || follow;
+    const target = !independentLook&&activity?.target ? activity.target : model.root.position.add(new B.Vector3(0, 1.25, 0));
     let direction, length;
-    if (activity) {
+    if(independentLook){
+      if(!orbitReady){orbitYaw=cam.rotation.y;orbitPitch=cam.rotation.x;orbitReady=true;}
+      const forward=B.Vector3.TransformNormal(new B.Vector3(0,0,scene.useRightHandedSystem?-1:1),B.Matrix.RotationYawPitchRoll(orbitYaw,orbitPitch,0)).normalize();
+      const across=new B.Vector3(-forward.z,0,forward.x).normalize();
+      const shift=new B.Vector3(forward.x,0,forward.z).scale(1.05).add(across.scale(.40));
+      const span=shift.length(),axis=shift.scale(1/span);
+      const safe=cameraLimit?Math.max(0,Math.min(span,cameraLimit(target,axis,span+.5)-.5)):span;
+      target.addInPlace(axis.scale(safe));
+      direction=forward.negate();direction.y+=followLift;direction.normalize();length=zoomDistance;
+    }else if (activity) {
       direction = activity.offset.normalizeToNew();
       length = activity.offset.length() * zoomDistance / defaultDistance;
     } else {
