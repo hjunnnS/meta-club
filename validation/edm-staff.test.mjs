@@ -21,8 +21,10 @@ test('adult staff use private clothed silhouettes and fixed role positions witho
    assert.notEqual(model.torso.material,base);
    const upper=model.near.getChildMeshes().filter(m=>m.name.includes('clothed upper torso'));
    assert.equal(upper.length,2);assert(upper.every(m=>m.material===model.torso.material));
-   assert.equal(model.root.position.z,role==='dj'?-15.4:17.4);
-   animateStaff(model,role,1.2,1.5,.8);assert.notEqual(model.limbs[2].rotation.x,0);
+   assert.equal(model.root.position.z,role==='dj'?-13.35:17.4);
+   const fixedShape=upper.map(mesh=>({position:mesh.position.asArray(),scale:mesh.scaling.asArray()}));
+   animateStaff(model,role,1.2,1.5,.8);
+   assert.deepEqual(upper.map(mesh=>({position:mesh.position.asArray(),scale:mesh.scaling.asArray()})),fixedShape);assert.notEqual(model.limbs[2].rotation.x,0);
    assert(model.root.position.equals(start));assert(!model.far.isEnabled());
    if(role==='dj')assert(model.near.getChildMeshes().some(m=>m.name.includes('headphone')));
    else assert(model.near.getChildMeshes().some(m=>m.name.includes('shaker')));

@@ -322,7 +322,7 @@ export function playerView(B, scene, cam, canvas, eyeHeight, controls, { followD
 export function staffNPC(B,scene,make,role) {
   const dj=role==='dj';
   const actor={id:dj?'house-dj':'house-bartender',ai:false,avatar:dj?'indigo':'teal',
-    nickname:dj?'DJ':'바 직원',x:dj?0:-13.6,y:dj?1.35:0,z:dj?-15.4:17.4,yaw:dj?0:Math.PI};
+    nickname:dj?'DJ':'바 직원',x:dj?0:-13.6,y:dj?1.35:0,z:dj?-13.35:17.4,yaw:dj?0:Math.PI};
   const model=make(actor),own=[];
   model.root.metadata={ageGroup:'adult',gender:'woman',role,decorative:true};
   const fabric=model.torso.material.clone(role+' fitted blouse');own.push(fabric);
@@ -333,7 +333,7 @@ export function staffNPC(B,scene,make,role) {
   function material(name,color){
     const ink=new B.StandardMaterial(role+' '+name,scene);ink.diffuseColor=B.Color3.FromHexString(color);own.push(ink);return ink;
   }
-  const hair=material('hair',dj?'#291c39':'#4a2c2c'),dark=material('uniform trim','#161326');
+  const hair=material('hair',dj?'#eac365':'#4a2c2c'),dark=material('uniform trim','#161326');
   const eyes=material('face details','#241a2b'),accent=material('uniform accent',dj?'#f16bcd':'#d3a862');
   function part(name,kind,options,position,ink,parent=model.near){
     const mesh=B.MeshBuilder[kind](role+' '+name,options,scene);

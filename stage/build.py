@@ -117,8 +117,9 @@ octagon("DJ platform",deck,0,-14.2,15,8.4,1.15,-.03,1.35,True)
 rect("DJ access",deck,-2.0,2.0,-10.05,-7.6,1.35,0,-.01,True)
 for x1,x2 in [(-6.25,-2.2),(2.2,6.25)]:
     box("Stage lip",pink,x1,x2,-10.13,-10.02,1.18,1.31)
-octagon("DJ booth",metal,0,-15.75,6.9,1.65,.45,1.35,2.45)
-box("Booth trim",ice,-3,3,-14.94,-14.90,2.32,2.43)
+booth_z = -12.9 if festival else -15.75
+octagon("DJ booth",metal,0,booth_z,6.9,1.65,.45,1.35,2.45)
+box("Booth trim",ice,-3,3,booth_z+.81,booth_z+.85,2.32,2.43)
 box("Stage backdrop",indigo,-6.8,6.8,-18.8,-18.45,1.35,8.0)
 for side in (-1,1):
     # Architectural fan frames, visible from the entry above the booth.
@@ -198,6 +199,8 @@ route=[(0,0,25),(0,0,12),(0,.018,0),(0,.018,-7.6),(0,1.35,-10.05),(0,1.35,-13),
        (14.6,.045,6),(14.6,0,0),(14.6,4,-8),(14.6,4,-13),(10.1,4,-13)]
 stops=dict(entry=0,floor=2,stage=5,west=9,east=11,balcony=15)
 if festival:
+    # Stop in front of the relocated booth, keeping the approach and return clear.
+    route[5] = (0,1.35,-11.2)
     # Visit the east dance floor first, then climb the remaining west balcony.
     route[9:] = [(-x,y,z) for x,y,z in route[9:]]
     stops.update(west=11,east=9)

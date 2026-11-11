@@ -103,7 +103,7 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
             for k in range(3):box('Array grille ribs',silver,x-.34,x+.34,-14.065,-14.05,y+.08+k*.10,y+.096+k*.10)
         for i in range(10):
             x=s*(.33+.28*i)
-            box('Booth equalizer',cyan if i%3 else pink,x-.045,x+.045,-14.896,-14.87,1.56,1.7+.45*abs(math.sin(i)))
+            box('Booth equalizer',cyan if i%3 else pink,x-.045,x+.045,-12.046,-12.02,1.56,1.7+.45*abs(math.sin(i)))
         for i in range(4):
             x=s*(2.1+i*1.35);near=(x,1.58,-11.1);far=(s*(7.0+i*1.7),8.85-i*.28,-8.5+i*1.4)
             post('Stage spot body',black,x,1.35,-11.1,.22,.23)

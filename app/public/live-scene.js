@@ -102,8 +102,8 @@ export function startLiveScene({
     mesh.setEnabled(false);
     return mesh;
   }
-  const boothFace = lightStrip('Booth center fill', 0, 1.91, -14.84, 5.98, .79);
-  const boothEnds = [-1, 1].map(side => lightStrip('Booth end glow', side*2.77, 1.91, -14.79, .45, .79));
+  const boothFace = lightStrip('Booth center fill', 0, 1.91, -11.99, 5.98, .79);
+  const boothEnds = [-1, 1].map(side => lightStrip('Booth end glow', side*2.77, 1.91, -11.94, .45, .79));
   const stageLips = [-1, 1].map(side => lightStrip('Stage lip cue', side*4.225, 1.15, -9.985, 4.05, .34));
   function illuminate(mesh, color, level) {
     mesh.setEnabled(level > 0);
@@ -172,7 +172,7 @@ export function startLiveScene({
   function speakerView(kind='speakers'){
     if(speakerCamera)return;
     const positions={speakers:[[-8.5,2.6,11.8],[-18.5,1.8,5.8]],
-      bartender:[[-11.3,1.95,14],[-13.6,1.4,17.4]],dj:[[0,3.5,-11.8],[0,3,-15.4]]};
+      bartender:[[-11.3,1.95,14],[-13.6,1.4,17.4]],dj:[[0,3.5,-9.8],[0,3,-13.35]]};
     const [eye,target]=positions[kind]||positions.speakers;
     speakerCamera=new B.FreeCamera('Club observation',B.Vector3.FromArray(eye),scene);
     speakerCamera.setTarget(B.Vector3.FromArray(target));
@@ -493,8 +493,8 @@ export function startLiveScene({
     animateStaff(bartender,'bartender',beats,t,musicEnergy,calmBeats.matches);
     if ((segment === 1 || segment === 2) && !preview && !celebrating && now >= nextBroadcast) {
       if (segment === 1) {
-        broadcastCamera.position.set(0, 3.16, -13.65);
-        broadcastCamera.setTarget(new B.Vector3(0, 3.08, -15.4));
+        broadcastCamera.position.set(0, 3.16, -11.60);
+        broadcastCamera.setTarget(new B.Vector3(0, 3.08, -13.35));
         broadcastCamera.fov = .43;
         broadcast.renderList = dj.near.getChildMeshes();
       } else {
