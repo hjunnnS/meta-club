@@ -120,10 +120,10 @@ function goboTextures(B,scene) {
     for(let y=0;y<size;y++)for(let x=0;x<size;x++){
       const u=(x+.5-size/2)/(size/2),v=(y+.5-size/2)/(size/2);
       const r=Math.hypot(u,v),angle=Math.atan2(v,u),offset=(y*size+x)*4;
-      const grid=t=>Math.abs(t-Math.round(t))<.12;
-      const mark=kind===0?(Math.abs(r-.76)<.060||Math.abs(r-.44)<.048||r>.2&&r<.87&&Math.abs(Math.sin(angle*8))<.16)
+      const grid=t=>Math.abs(t-Math.round(t))<.06;
+      const mark=kind===0?(Math.abs(r-.76)<.030||Math.abs(r-.44)<.024||r>.2&&r<.87&&Math.abs(Math.sin(angle*8))<.08)
         :kind===1?(grid(u*4)||grid(v*4))
-        :(Math.abs(r-.67)<.065&&Math.cos(angle*12)>.35||Math.abs(r-.30)<.025);
+        :(Math.abs(r-.67)<.0325&&Math.cos(angle*12)>.35||Math.abs(r-.30)<.0125);
       pixels[offset]=pixels[offset+1]=pixels[offset+2]=255;
       pixels[offset+3]=r<.94&&mark?Math.round(255*Math.min(1,(.94-r)/.08)):0;
     }
@@ -146,7 +146,7 @@ export function strobeAccents(B,scene) {
   const curtainInk=[ink('Curtain white','#f5fbff'),ink('Curtain yellow','#ffe56d')];
   const fanInk=ink('Overhead fan ice','#ddf5ff'),fanSheetInk=ink('Overhead fan luminous sheet','#92ddff');
   const curtains=[],fans=[],fanSheets=[],patterns=[],textures=goboTextures(B,scene);
-  function ray(name,rig,material,diameter=.038){
+  function ray(name,rig,material,diameter=.019){
     const mesh=B.MeshBuilder.CreateCylinder(name,{height:1,diameter,tessellation:5,cap:B.Mesh.NO_CAP},scene);
     mesh.parent=rig;mesh.material=material;mesh.isPickable=false;mesh.checkCollisions=false;mesh.rotationQuaternion=new B.Quaternion();return mesh;
   }
@@ -156,7 +156,7 @@ export function strobeAccents(B,scene) {
   }
   for(const side of [-1,1])for(let i=0;i<9;i++){
     const origin=new B.Vector3(side*5.7,6.2,-10.3);
-    fans.push({mesh:ray('Strobe overhead fan beam',rigs.fan,fanInk,.085),origin,side,i});
+    fans.push({mesh:ray('Strobe overhead fan beam',rigs.fan,fanInk,.0425),origin,side,i});
   }
   for(const side of [-1,1]){
     const mesh=new B.Mesh('Strobe overhead fan light sheet',scene),vertices=new Float32Array(9);

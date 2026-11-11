@@ -71,9 +71,9 @@ export function celebration(B, scene, root, seconds, holographic = false, select
     const y = 7.4+1.8*Math.min(age,.5)-1.35*Math.max(0,age-.5);
     p.isVisible = age >= 0 && y > .15;
     if (!p.isVisible) return p;
-    // Eight bursts around the ceiling rings: outward launch, then flutter down.
-    const emitter=(i%8)*Math.PI/4,angle=emitter+(noise(i,9)-.5)*.8;
-    const travel=(2+noise(i,10)*3.6)*(1-Math.exp(-age*3))+age*.15;
+    // Twelve outward bursts cover the audience and side aisles, then flutter down.
+    const emitter=(i%12)*Math.PI/6,angle=emitter+(noise(i,9)-.5)*1.2;
+    const travel=(3+noise(i,10)*7.2)*(1-Math.exp(-age*2.2))+age*.28;
     p.position.set(6*Math.cos(emitter)+Math.cos(angle)*travel+.35*Math.sin(age*1.7+i),
       y,1+6*Math.sin(emitter)+Math.sin(angle)*travel+.35*Math.sin(age*1.3+i));
     p.rotation.set(age*(1+noise(i,11)*3), age*.9+i, age*1.4+i);

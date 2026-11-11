@@ -393,8 +393,8 @@ function peripheralLighting(B,scene) {
     const haloInk=paint(B,scene,'peripheral laser halo',i%2?'#ffce4c':'#67ff83',1);
     haloInk.disableLighting=true;haloInk.alphaMode=B.Engine.ALPHA_ADD;
     const rays=[-1,1].map(spread=>{
-      const ray=attach(B.MeshBuilder.CreateCylinder('peripheral laser ray',{height:1,diameter:.06,tessellation:6,cap:B.Mesh.NO_CAP},scene),rig,rayInk);
-      const halo=attach(B.MeshBuilder.CreateCylinder('peripheral laser soft edge',{height:1,diameter:.15,tessellation:6,cap:B.Mesh.NO_CAP},scene),rig,haloInk);
+      const ray=attach(B.MeshBuilder.CreateCylinder('peripheral laser ray',{height:1,diameter:.03,tessellation:6,cap:B.Mesh.NO_CAP},scene),rig,rayInk);
+      const halo=attach(B.MeshBuilder.CreateCylinder('peripheral laser soft edge',{height:1,diameter:.075,tessellation:6,cap:B.Mesh.NO_CAP},scene),rig,haloInk);
       ray.rotationQuaternion=new B.Quaternion();halo.rotationQuaternion=new B.Quaternion();return {ray,halo,spread};
     });
     return {origin,body,glass,cone,pool,ink,poolInk,rays,rayInk,haloInk};
@@ -493,7 +493,7 @@ export function houseLights(B, scene) {
     for (let i = 0; i < 4; i++) {
       const origin = new B.Vector3(side * (3.4 + 1.35 * i), 6.7, -12 + i * .6);
       const mesh = attach(B.MeshBuilder.CreateCylinder('house fan', {
-        height: 1, diameterTop: .18, diameterBottom: .035, tessellation: 8, cap: B.Mesh.NO_CAP
+        height: 1, diameterTop: .09, diameterBottom: .0175, tessellation: 8, cap: B.Mesh.NO_CAP
       }, scene), rig, lights[side === 1 ? 0 : 1]);
       mesh.rotationQuaternion = new B.Quaternion();
       beams.push({ mesh, side, i, origin });
@@ -506,7 +506,7 @@ export function houseLights(B, scene) {
     material.alphaMode = B.Engine.ALPHA_ADD;
     material.alpha = 0;
     const ray = attach(B.MeshBuilder.CreateCylinder('phrase laser ray', {
-      height: 1, diameterTop: .12, diameterBottom: .065, tessellation: 8, cap: B.Mesh.NO_CAP
+      height: 1, diameterTop: .06, diameterBottom: .0325, tessellation: 8, cap: B.Mesh.NO_CAP
     }, scene), rig, material);
     ray.rotationQuaternion = new B.Quaternion();
     ray.setEnabled(false);
@@ -589,8 +589,8 @@ function lasers(B, scene, root, event, fastFlash) {
     light.alpha = 0.15;
     const core = paint(B, scene, 'beam core', '#ffffff');
     core.disableLighting = true;
-    const shaft = beam('overhead shaft', 0.75, 0.10, light);
-    const ray = beam('overhead core', 0.13, 0.05, core);
+    const shaft = beam('overhead shaft', 0.375, 0.05, light);
+    const ray = beam('overhead core', 0.065, 0.025, core);
     const lens = attach(B.MeshBuilder.CreateSphere('moving head lens', {diameter: 0.28, segments: 8}, scene), root, core);
     lens.position.copyFrom(origin);
     const casing=paint(B,scene,'moving head housing','#242033');
@@ -613,7 +613,7 @@ function lasers(B, scene, root, event, fastFlash) {
     return {
       side, spread: (i % 14) / 13 * 2 - 1,
       origin: new B.Vector3(side * 6.7, 4.2, -15.6),
-      mesh: beam('scanning fan', 0.065, 0.018, fanMaterials[i % spectrum.length]),
+      mesh: beam('scanning fan', 0.0325, 0.009, fanMaterials[i % spectrum.length]),
     };
   });
   const target = new B.Vector3();
