@@ -15,31 +15,32 @@ export function ceilingLights(B, scene) {
     const arcs=[];
     const ring = new B.TransformNode('rotating ceiling ring',scene);
     ring.parent=rig;
-    ring.position.set(0,7.65+i*.24,1);
+    ring.position.set(0,6.35+i*.26,-1.2);
     for(let j=0;j<8;j++) {
-      const start=j*Math.PI/4, radius=5.7+i*.55;
+      const start=j*Math.PI/4, radius=2.9+i*.46;
       const path=Array.from({length:9},(_,k)=>new B.Vector3(radius*Math.cos(start+k*.045),0,radius*Math.sin(start+k*.045)));
-      const tube=B.MeshBuilder.CreateTube('ceiling ring arc',{path,radius:.055,tessellation:5,cap:B.Mesh.NO_CAP},scene);
+      const tube=B.MeshBuilder.CreateTube('ceiling ring arc',{path,radius:.035,tessellation:5,cap:B.Mesh.NO_CAP},scene);
       tube.parent=ring;tube.material=materials[i];tube.isPickable=false;
       arcs.push(tube);
     }
     return {ring,arcs};
   });
   const calm=matchMedia('(prefers-reduced-motion: reduce)');
-  return (beat,strobing,energy=0,roomPulse=0) => {
+  return (beat,strobing,energy=0,roomPulse=0,look=null) => {
     rig.setEnabled(!strobing);
     const accent=calm.matches?0:Math.exp(-(((beat%1)+1)%1)*7)*energy;
     if(outerHalo?.emissiveColor){
-      const tone=colors[Math.floor(Math.max(0,beat)/8)%3];
+      const tone=look?B.Color3.FromHexString(look.primary):colors[Math.floor(Math.max(0,beat)/8)%3];
       tone.scaleToRef(strobing?.08:.35+.65*energy+accent*.8+roomPulse,outerHalo.emissiveColor);
     }
     rings.forEach(({ring,arcs},i)=>{
       const phase=((beat%32)+32)%32;
       const hit=!calm.matches&&beat>=32&&phase<4?Math.sin(phase*Math.PI)*Math.exp(-phase*.9)*energy:0;
-      ring.position.y=7.65+i*.24-hit*.48;
-      ring.rotation.z=hit*.16*(i%2?-1:1);
-      ring.rotation.x=hit*.06;
+      ring.position.y=6.35+i*.26-hit*.24;
+      ring.rotation.z=hit*.08*(i%2?-1:1);
+      ring.rotation.x=hit*.035;
       ring.rotation.y=calm.matches?0:beat*.10*(i%2?-1:1);
+      if(look)materials[i].emissiveColor.copyFrom(B.Color3.FromHexString(i%2?look.secondary:look.primary));
       materials[i].alpha=calm.matches?.5:Math.min(1,.50+accent*.35+roomPulse*.25);
       arcs.forEach((arc,j)=>{arc.visibility=calm.matches?.65:(j===((Math.floor(beat*2)+i)%8+8)%8?1:.35);});
     });

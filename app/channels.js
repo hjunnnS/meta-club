@@ -182,6 +182,10 @@ export async function startChannels(app, { origin, secret, port }) {
   app.get('/clubs/edm/sdk.js', serveFile('./node_modules/colyseus.js/dist/colyseus.js'));
   app.get('/clubs/edm/music.js', serveFile('./public/music.js'));
   app.get('/clubs/edm/edm-layout.js', serveFile('./edm-layout.js'));
+  app.get('/clubs/edm/rhythm-game.js', serveFile('./public/rhythm-game.js'));
+  app.get('/clubs/edm/neon-horizon-chart.json', serveFile('./public/neon-horizon-chart.json'));
+  app.get('/clubs/edm/activity-feedback.js', serveFile('./public/activity-feedback.js'));
+  app.get('/clubs/edm/scene-look.js', serveFile('./public/scene-look.js'));
   app.get('/clubs/edm/click-walk.js', serveFile('./public/click-walk.js'));
   app.get('/clubs/edm/scene.js', serveFile('./public/live-scene.js'));
   app.get('/clubs/edm/ambience.js', serveFile('./public/ambience.js'));

@@ -6,7 +6,7 @@ export function rhythmFloor(B, scene) {
   const material = new B.ShaderMaterial('rhythm tiles', scene, {
     vertexSource: 'precision highp float; attribute vec3 position; uniform mat4 worldViewProjection; varying vec2 p; void main(){p=position.xz;gl_Position=worldViewProjection*vec4(position,1.);}',
     fragmentSource: `precision highp float;
-      varying vec2 p; uniform float beat; uniform float intensity; uniform float celebration; uniform float accent; uniform float cueBeat; uniform vec3 cueColor; uniform float pattern; uniform float flash;
+      varying vec2 p; uniform float beat; uniform float intensity; uniform float celebration; uniform float accent; uniform float cueBeat; uniform vec3 cueColor; uniform float pattern; uniform float flash; uniform vec3 sceneColor; uniform vec3 sceneLight; uniform float sceneWhite;
       void main(){
         float radius=length(p); if(radius>8.2 || radius<0.85) discard;
         float band=(radius-.85)/2.45;
@@ -44,14 +44,18 @@ export function rhythmFloor(B, scene) {
           color=mix(vec3(.34,.31,.53),vec3(.88,.79,.99),halo);
           lit=.28+.58*halo;
         }
-        color=mix(color,vec3(1.,.96,.90),flash*.90);lit=max(lit,flash);
+        color=mix(sceneColor,sceneLight,clamp(lit*.78+sceneWhite,0.,1.));
+        color=mix(color,vec3(1.,.96,.90),max(flash*.90,sceneWhite));lit=max(lit,flash);
         gl_FragColor=vec4(mix(vec3(.12,.12,.24),color,lit),intensity*(.18+.82*lit));
       }`
-  }, { attributes:['position'], uniforms:['worldViewProjection','beat','intensity','celebration','accent','cueBeat','cueColor','pattern','flash'], needAlphaBlending:true });
+  }, { attributes:['position'], uniforms:['worldViewProjection','beat','intensity','celebration','accent','cueBeat','cueColor','pattern','flash','sceneColor','sceneLight','sceneWhite'], needAlphaBlending:true });
   material.backFaceCulling = false;
   mesh.material = material;
   const calm = matchMedia('(prefers-reduced-motion: reduce)');
-  return (beat, celebrating, accent, cueBeat, cueColor, pattern = 0, flash = 0) => {
+  return (beat, celebrating, accent, cueBeat, cueColor, pattern = 0, flash = 0, look = null) => {
+    material.setColor3('sceneColor',B.Color3.FromHexString(look?.primary||'#9e6dff'));
+    material.setColor3('sceneLight',B.Color3.FromHexString(look?.secondary||'#9deaff'));
+    material.setFloat('sceneWhite',calm.matches?0:look?.white||0);
     material.setFloat('flash', calm.matches ? 0 : flash);
     material.setFloat('pattern', pattern);
     material.setColor3('cueColor', cueColor);
@@ -59,6 +63,6 @@ export function rhythmFloor(B, scene) {
     material.setFloat('accent', accent);
     material.setFloat('celebration', celebrating ? 1 : 0);
     material.setFloat('beat', beat);
-    material.setFloat('intensity', calm.matches ? 0.42 : 0.9);
+    material.setFloat('intensity', calm.matches ? 0.42 : look?.floor??0.9);
   };
 }

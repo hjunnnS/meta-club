@@ -209,6 +209,20 @@ export function musicPlayer(notice, playing, failed) {
       }
       return bands;
     },
+    status(at = performance.now()) {
+      const next=target();
+      if(!source||!next||current!==next.track.id||ctx?.state!=='running'||lastFailure)return {playing:false};
+      const stamp=ctx.getOutputTimestamp?.();
+      const audible=stamp&&stamp.contextTime>0
+        ? stamp.contextTime+(at-stamp.performanceTime)/1000
+        : ctx.currentTime-(ctx.outputLatency||ctx.baseLatency||0)+(at-performance.now())/1000;
+      const raw=position(Math.max(0,Math.min(ctx.currentTime,audible))),length=source.buffer.duration;
+      const time=((raw%length)+length)%length;
+      const expected=next.cycle*next.track.duration+next.time;
+      const totalTime=time+Math.round((expected-time)/length)*length;
+      return {playing:true,track:next.track,time,totalTime,
+        beat:(totalTime-(next.track.firstBeat||0))*(next.track.bpm||120)/60};
+    },
     beat: () => trackBeat(target(), (Date.now() + clockOffset - epoch) / 1000),
     reset() {
       stop();

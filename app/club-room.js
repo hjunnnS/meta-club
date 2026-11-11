@@ -104,6 +104,7 @@ export class EdmRoom extends Room {
     this.onMessage('wand', (client, enabled) => {
       const actor = this.member(client);
       if (actor && typeof enabled === 'boolean' && this.allowActivity(client)) {
+        if(enabled&&!actor.wand)this.react(actor,'disco-point',true);
         actor.wand = enabled;
         this.dirty = true;
       }

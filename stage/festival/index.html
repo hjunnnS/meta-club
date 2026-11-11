@@ -81,7 +81,7 @@ async function open(){
  walker.ellipsoid=new B.Vector3(.28,.71,.28);
  walker.ellipsoidOffset=new B.Vector3(0,walker.ellipsoid.y,0);
  walker.isPickable=false;
- let walking=false, allowedStep=()=>true;
+ let walking=false, movementBlocked=false, allowedStep=()=>true;
  let walkRoute=[], walkArrival=null, stalled=0;
  function cancelWalk(){walkRoute=[];walkArrival=null;stalled=0;}
  let joystick={x:0,y:0}, seated=false;
@@ -113,7 +113,7 @@ async function open(){
    const pressed=(a,b)=>Number(keys.has(a)||keys.has(b));
    const forward=pressed('KeyW','ArrowUp')-pressed('KeyS','ArrowDown')+joystick.y;
    const side=pressed('KeyD','ArrowRight')-pressed('KeyA','ArrowLeft')+joystick.x;
-   if(seated){cancelWalk();return;}
+   if(seated||movementBlocked){cancelWalk();return;}
    const look=cam.getForwardRay().direction;
    const heading=new B.Vector3(look.x,0,look.z).normalize();
    const right=new B.Vector3(-heading.z,0,heading.x);
@@ -325,6 +325,7 @@ async function open(){
    allowedStep=startLiveScene({B,cam,scene,engine,canvas,glow,eyeHeight,
      joystick:(x,y)=>{if(x||y)cancelWalk();joystick={x,y};},
      navigate,cancelWalk,
+     lockInput(value){movementBlocked=value;keys.clear();cancelWalk();joystick={x:0,y:0};},
      pickDestination(x,y){return scene.pick(x,y,m=>floors.has(m)||m.checkCollisions);},
      place(actor){
        cancelWalk();

@@ -26,6 +26,21 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
         p=materials[i]['pbrMetallicRoughness']
         p.update(metallicFactor=metal,roughnessFactor=rough)
         if emission: materials[i]['emissiveFactor']=emission
+        textured={'Powder coated steel':'metal','Anodised aluminium':'metal','Satin champagne':'metal',
+                  'Obsidian counter':'stone','Booth smoked stone':'stone','Aubergine velvet':'cloth',
+                  'Booth midnight plum':'cloth','Fluted walnut':'wood'}
+        kind=textured.get(name)
+        if kind:
+            p['baseColorFactor']=[1,1,1,1]
+            def surface(x,y,rgb=rgb,kind=kind):
+                grain=math.sin(x*91.7+y*57.3)*43758.5453
+                noise=grain-math.floor(grain)-.5
+                if kind=='stone': gain=.90+.12*math.sin(x*.13+math.sin(y*.055)*3)**12+noise*.045
+                elif kind=='metal': gain=.91+.07*math.sin(y*2.3)+noise*.035
+                elif kind=='cloth': gain=.86+.12*((x+y)%2)+noise*.025
+                else: gain=.85+.14*math.sin(x*.35+math.sin(y*.04))+noise*.04
+                return [int(max(0,min(255,c*255*gain))) for c in rgb]
+            images[i]=(png(128,128,surface),lambda x,y,z:(x*.55+z*.19,y*.65+z*.31))
         return i
     ink=finish('Powder coated steel',(.048,.045,.072),.35)
     silver=finish('Anodised aluminium',(.30,.32,.41),.50,.28)
@@ -40,7 +55,10 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
         ('Amber LED',(1,.47,.095)),('Pearl LED',(.72,.86,1))]]
     purple,cyan,pink,gold,white=lamps
     for m in materials[:11]:
-        m['pbrMetallicRoughness']['roughnessFactor']=.53
+        p=m['pbrMetallicRoughness']
+        p['roughnessFactor']=.72 if m['name'] in ['Arena · basalt','Stage surface'] else .48
+        if m['name']=='Stage surface':p.update(baseColorFactor=[.08,.10,.14,1],metallicFactor=.14)
+        elif m['name']=='Structural graphite':p.update(baseColorFactor=[.035,.04,.055,1],metallicFactor=.35,roughnessFactor=.42)
     def post(name,mat,x,y,z,r,h):
         beam(name,mat,(x,y,z),(x,y+h,z),r)
     def ellipse(name,mat,x,y,z,rx,rz,r,n=64):
@@ -186,6 +204,8 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
             for zz in [z-.46,z+.46]:post('Wall booth leg',brass,xx,.04,zz,.045,.58)
         beam('Wall booth table glow',purple,(17.82,.69,z-.49),(17.82,.69,z+.49),.022)
         post('Wall booth lantern',gold,18.5,.73,z,.065,.18)
+        for side in [-1,1]:
+            beam('Booth underside light',piping,(17.35,.095,z+side*1.98),(20.45,.095,z+side*1.98),.014)
         # Small number plaques attach to the aisle-facing lower front of each return seat.
         number=finish('Table number '+str(index),(1,1,1),0,.65,(.72,.72,.72))
         digits={1:['010','110','010','010','111'],2:['111','001','111','100','111'],

@@ -93,22 +93,22 @@ export function ledScreen(B, scene, message, nickname = '', overlay = lettering(
 }
 
 // Four eight-beat looks on the same 32-beat clock as the floor and crowd.
-function playWall(ctx, beat) {
+function playWall(ctx, beat, look = null) {
   const section = Math.floor(beat / 8) % 4;
   const baseHue = [258, 181, 316, 225][section];
   const hue = baseHue + 28 * Math.sin(beat * Math.PI / 4);
   const kick = Math.exp(-3.4 * (beat % 1));
   const wash = ctx.createLinearGradient(0, 0, 1024, 384);
-  wash.addColorStop(0, `hsl(${hue} 90% 41%)`);
-  wash.addColorStop(.5, `hsl(${hue+18} 74% 13%)`);
-  wash.addColorStop(1, `hsl(${hue+85} 92% 40%)`);
+  wash.addColorStop(0, look?.primary||`hsl(${hue} 90% 41%)`);
+  wash.addColorStop(.5, look?'#0b0b1e':`hsl(${hue+18} 74% 13%)`);
+  wash.addColorStop(1, look?.secondary||`hsl(${hue+85} 92% 40%)`);
   ctx.fillStyle = wash;
   ctx.fillRect(0,0,1024,384);
   ctx.save();
   ctx.translate(512,192);
   for (let i=0; i<9; i++) {
     const travel = ((beat * .32 + i) % 9) / 9;
-    ctx.strokeStyle = `hsla(${hue+travel*125} 100% 68% / ${.28+.65*travel})`;
+    ctx.strokeStyle = look?(i%2?look.secondary:look.primary):`hsla(${hue+travel*125} 100% 68% / ${.28+.65*travel})`;
     ctx.lineWidth = 3 + 15*travel + 4*kick;
     ctx.beginPath();
     if (section % 2 === 0) {
@@ -148,7 +148,8 @@ export function houseScreen(B, scene, broadcast) {
       vertexSource: 'precision highp float; attribute vec3 position; attribute vec2 uv; uniform mat4 worldViewProjection; varying vec2 vUV; void main(){vUV=uv;gl_Position=worldViewProjection*vec4(position,1.);}',
       fragmentSource: `precision highp float; varying vec2 vUV; uniform sampler2D artwork; uniform sampler2D feed; uniform float live;
         void main(){vec4 bg=texture2D(artwork,vUV);vec4 video=texture2D(feed,vUV);
-        float edge=smoothstep(.08,.18,vUV.x)*(1.-smoothstep(.82,.92,vUV.x));
+        float edge=smoothstep(.04,.10,vUV.x)*(1.-smoothstep(.90,.96,vUV.x));
+        edge*=smoothstep(.10,.18,vUV.y)*(1.-smoothstep(.90,.97,vUV.y));
         gl_FragColor=vec4(mix(bg.rgb,video.rgb,live*edge*video.a),1.);}`
     }, {attributes:['position','uv'],uniforms:['worldViewProjection','live'],samplers:['artwork','feed']});
     material.setTexture('artwork', texture);
@@ -158,7 +159,7 @@ export function houseScreen(B, scene, broadcast) {
     screen.material = material;
   }
   let lastSegment = -1, lastPerformance, lastDim;
-  return (track, beats, visible, accent, gather, calm, phraseBeat, release, cueColor, performanceTitle = null, dimBackground = false, roomPulse = 0) => {
+  return (track, beats, visible, accent, gather, calm, phraseBeat, release, cueColor, performanceTitle = null, dimBackground = false, roomPulse = 0, look = null) => {
     flashInk.alpha=calm?0:roomPulse*.58;
     flashPanel.setEnabled(visible&&!calm&&roomPulse>.001);
     screen.setEnabled(visible);
@@ -174,7 +175,15 @@ export function houseScreen(B, scene, broadcast) {
       overlay = performanceTitle ? lettering(performanceTitle) : segment === 1 || segment === 2 ? null : track ? lettering(track, 'EDM CLUB') : lettering('EDM CLUB');
     } else if (lastFrame === frame) return;
     lastFrame = frame;
-    if (track) playWall(ctx, calm ? 0 : Math.max(0, phraseBeat));
+    const portrait=segment===1||segment===2;
+    if(portrait)flashInk.alpha*=.25;
+    if(portrait){
+      ctx.fillStyle='#080a14';ctx.fillRect(0,0,1024,384);
+      ctx.strokeStyle=look?.primary||cueColor;ctx.lineWidth=5;ctx.strokeRect(13,12,998,360);
+      ctx.fillStyle='#e9f7ff';ctx.font='bold 22px system-ui';ctx.textAlign='left';
+      ctx.fillText(segment===1?'DJ LIVE':'DANCE FLOOR',30,38);
+      ctx.font='18px system-ui';ctx.fillText(track||'EDM CLUB',30,361);
+    }else if (track) playWall(ctx, calm ? 0 : Math.max(0, phraseBeat),look);
     else mediaWall(ctx, beats * 0.36);
     // Mirrored neon wings leave the dark central field clear for the title.
     const sweep = calm ? 0 : Math.sin(beats * Math.PI / 4);
@@ -182,27 +191,28 @@ export function houseScreen(B, scene, broadcast) {
       ctx.save();
       ctx.translate(side < 0 ? 0 : 1024, 0);
       ctx.scale(-side, 1);
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < (portrait?2:5); i++) {
         const x = 10 + i * 24;
         const tip = x + 65 + 12 * sweep + gather * (370 - i * 12);
         ctx.beginPath();
         ctx.moveTo(x - 36, 0);
         ctx.lineTo(tip, 192);
         ctx.lineTo(x - 36, 384);
-        ctx.strokeStyle = ['#7555e0','#389fce','#30d6d3','#f558bd','#ffc07a'][i];
+        ctx.strokeStyle = look?(i%2?look.secondary:look.primary):cueColor;
+        ctx.globalAlpha=portrait?.18:1;
         ctx.lineWidth = i === 4 ? 12 : 5;
         ctx.stroke();
       }
       ctx.restore();
     }
-    if (accent > 0) {
+    if (accent > 0&&!portrait) {
       ctx.fillStyle = `rgba(71, 206, 228, ${.28 * accent})`;
       ctx.fillRect(0, 0, 1024, 384);
       ctx.fillStyle = `rgba(159, 255, 245, ${accent})`;
       ctx.fillRect(0, 14, 1024, 18);
       ctx.fillRect(0, 352, 1024, 18);
     }
-    if (release >= 0 && release < .60) {
+    if (!portrait&&release >= 0 && release < .60) {
       const progress = release / .60;
       const radius = calm ? 185 : 34 + 890 * (1 - (1 - progress) ** 2);
       ctx.save();
@@ -513,10 +523,12 @@ export function houseLights(B, scene) {
     return { side, ray, material, origin: new B.Vector3(side * 4.2, 4.7, -12.2) };
   });
   const delta = new B.Vector3();
-  return (beat, visible, release, bpm=120, energy=0, strobing=false,preview=null,playing=true,arrangement=1) => {
+  return (beat, visible, release, bpm=120, energy=0, strobing=false,preview=null,playing=true,arrangement=1,look=null) => {
     const cue=peripheralCue(beat,bpm,preview,playing,arrangement);
     renderPeriphery(beat,bpm,energy,strobing,cue);
+    if(look)lights.forEach((m,i)=>m.emissiveColor.copyFrom(B.Color3.FromHexString(i?look.primary:look.secondary)));
     rig.setEnabled(visible&&!cue.preview);
+    if(look)for(const {mesh} of beams)mesh.visibility=look.beams;
     if (!visible||cue.preview) return;
     for(const material of lights)material.alpha=.065*cue.wash;
     const sweeping = release >= 0 && !calm.matches;
@@ -719,10 +731,12 @@ function phoenix(B, scene, root) {
 }
 
 export function eventPlayer(B, scene, now = Date.now, fastFlash = () => false) {
-  let current, root, animate, adorn;
+  let current, root, animate, adorn, bodies=[];
+  const prominence=(age,seconds)=>Math.min(1,Math.max(0,(age-1.4)/2.6),Math.max(0,(seconds-1.2-age)/4.8));
   function stop() {
     root?.dispose(false, true);
     root = current = animate = adorn = null;
+    bodies=[];
   }
   function set(event) {
     if (!event || !Object.hasOwn(effects, event.kind)) { stop(); return; }
@@ -734,6 +748,7 @@ export function eventPlayer(B, scene, now = Date.now, fastFlash = () => false) {
     animate = particlePreview ? null : ['whale','dragon','jellyfish','butterflies'].includes(event.kind)
       ? hologram(B, scene, root, event.kind)
       : {led: marquee, laser: lasers, phoenix}[event.kind](B, scene, root, event, fastFlash);
+    bodies=event.kind==='led'?[]:root.getChildMeshes();
     adorn = event.kind === 'led' ? null : celebration(B, scene, root, effects[event.kind].seconds,
       !particlePreview && event.kind !== 'laser', particlePreview ? event.kind : 'both', event.bpm || 120);
     tick();
@@ -744,11 +759,15 @@ export function eventPlayer(B, scene, now = Date.now, fastFlash = () => false) {
     if (t >= effects[current.kind].seconds) stop();
     else {
       animate?.(t);
+      const level=prominence(t,effects[current.kind].seconds);
+      for(const mesh of bodies)mesh.visibility=level;
       adorn?.(t);
     }
   }
   scene.onBeforeRenderObservable.add(tick);
   return {set, stop, get kind() { return current?.kind; },
+    get phase(){return current?{kind:current.kind,age:Math.max(0,(now()-current.start)/1000),seconds:effects[current.kind].seconds,
+      level:prominence(Math.max(0,(now()-current.start)/1000),effects[current.kind].seconds)}:null;},
     get strobing() {
       const elapsed = current ? now() - current.start : -1;
       return current?.kind === 'laser' && fastFlash() &&

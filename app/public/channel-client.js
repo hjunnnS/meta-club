@@ -1,9 +1,11 @@
+import {rhythmGame} from './rhythm-game.js';
 import { nearbyEdmSeats } from './edm-layout.js';
 import { dances, danceButtons } from './free-dance.js';
 import { initShop } from './shop.js';
 import { musicPlayer } from './music.js';
 const el = (id) => document.getElementById(id),
   map = document.querySelector('iframe');
+let rhythm;
 let audibleTrack = null;
 let loginRequired = false;
 function showMusic(id) {
@@ -109,6 +111,7 @@ function display(data) {
   }
 }
 function disconnected(message, reconnect) {
+  rhythm?.interrupt('연결이 끊겨 라운드를 중단했습니다.');
   firstVisitFailure(message);
   shop.channel(null);
   el('event-controls').hidden = true;
@@ -257,6 +260,7 @@ window.addEventListener('message', (event) => {
   if (kind === 'scene-ready') {
     sceneLoaded = true;
     frame('connection-state', true);
+    frame('game-active',Boolean(rhythm?.active));
     note('');
     ready = true;
     showMusic(audibleTrack);
@@ -351,6 +355,11 @@ el('dismiss').onclick = () => {
   showGuide(false);
   el('show-guide').focus();
 };
+rhythm=rhythmGame({music,
+  startMusic:async()=>{if(room)room.send('clock',Date.now());await music.start();},
+  canPlay:()=>Boolean(memberId&&room&&ready),
+  lock:active=>frame('game-active',active)});
+el('rhythm-open').onclick=()=>rhythm.open();
 function resume() {
   if (document.hidden || manual) return;
   frame('resume');

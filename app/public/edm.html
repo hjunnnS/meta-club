@@ -56,6 +56,15 @@
       height: 100%;
       border: 0;
     }
+    .rhythm-dialog{width:min(660px,94vw);max-height:94dvh;overflow:auto;margin:auto;border:1px solid #706784;border-radius:14px;background:#111422;color:#f4f7ff;padding:12px}
+    .rhythm-dialog::backdrop{background:#080b1455}
+    .rhythm-dialog header{padding:0 0 8px;justify-content:space-between}
+    .rhythm-dialog header p{margin:3px 0;font-size:12px;color:#bbc5df}
+    .rhythm-dialog canvas{width:100%;height:min(58dvh,490px);display:block;border-radius:6px;touch-action:none}
+    .rhythm-meters,.rhythm-actions{display:flex;gap:12px;justify-content:space-between;padding:8px 0;flex-wrap:wrap}
+    .rhythm-status{min-height:1.5em;margin:8px 0;font-size:13px}
+    .rhythm-help{font-size:12px;line-height:1.5;color:#bcc4db;margin-bottom:0}
+    .rhythm-keys button{margin:3px}
     #guide { background: #21192b; padding: .55rem .8rem; }
     #guide p { margin: .25rem 0 0; }
     #train-hint { font-size: .85rem; }
@@ -149,7 +158,7 @@
     <iframe title="EDM 클럽 공간" hidden></iframe>
   <section id="guide" aria-label="EDM 첫 방문 안내" hidden>
     <strong>EDM에서 처음 놀기</strong> <button id="dismiss">안내 닫기</button>
-    <p>음악을 켜고 춤을 고르세요. 무드봉을 들거나 운행 중인 기차에 합류할 수 있습니다. 바닥을 클릭하거나 WASD로 걷고, 드래그로 둘러보세요. 오른쪽 1~8번 테이블의 소파를 클릭하면 가까이 걸어가 앉습니다. 가까운 자리에서는 앉기 버튼도 사용할 수 있습니다. 일어나기 버튼으로 통로에 나올 수 있습니다.</p>
+    <p>음악을 켜고 춤을 고르세요. 무드봉을 들거나 운행 중인 기차에 합류할 수 있습니다. 바닥을 클릭하거나 WASD로 걷고, 드래그로 둘러보세요. 오른쪽 1~8번 테이블의 소파를 클릭하면 가까이 걸어가 앉습니다. 가까운 자리에서는 앉기 버튼도 사용할 수 있습니다. 일어나기 버튼으로 통로에 나올 수 있습니다. 리듬 게임 버튼으로 7키 연습을 시작할 수 있습니다.</p>
     <p id="train-hint" aria-live="polite"></p>
     <p id="guide-guest" hidden>춤·무드봉·기차는 <a href="/auth/signin?callbackUrl=%2Fclubs%2Fedm">회원 로그인</a> 후 이용할 수 있습니다.</p>
   </section>
@@ -160,6 +169,7 @@
       <div><button id="music">음악 시작</button> <output id="track"></output></div>
       <div><span id="dance-options"></span></div>
       <div><button id="wand" aria-pressed="false">무드봉 들기</button></div>
+      <div><button id="rhythm-open">리듬 게임 · 7키</button></div>
       <div><button id="seat" hidden>앉기</button></div>
       <div>
         <button id="train-join" hidden>기차 합류</button><button id="train-leave" hidden>기차 내리기</button>

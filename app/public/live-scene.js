@@ -1,5 +1,7 @@
 import { ceilingLights, musicSpeakers, strobeAccents, strobeAccentCue, accentDurations } from './ceiling-lights.js';
 import { clubAmbience, strobeDurations } from './ambience.js';
+import {activityFeedback} from './activity-feedback.js';
+import {sceneLook} from './scene-look.js';
 import { rhythmFloor } from './rhythm-floor.js';
 import { playlistPosition, trackBeat, musicDynamics } from './music.js';
 import { effects, eventPlayer, ledScreen, houseScreen, houseLights, peripheralTests, peripheralCue } from '/stage/festival/events.js';
@@ -18,6 +20,7 @@ export function startLiveScene({
   navigate,
   cancelWalk,
   pickDestination,
+  lockInput,
   place,
 }) {
   const send = (kind, data) => parent.postMessage({ kind, data }, location.origin);
@@ -25,6 +28,7 @@ export function startLiveScene({
     make = avatarFactory(B, scene, glow);
   let epoch = Date.now(),
     offset = 0;
+  const feedback=activityFeedback(B,scene);
   const renderCeiling = ceilingLights(B,scene);
   const renderSpeakers = musicSpeakers(B,scene);
   const renderAccents = strobeAccents(B,scene);
@@ -63,9 +67,7 @@ export function startLiveScene({
   const updateBoard = houseScreen(B, scene, broadcast);
   let nextBroadcast = 0;
 
-  const cueColors = ['#e587ff', '#54ffe1', '#ff82cb', '#80b8ff'].map(hex => ({
-    hex, rgb: B.Color3.FromHexString(hex),
-  }));
+  const lookPrimary=B.Color3.White(),lookSecondary=B.Color3.White();
   // Overlays follow the existing booth face and the two lips flanking its access ramp.
   function lightStrip(name, x, y, z, width, height) {
     const mesh = B.MeshBuilder.CreateBox(name, {width, height, depth: .032}, scene);
@@ -129,7 +131,12 @@ export function startLiveScene({
         model = make(a, a.id === wandGuest);
         models.set(a.id, model);
       }
-      model.actor = a;
+      const previous=model.actor;
+      if(previous&&a.id===self){
+        if(a.wand&&!previous.wand)feedback.start(a.id,'wand');
+        else if(a.action!==previous.action&&dances.has(a.action))feedback.start(a.id,'dance');
+      }
+      model.actor = {...a};
       if (a.id === self) {
         riding = a.trainSlot > 0;
         if (riding) {cancelWalk();place(a);}
@@ -143,7 +150,7 @@ export function startLiveScene({
       models.delete(id);
     }
   }
-  let preview, speakerCamera, connected=true;
+  let preview, speakerCamera, connected=true, gameActive=false;
   function speakerView(kind='speakers'){
     if(speakerCamera)return;
     cancelWalk();
@@ -210,11 +217,13 @@ export function startLiveScene({
     if (kind === 'fast-flash') fastFlash = data === true;
     if (kind === 'led-preview') showPreview(data);
     if (kind === 'actors') onSnapshot(data);
+    if(kind==='game-active'){gameActive=data===true;lockInput(gameActive);cancelWalk();}
     if (kind === 'connection-state') {
       connected=data===true;
       if(!connected){cancelWalk();joystick(0,0);stageEvents.stop();}
     }
     if (kind === 'place') {
+      feedback.seat(null);
       activeSeat = data.seat;
       place(data);
       moveBefore = null;
@@ -277,7 +286,23 @@ export function startLiveScene({
   canvas.onlostpointercapture = () => {
     lookId = null;
   };
-  let seatTap = null;
+  let seatTap = null,hoverAt=0;
+  function pickedSeat(hit){
+    if(!hit?.hit||![hit.pickedMesh.name,hit.pickedMesh.parent?.name].some(name=>/^Wall booth (seat|table|back|base)$/.test(name)))return -1;
+    let index=-1,best=Infinity;
+    edmSeats.forEach((s,i)=>{const d=s.table?Math.hypot(s.x-hit.pickedPoint.x,s.z-hit.pickedPoint.z):Infinity;if(d<best){index=i;best=d;}});
+    return index;
+  }
+  canvas.addEventListener('pointerleave',()=>feedback.seat(null));
+  canvas.addEventListener('pointermove',e=>{
+    if(e.buttons||performance.now()-hoverAt<80)return;hoverAt=performance.now();
+    const r=canvas.getBoundingClientRect();
+    const hit=pickDestination((e.clientX-r.left)*engine.getRenderWidth()/r.width,(e.clientY-r.top)*engine.getRenderHeight()/r.height);
+    const index=pickedSeat(hit),occupied=[...models.values()].some(m=>m.actor.seat===index);
+    const can=index>=0&&!occupied&&activeSeat===null&&!riding&&!speakerCamera&&connected&&!gameActive;
+    feedback.seat(can?edmSeats[index]:null);canvas.style.cursor=can?'pointer':'grab';
+    canvas.title=can?edmSeats[index].table+'번 테이블 · 클릭하면 걸어가 앉습니다.':'';
+  });
   canvas.addEventListener('pointerdown', e=>{
     seatTap=e.button===0?{id:e.pointerId,x:e.clientX,y:e.clientY,drag:false}:null;
   });
@@ -287,7 +312,7 @@ export function startLiveScene({
   canvas.addEventListener('pointercancel', ()=>seatTap=null);
   canvas.addEventListener('pointerup', e=>{
     const tap=seatTap;seatTap=null;
-    if(!tap||tap.id!==e.pointerId||tap.drag||activeSeat!==null||riding||speakerCamera||preview||!connected)return;
+    if(!tap||tap.id!==e.pointerId||tap.drag||activeSeat!==null||riding||speakerCamera||preview||!connected||gameActive)return;
     const bounds=canvas.getBoundingClientRect();
     const hit=pickDestination((e.clientX-bounds.left)*engine.getRenderWidth()/bounds.width,
       (e.clientY-bounds.top)*engine.getRenderHeight()/bounds.height);
@@ -311,6 +336,7 @@ export function startLiveScene({
       send('move',{x:cam.position.x,y:cam.position.y-eyeHeight,z:cam.position.z,yaw:cam.rotation.y});
       send('seat-request',selected);
     };
+    feedback.seat(selected>=0?edmSeats[selected]:null);
     if(!navigate(goal,arrived,(from,to)=>permittedPath(from,to,states)))
       send('gate-notice','걸어갈 수 있는 경로가 없습니다. 가까운 열린 바닥을 선택해 주세요.');
 
@@ -364,7 +390,11 @@ export function startLiveScene({
     const smokeProtection=peripheralPlan.protectSmoke&&previewAge>=strobeDurations[strobePreviewPattern];
     const effectBlocksStrobe=Boolean(accentPreview)||(effectPreview&&effectPreview.kind!=='strobe-hold');
     const roomPulse = renderAmbience(beats, audioBands, strobing||Boolean(effectBlocksStrobe)||Boolean(smokeProtection), Boolean(audibleTrack), playback?.track.bpm || 120, previewAge<strobeDurations[strobePreviewPattern]+1.6 ? previewAge : null, strobePreviewPattern,dynamics.level);
-    renderCeiling(beats,strobing,musicEnergy,roomPulse);
+    const boardSegment=playing?Math.floor(Math.max(0,beats)%32/8):-1;
+    const look=sceneLook(beats,Boolean(playing),dynamics.level,boardSegment===1||boardSegment===2);
+    lookPrimary.copyFrom(B.Color3.FromHexString(look.primary));
+    lookSecondary.copyFrom(B.Color3.FromHexString(look.secondary));
+    renderCeiling(beats,strobing,musicEnergy,roomPulse,look);
     renderSpeakers(beats,audioBands,Boolean(playing),dt,calmBeats.matches);
     const accentAge=accentPreview?(performance.now()-accentPreview.start)/1000:0;
     if(accentPreview&&accentAge>=accentDurations[accentPreview.kind])accentPreview=null;
@@ -373,8 +403,11 @@ export function startLiveScene({
       preview:accentTest,strobePreview:previewAge<strobeDurations[strobePreviewPattern]?{kind:strobePreviewPattern,age:previewAge}:null,
       overlap:stageEvents.kind&&stageEvents.kind!=='led'||peripheralPlan.laser>.5,
       protectSmoke:Boolean(smokeProtection),reduced:calmBeats.matches,arrangement:dynamics.level});
+    const performancePhase=stageEvents.phase;
+    const performancePriority=performancePhase&&performancePhase.kind!=='led'&&performancePhase.level<.75;
+    if(performancePriority&&!accentTest){accentCue.curtain*=.22;accentCue.fan*=.22;accentCue.gobo*=.45;}
     renderAccents(accentCue,beats,accentTest?.75:musicEnergy,calmBeats.matches,dt);
-    if (ambient) ambient.intensity = (smokeProtection?.42:.52) + roomPulse * 1.65;
+    if (ambient) ambient.intensity = (smokeProtection?.39:look.ambient) + roomPulse * 1.10;
     // The first beat of each four-beat bar accents both surfaces on the same frame.
     const barPhase = ((beats % 4) + 4) % 4;
     const accent = playing && beats >= 0 ? Math.max(0, 1 - barPhase / .78) * (calmBeats.matches ? .3 : 1) : 0;
@@ -383,9 +416,9 @@ export function startLiveScene({
     const phase32 = phraseBeat % 32;
     const gather = phase32 >= 30 ? (phase32 - 30) / 2 : 0;
     const release = phraseBeat >= 32 && phase32 < 3 ? phase32 / 3 : -1;
-    renderHouseLights(beats, !stageEvents.kind, preview||accentPreview ? -1 : release, playback?.track.bpm || 120, musicEnergy, strobing, effectPreview, Boolean(playing),dynamics.level);
+    renderHouseLights(beats, !stageEvents.kind, preview||accentPreview ? -1 : release, playback?.track.bpm || 120, musicEnergy, strobing, effectPreview, Boolean(playing),dynamics.level,look);
     // Pick the upcoming phrase's color during the pickup and keep it through the release.
-    const cue = cueColors[Math.floor((Math.max(0, phraseBeat) + 2) / 32) % cueColors.length];
+    const cue = {hex:look.primary,rgb:lookPrimary};
     const wallRelease = preview || celebrating ? -1 : release;
     // Times are measured in beats after the wall opens. Let neighboring surfaces overlap.
     const cueBeat = playing && phraseBeat >= 32 && !preview && !celebrating ? phase32 : -1;
@@ -396,16 +429,23 @@ export function startLiveScene({
     for (const end of boothEnds) illuminate(end, cue.rgb, endGlow);
     const lipGlow = ramp(cueBeat - 1.22, .28) * ramp(2.95 - cueBeat, .75);
     for (const lip of stageLips) illuminate(lip, cue.rgb, lipGlow);
-    renderFloor(beats, celebrating, accent, cueBeat, cue.rgb, stageEvents.kind === 'laser' ? 1 : ['phoenix','whale','dragon','jellyfish','butterflies'].includes(stageEvents.kind) ? 2 : 0, roomPulse);
-    updateBoard(playing ? playback.track.title : null, beats, !preview && !celebrating, accent, gather, calmBeats.matches, phraseBeat, wallRelease, cue.hex, stageEvents.kind && stageEvents.kind !== 'led' ? effects[stageEvents.kind].label : null, strobing, roomPulse);
+    renderFloor(beats, celebrating, accent, cueBeat, cue.rgb, stageEvents.kind === 'laser' ? 1 : ['phoenix','whale','dragon','jellyfish','butterflies'].includes(stageEvents.kind) ? 2 : 0, roomPulse,look);
+    updateBoard(playing ? playback.track.title : null, beats, !preview && !celebrating, accent, gather, calmBeats.matches, phraseBeat, wallRelease, cue.hex, stageEvents.kind && stageEvents.kind !== 'led' ? effects[stageEvents.kind].label : null, strobing, roomPulse,look);
     const phase = beats * Math.PI * 2,
       beatWave = Math.sin(phase);
     washes.forEach(({ light, base }, i) => {
-      light.intensity = base * (strobing ? .20 : 1+roomPulse*1.5) * (dancers ? 1 + 0.38 * Math.sin(phase / 4 + (i * Math.PI) / 2) : 1);
+      light.diffuse.copyFrom(i%2?lookSecondary:lookPrimary);
+      light.intensity = base * (strobing ? .20 : .70+look.opening*.45+roomPulse*1.25) * (dancers ? 1 + 0.38 * Math.sin(phase / 4 + (i * Math.PI) / 2) : 1);
     });
     strips.forEach(({ material, base }, i) => {
-      base.scaleToRef(strobing ? .16 : dancers ? 1 + 0.26 * Math.sin(phase / 4 + i * 2) : 1, material.emissiveColor);
+      B.Color3.Lerp(base,i%2?lookSecondary:lookPrimary,.72).scaleToRef(strobing ? .10 : look.decor*(dancers ? 1 + .14*Math.sin(phase/4+i*2) : 1), material.emissiveColor);
     });
+    for(const mesh of scene.meshes){
+      if(/^(peripheral laser (ray|soft edge)|wall downward light cone|house fan|phrase laser ray)$/.test(mesh.name))
+        mesh.visibility=effectPreview||accentTest?1:look.beams*(performancePriority?.25:1);
+    }
+    scene.materials.filter(m=>['house wash','peripheral thin laser','peripheral laser halo','scanner beam','beam core','shaft glow','floor wash'].includes(m.name))
+      .forEach((m,i)=>{if(m.emissiveColor)m.emissiveColor.copyFrom(i%2?lookSecondary:lookPrimary);});
     let detailed = 0,
       ai = 0,
       visibleAI = 0;
@@ -483,25 +523,29 @@ export function startLiveScene({
           : 0;
       });
     }
+    feedback.tick(models,now,calmBeats.matches);
     const segment = playing ? Math.floor(phase32 / 8) : -1;
     animateDance(dj, 'groove', beats, undefined, musicEnergy);
     animateStaff(dj,'dj',beats,t,musicEnergy,calmBeats.matches);
     animateStaff(bartender,'bartender',beats,t,musicEnergy,calmBeats.matches);
     if ((segment === 1 || segment === 2) && !preview && !celebrating && now >= nextBroadcast) {
       if (segment === 1) {
-        broadcastCamera.position.set(0, 3.16, -11.60);
-        broadcastCamera.setTarget(new B.Vector3(0, 3.08, -13.35));
-        broadcastCamera.fov = .43;
+        broadcastCamera.position.set(0, 3.20, -10.2);
+        broadcastCamera.setTarget(new B.Vector3(0, 2.83, -13.35));
+        broadcastCamera.fov = .52;
         broadcast.renderList = dj.near.getChildMeshes();
       } else {
-        const caller = models.get(wandGuest);
-        const guests = [caller, ...responders.map(id => models.get(id))].filter(m => m && m.actor.trainSlot == null);
+        const guests=[...models.values()].filter(m=>m.actor.trainSlot==null&&m.actor.seat==null&&
+          dances.has(m.actor.action)&&Math.hypot(m.actor.x,m.actor.z)<9)
+          .sort((a,b)=>Math.hypot(a.actor.x,a.actor.z)-Math.hypot(b.actor.x,b.actor.z)).slice(0,3);
         if (guests.length) {
           const center = guests.reduce((p,m) => p.add(m.root.position), B.Vector3.Zero()).scale(1/guests.length);
           center.y += .95;
-          broadcastCamera.position.copyFrom(center).addInPlace(new B.Vector3(11, 1.4, 3.7));
+          const radius=Math.max(1.2,...guests.map(m=>Math.hypot(m.root.position.x-center.x,m.root.position.z-center.z)));
+          const distance=Math.max(4.2,radius*2.1);
+          broadcastCamera.position.copyFrom(center).addInPlace(new B.Vector3(distance*.22,1.05,distance));
           broadcastCamera.setTarget(center);
-          broadcastCamera.fov = .65;
+          broadcastCamera.fov = .70;
         }
         broadcast.renderList = guests.flatMap(m => m.near.getChildMeshes());
       }
@@ -540,7 +584,7 @@ export function startLiveScene({
   send('scene-ready', true);
   let lastGateNotice = -Infinity;
   return (from, to) => {
-    if(speakerCamera||!connected)return false;
+    if(speakerCamera||!connected||gameActive)return false;
     const allowed = permittedPath(from, to, states);
     if (!allowed && performance.now() - lastGateNotice > 4000) {
       send('gate-notice', '아직 열리지 않은 구역입니다. 오른쪽 테이블 구역은 중앙 플로어에서 바로 이동할 수 있습니다.');
