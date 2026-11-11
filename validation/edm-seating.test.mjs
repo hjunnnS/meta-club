@@ -25,7 +25,7 @@ test('numbered booths synchronize seating, protect occupied seats and exit to th
     assert.equal(booths.length,24);
     assert.deepEqual([...new Set(booths.map(s=>s.table))],[1,2,3,4,5,6,7,8]);
     assert.deepEqual(booths.filter(s=>s.x===20.05).map(s=>s.z),[16.6,12,7.4,2.8,-2,-6.8,-11.6,-16.2]);
-    assert.equal(edmArea({x:14.6,y:0,z:6}).tier,1);
+    assert.equal(edmArea({x:14.6,y:0,z:6}).tier,0);
     assert(permittedPath({x:16.6,y:0,z:-1},{x:16.6,y:0,z:18.25},['CLOSED','CLOSED']));
     // Reject a forged long-distance target before moving any actor.
     seat(a,booths[0].index);assert.equal(room.member(a).seat,null);
@@ -56,4 +56,19 @@ test('numbered booths synchronize seating, protect occupied seats and exit to th
     for(const c of clients)if(room.member(c))room.onLeave(c,true);
     room.clock.clear();room.onDispose();
   }
+});
+
+
+test('central floor reaches all eight table approaches while expansion areas stay closed',()=>{
+  const closed=['CLOSED','CLOSED'];
+  // Reproduce the reported direct eastbound crossing through the removed pad.
+  assert(permittedPath({x:0,y:.018,z:6},{x:16.6,y:0,z:6},closed));
+  for(const seat of edmSeats.filter(s=>s.table)){
+    const center={x:0,y:.018,z:0};
+    assert(permittedPath(center,seat.exit,closed),`outbound table ${seat.table}`);
+    assert(permittedPath(seat.exit,center,closed),`return table ${seat.table}`);
+  }
+  assert(!permittedPath({x:0,y:0,z:6},{x:-14.6,y:.045,z:6},closed));
+  assert(!permittedPath({x:-14.6,y:0,z:1},{x:-14.6,y:4,z:-8},closed));
+  assert(permittedPath({x:0,y:0,z:6},{x:-14.6,y:.045,z:6},['OPEN','CLOSED']));
 });

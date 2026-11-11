@@ -28,7 +28,10 @@ export function edmArea({ x, y, z }) {
   // The reclaimed east-wall sofa row and its open aisle remain accessible.
   if (x >= 16.1 && z >= -19 && z <= 19 && y >= -.08 && y < .7)
     return { tier: 0, group: 'east-tables' };
-  if (octagon(dx, Math.abs(z - 6), 5.1, 5.5, 1.6)) return { tier: 1, group: side + '-dance' };
+  // The former east dance pad was removed: its ground-level approach to the
+  // tables is base space too, rather than an invisible expansion gate.
+  if (x < 0 && octagon(dx, Math.abs(z - 6), 5.1, 5.5, 1.6))
+    return { tier: 1, group: 'west-dance' };
   let group = 'arena';
   if (z > 20.5) group = 'entry';
   else if (Math.hypot(x, z) <= 8.5) group = 'dancefloor';
