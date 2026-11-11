@@ -348,19 +348,23 @@ export function staffNPC(B,scene,make,role) {
   }
   {
     // Both adult staff use sleeveless tops with role-specific fabric colors.
-    model.root.metadata.outfit='opaque sleeveless tank top';
+    model.root.metadata.outfit=dj?'opaque cropped spaghetti-strap tank top':'opaque sleeveless tank top';
     const skin=model.near.getChildMeshes().find(mesh=>mesh.name==='head')?.material;
     if(skin){
       for(const joint of [model.limbs[0],model.limbs[2]])
         for(const mesh of joint.getChildMeshes())if(mesh.name==='arm')mesh.material=skin;
-      // A shallow neckline and broad opaque straps distinguish the sleeveless top.
+      // A shallow neckline and thin straps distinguish the sleeveless top.
       const neckline=part('tank neckline','CreateSphere',{diameter:1,segments:12},[0,1.365,.184],skin);
       neckline.scaling.set(.24,.115,.075);
+      if(dj){
+        const midriff=part('exposed midriff','CreateCapsule',{radius:.20,height:.28,tessellation:12},[0,.95,0],skin);
+        midriff.scaling.z=.80;
+      }
     }
-    model.torso.scaling.y=.90;model.torso.position.y=1.02;
+    model.torso.scaling.y=dj?.55:.90;model.torso.position.y=dj?1.18:1.02;
     for(const side of [-1,1])
       part('tank shoulder strap','CreateBox',{width:.095/3,height:.16,depth:.13},[side*.165,1.365,.025],fabric);
-    part('tank hem','CreateBox',{width:.43,height:.035,depth:.32},[0,.91,.015],accent);
+    part('tank hem','CreateBox',{width:.43,height:.035,depth:.32},[0,dj?1.0:.91,.015],accent);
   }
   const hips=part('uniform hips','CreateSphere',{diameter:.54,segments:12},[0,.79,0],dark);
   hips.scaling.set(1,.55,.65);
