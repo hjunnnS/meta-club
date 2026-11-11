@@ -317,3 +317,83 @@ export function playerView(B, scene, cam, canvas, eyeHeight, controls, { followD
     },
   };
 }
+
+// Adult staff silhouettes are separate from the default player and block guests.
+export function staffNPC(B,scene,make,role) {
+  const dj=role==='dj';
+  const actor={id:dj?'house-dj':'house-bartender',ai:false,avatar:dj?'indigo':'teal',
+    nickname:dj?'DJ':'바 직원',x:dj?0:-13.6,y:dj?1.35:0,z:dj?-15.4:17.4,yaw:dj?0:Math.PI};
+  const model=make(actor),own=[];
+  model.root.metadata={ageGroup:'adult',gender:'woman',role,decorative:true};
+  const fabric=model.torso.material.clone(role+' fitted blouse');own.push(fabric);
+  fabric.diffuseColor=B.Color3.FromHexString(dj?'#9a3d90':'#258f92');
+  fabric.emissiveColor=fabric.diffuseColor.scale(.12);
+  const source=model.torso.material;
+  for(const mesh of model.near.getChildMeshes())if(mesh.material===source)mesh.material=fabric;
+  function material(name,color){
+    const ink=new B.StandardMaterial(role+' '+name,scene);ink.diffuseColor=B.Color3.FromHexString(color);own.push(ink);return ink;
+  }
+  const hair=material('hair',dj?'#291c39':'#4a2c2c'),dark=material('uniform trim','#161326');
+  const eyes=material('face details','#241a2b'),accent=material('uniform accent',dj?'#f16bcd':'#d3a862');
+  function part(name,kind,options,position,ink,parent=model.near){
+    const mesh=B.MeshBuilder[kind](role+' '+name,options,scene);
+    mesh.parent=parent;mesh.position.set(...position);mesh.material=ink;mesh.isPickable=false;return mesh;
+  }
+  // The rounded upper-body volumes use the same opaque blouse as the torso.
+  for(const side of [-1,1]) {
+    const chest=part('clothed upper torso','CreateSphere',{diameter:.35,segments:12},[side*.14,1.22,.15],fabric);
+    chest.scaling.set(1,.94,1.15);
+    part('side hair','CreateCapsule',{radius:.065,height:.48,tessellation:8},[side*.17,1.5,-.015],hair);
+    part('eye','CreateBox',{width:.035,height:.042,depth:.012},[side*.062,1.58,.155],eyes);
+  }
+  const hips=part('uniform hips','CreateSphere',{diameter:.54,segments:12},[0,.79,0],dark);
+  hips.scaling.set(1,.55,.65);
+  part('waist band','CreateBox',{width:.45,height:.065,depth:.34},[0,.89,0],dark);
+  const crown=part('hair crown','CreateSphere',{diameter:.40,segments:12},[0,1.72,-.03],hair);
+  crown.scaling.set(1,.65,.95);
+  part('back hair','CreateCapsule',{radius:.17,height:dj?.46:.61,tessellation:8},[0,dj?1.50:1.38,-.14],hair);
+  part('mouth','CreateBox',{width:.062,height:.014,depth:.012},[0,1.48,.16],accent);
+  part('staff badge','CreateBox',{width:.075,height:.045,depth:.018},[-.13,1.365,.17],accent);
+  if(dj) {
+    for(const side of [-1,1])part('headphone ear','CreateBox',{width:.08,height:.19,depth:.22},[side*.205,1.61,0],dark);
+    part('headphone band','CreateBox',{width:.47,height:.055,depth:.13},[0,1.82,0],dark);
+  } else {
+    part('apron','CreateBox',{width:.44,height:.38,depth:.035},[0,.70,.17],dark);
+    part('apron pocket','CreateBox',{width:.22,height:.11,depth:.02},[0,.72,.195],accent);
+    const metal=material('shaker steel','#b4b5c3');
+    part('shaker','CreateCylinder',{height:.24,diameter:.09,tessellation:10},[0,-.49,.02],metal,model.limbs[2]);
+    part('shaker cap','CreateCylinder',{height:.055,diameter:.065,tessellation:10},[0,-.35,.02],metal,model.limbs[2]);
+  }
+  // Keep bright counter lamps from bleaching staff skin and clothing.
+  const privateMaterials=new Map();
+  for(const mesh of model.near.getChildMeshes()) {
+    if(mesh.material&&!own.includes(mesh.material)) {
+      if(!privateMaterials.has(mesh.material)) {
+        const ink=mesh.material.clone(role+' '+mesh.material.name);own.push(ink);privateMaterials.set(mesh.material,ink);
+      }
+      mesh.material=privateMaterials.get(mesh.material);
+    }
+    if(mesh.material?.specularColor)mesh.material.specularColor.set(0,0,0);
+    for(const light of scene.lights)if(light.getTypeID()!==3)light.excludedMeshes.push(mesh);
+  }
+  model.root.scaling.setAll(1.1);
+  model.far.setEnabled(false);model.label.setEnabled(!dj);
+  const dispose=model.dispose.bind(model);
+  model.dispose=()=>{dispose();own.forEach(ink=>ink.dispose());};
+  return model;
+}
+export function animateStaff(model,role,beats,seconds,energy=0,reduced=false) {
+  const pulse=reduced?0:Math.sin(beats*Math.PI*2),slow=reduced?0:Math.sin(seconds*1.8);
+  if(role==='bartender') {
+    model.near.rotation.y=slow*.055;
+    model.near.rotation.z=slow*.025;
+    model.limbs[0].rotation.x=-1.28+slow*.10;
+    model.limbs[2].rotation.x=-1.48+slow*.16;
+    model.limbs[0].rotation.z=-.12;
+    model.limbs[2].rotation.z=.10;
+  } else {
+    model.limbs[0].rotation.x=-1.24+pulse*.16*(.4+energy*.6);
+    model.limbs[2].rotation.x=-1.30-pulse*.13*(.4+energy*.6);
+    model.limbs[0].rotation.z=-.15;model.limbs[2].rotation.z=.15;
+  }
+}

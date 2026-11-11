@@ -5,7 +5,7 @@ import { playlistPosition, trackBeat, musicDynamics } from './music.js';
 import { effects, eventPlayer, ledScreen, houseScreen, houseLights, peripheralTests, peripheralCue } from '/stage/festival/events.js';
 import { permittedPath, edmCameraDistance, edmSeats } from './edm-layout.js';
 import { dances, danceCamera, animateDance } from './free-dance.js';
-import { avatarFactory, playerView } from './avatar.js';
+import { avatarFactory, playerView, staffNPC, animateStaff } from './avatar.js';
 // Floor chevrons lead toward the east booths without changing the walking surfaces.
 function markLoungeWalk(B, scene) {
   const start = new B.Vector3(-.8, .061, 6.9);
@@ -81,28 +81,8 @@ export function startLiveScene({
   broadcast.renderList = [];
   broadcast.refreshRate = 0;
   scene.customRenderTargets.push(broadcast);
-  const dj = make({id:'house-dj', ai:true, avatar:'indigo', nickname:'DJ', x:0, y:1.35, z:-15.4, yaw:0});
-  dj.label.setEnabled(false);
-  dj.far.setEnabled(false);
-  // Eyes and headphones keep the same block proportions as the default guests.
-  const headphoneInk = new B.StandardMaterial('DJ headphones', scene);
-  headphoneInk.diffuseColor = B.Color3.FromHexString('#211839');
-  const eyeInk = new B.StandardMaterial('DJ eyes', scene);
-  eyeInk.diffuseColor = B.Color3.FromHexString('#20162c');
-  for (const side of [-1,1]) {
-    const eye = B.MeshBuilder.CreateBox('DJ eye', {width:.035,height:.055,depth:.012}, scene);
-    eye.parent = dj.near;
-    eye.position.set(side*.075,1.59,.167);
-    eye.material = eyeInk;
-    const ear = B.MeshBuilder.CreateBox('DJ headphone ear', {width:.065,height:.18,depth:.21}, scene);
-    ear.parent = dj.near;
-    ear.position.set(side*.195,1.56,0);
-    ear.material = headphoneInk;
-  }
-  const headband = B.MeshBuilder.CreateBox('DJ headphone band', {width:.43,height:.055,depth:.12},scene);
-  headband.parent = dj.near;
-  headband.position.set(0,1.74,0);
-  headband.material = headphoneInk;
+  const dj = staffNPC(B,scene,make,'dj');
+  const bartender = staffNPC(B,scene,make,'bartender');
   const updateBoard = houseScreen(B, scene, broadcast);
   let nextBroadcast = 0;
 
@@ -187,13 +167,16 @@ export function startLiveScene({
     }
   }
   let preview, speakerCamera;
-  function speakerView(){
+  function speakerView(kind='speakers'){
     if(speakerCamera)return;
-    speakerCamera=new B.FreeCamera('Speaker observation',new B.Vector3(-8.5,2.6,11.8),scene);
-    speakerCamera.setTarget(new B.Vector3(-18.5,1.8,5.8));
+    const positions={speakers:[[-8.5,2.6,11.8],[-18.5,1.8,5.8]],
+      bartender:[[-11.3,1.95,14],[-13.6,1.4,17.4]],dj:[[0,3.5,-11.8],[0,3,-15.4]]};
+    const [eye,target]=positions[kind]||positions.speakers;
+    speakerCamera=new B.FreeCamera('Club observation',B.Vector3.FromArray(eye),scene);
+    speakerCamera.setTarget(B.Vector3.FromArray(target));
     view.preview(speakerCamera);
     const close=document.createElement('button');
-    close.textContent='스피커 보기 종료';
+    close.textContent=kind==='speakers'?'스피커 보기 종료':'직원 보기 종료';
     close.style.cssText='position:fixed;top:15px;left:15px;z-index:3;background:#21172bdd;color:white;padding:10px;border:1px solid #ffffff66;border-radius:8px';
     document.body.append(close);
     close.onclick=()=>{view.preview(null);speakerCamera.dispose();speakerCamera=null;close.remove();canvas.focus();};
@@ -222,6 +205,7 @@ export function startLiveScene({
     }
     if (kind === 'audible-track') audibleTrack = data;
     if (kind === 'speaker-view') speakerView();
+    if (kind === 'staff-view' && ['dj','bartender'].includes(data)) speakerView(data);
     if(kind==='peripheral-preview'&&Object.hasOwn(peripheralTests,data)){
       peripheralPreview={kind:data,start:performance.now()};stageEvents.stop();strobePreviewStarted=-Infinity;
     }
@@ -488,10 +472,12 @@ export function startLiveScene({
     }
     const segment = playing ? Math.floor(phase32 / 8) : -1;
     animateDance(dj, 'groove', beats, undefined, musicEnergy);
+    animateStaff(dj,'dj',beats,t,musicEnergy,calmBeats.matches);
+    animateStaff(bartender,'bartender',beats,t,musicEnergy,calmBeats.matches);
     if ((segment === 1 || segment === 2) && !preview && !celebrating && now >= nextBroadcast) {
       if (segment === 1) {
-        broadcastCamera.position.set(0, 3.03, -13.65);
-        broadcastCamera.setTarget(new B.Vector3(0, 2.88, -15.4));
+        broadcastCamera.position.set(0, 3.16, -13.65);
+        broadcastCamera.setTarget(new B.Vector3(0, 3.08, -15.4));
         broadcastCamera.fov = .43;
         broadcast.renderList = dj.near.getChildMeshes();
       } else {

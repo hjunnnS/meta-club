@@ -54,7 +54,7 @@ async function open(){
  finally{URL.revokeObjectURL(model);}
  for(const m of scene.materials)if('maxSimultaneousLights' in m)m.maxSimultaneousLights=10;
  const glow=new B.GlowLayer('light diffusion',scene,{blurKernelSize:48});glow.intensity=.53;
- const views={'입구':[[0,1.65,25],[0,3.4,-16]],'발코니':[[-10.1,5.65,-13],[0,.4,0]],'바': [[-13.6,1.7,14.45],[0,3.4,-16]],'테이블':[[6.5,4.1,19],[19,.9,4]],'스피커':[[-8.5,2.6,11.8],[-18.5,1.8,5.8]],'무대':[[0,1.67,3],[0,3.6,-17]]};
+ const views={'입구':[[0,1.65,25],[0,3.4,-16]],'발코니':[[-10.1,5.65,-13],[0,.4,0]],'바': [[-13.6,1.7,14.45],[0,3.4,-16]],'테이블':[[6.5,4.1,19],[19,.9,4]],'스피커':[[-8.5,2.6,11.8],[-18.5,1.8,5.8]],'바 직원':[[-11.3,1.95,14],[-13.6,1.4,17.4]],'DJ':[[0,3.5,-11.8],[0,3,-15.4]],'무대':[[0,1.67,3],[0,3.6,-17]]};
  const nav=document.querySelector('nav'), tour=document.querySelector('.tour');
  const play=document.querySelector('#play'), slider=tour.querySelector('input'), locationLabel=document.querySelector('#location');
  const points=reviewRoute.map(p=>B.Vector3.FromArray(p));
@@ -186,7 +186,7 @@ async function open(){
    playing=false;onRoute=true;distance=end*Number(slider.value)/1000;
    markView(distance>=end?'발코니':null);placeOnRoute(true);
  };
- select(({booths:'테이블',bar:'바',speakers:'스피커'})[new URLSearchParams(location.search).get('view')]||'입구');await scene.whenReadyAsync();
+ select(({booths:'테이블',bar:'바',speakers:'스피커',bartender:'바 직원',dj:'DJ'})[new URLSearchParams(location.search).get('view')]||'입구');await scene.whenReadyAsync();
  engine.runRenderLoop(()=>{
    if(walking&&!seated)walkFrame();
    if(playing){
@@ -197,6 +197,14 @@ async function open(){
    scene.render();
  });
  window.addEventListener('resize',()=>engine.resize());status.hidden=true;tour.hidden=false;window.setView=select;
+ if(['bartender','dj'].includes(new URLSearchParams(location.search).get('view'))){
+   const {avatarFactory,staffNPC,animateStaff}=await import('/clubs/edm/avatar.js');
+   const make=avatarFactory(B,scene,glow),staff=['bartender','dj'].map(role=>({role,model:staffNPC(B,scene,make,role)}));
+   scene.onBeforeRenderObservable.add(()=>{
+     const seconds=performance.now()/1000;
+     staff.forEach(({role,model})=>animateStaff(model,role,seconds*2,seconds,0,matchMedia('(prefers-reduced-motion: reduce)').matches));
+   });
+ }
  if(window.festivalAssets?.events || location.search==='?events'){
    const {effects,eventPlayer}=await import(sources.events || './events.js');
    const panel=document.querySelector('#event-panel'), buttons=document.querySelector('#event-buttons');
