@@ -50,7 +50,7 @@ export function startLiveScene({
   const renderHouseLights = houseLights(B, scene);
   const ambient = scene.getLightByName('ambient');
   if (ambient) ambient.intensity = 0.52;
-  let tracks = [], audibleTrack = null;
+  let tracks = [], audibleTrack = null, musicStartBeat = null, firstLaserAt = null;
   const calmBeats = matchMedia('(prefers-reduced-motion: reduce)');
   let fastFlash = false, otherWands = true;
   // One small broadcast target films the existing animated models, excluding the screen itself.
@@ -160,7 +160,8 @@ export function startLiveScene({
   // The west-side reactive guest already carries a wand beside the entry group.
   const wandGuest = 'ai-3';
   let responders = [];
-  function onSnapshot({ actors, self, zones, stageEvent }) {
+  function onSnapshot({ actors, self, zones, stageEvent, nextPerformance }) {
+    if(nextPerformance?.id==='scheduled-0'&&nextPerformance.kind==='laser')firstLaserAt=nextPerformance.start;
     if(activePeripheralPreview())stageEvents.stop();else stageEvents.set(stageEvent);
     if (zones) states = zones;
     dancers = actors.filter((a) => a.action === 'dance' || dances.has(a.action)).length;
@@ -230,11 +231,12 @@ export function startLiveScene({
     if (e.source !== parent || e.origin !== location.origin) return;
     const { kind, data } = e.data || {};
     if (kind === 'clock') {
+      if(epoch!==data.epoch){musicStartBeat=null;firstLaserAt=null;}
       epoch = data.epoch;
       tracks = data.tracks || [];
       offset = data.offset;
     }
-    if (kind === 'audible-track') {audibleTrack = data;outputClock=null;}
+    if (kind === 'audible-track') {if(audibleTrack!==data)musicStartBeat=null;audibleTrack = data;outputClock=null;}
     if(kind==='music-output-clock'){
       if(data?.playing&&data.id===audibleTrack&&Number.isFinite(data.time)&&Number.isFinite(data.sentAt))
         outputClock={id:data.id,time:data.time+Math.max(0,Math.min(.15,(Date.now()-data.sentAt)/1000)),at:performance.now()};
@@ -453,6 +455,15 @@ export function startLiveScene({
     const beats = trackBeat(playback, t);
     const effectPreview=activePeripheralPreview();
     const playing = playback && playback.track.id === audibleTrack;
+    if(playing&&musicStartBeat===null)musicStartBeat=Math.ceil(Math.max(0,beats));
+    const bpm=playback?.track.bpm||120;
+    // Use the existing channel's first show time; do not reschedule it for the opening.
+    const laserTime=firstLaserAt===null?((Math.ceil((30-(playback?.track.firstBeat||0))*bpm/240)*4)*60/bpm+(playback?.track.firstBeat||0)):(firstLaserAt-epoch)/1000;
+    const laserBeat=(laserTime-(playback?.track.firstBeat||0))*bpm/60;
+    const openingActive=Boolean(playing)&&t<laserTime&&t>=0&&!stageEvents.kind&&!preview&&!accentPreview&&!effectPreview;
+    const openingSection=Math.floor(Math.max(0,beats)/16)%3;
+    const openingGather=openingActive?Math.max(0,Math.min(1,(beats-(laserBeat-8))/8)):0;
+    const startBeat=openingActive?beats-musicStartBeat:-1;
     const dynamics=musicDynamics(playback);
     const blend=1-Math.exp(-Math.min(dt,100)/350);
     arrangementLevel+=(dynamics.level-arrangementLevel)*blend;
@@ -475,6 +486,12 @@ export function startLiveScene({
     const roomPulse = renderAmbience(beats, audioBands, strobing||Boolean(effectBlocksStrobe)||Boolean(smokeProtection)||((stageFocus||boardFocus)&&!effectPreview&&phrasePhase<1.5), Boolean(audibleTrack), playback?.track.bpm || 120, previewAge<strobeDurations[strobePreviewPattern]+1.6 ? previewAge : null, strobePreviewPattern,dynamics.level);
     const boardSegment=playing?Math.floor(Math.max(0,beats)%32/8):-1;
     const look=sceneLook(beats,Boolean(playing),dynamics.level,boardSegment===1||boardSegment===2);
+    if(openingActive){
+      const palettes=[['#8b74ff','#9deaff'],['#ff79d5','#79baff'],['#8edbff','#fff1c9']];
+      [look.primary,look.secondary]=palettes[openingSection];
+      look.floor=Math.max(look.floor,.82);look.decor=Math.max(look.decor,.38);
+      look.openingSection=openingSection;look.openingGather=openingGather;
+    }
     B.Color3.LerpToRef(lookPrimary,B.Color3.FromHexString(look.primary),blend,lookPrimary);
     B.Color3.LerpToRef(lookSecondary,B.Color3.FromHexString(look.secondary),blend,lookSecondary);
     look.primary=lookPrimary.toHexString();look.secondary=lookSecondary.toHexString();
@@ -493,6 +510,14 @@ export function startLiveScene({
       preview:accentTest,strobePreview:previewAge<strobeDurations[strobePreviewPattern]?{kind:strobePreviewPattern,age:previewAge}:null,
       overlap:stageEvents.kind&&stageEvents.kind!=='led'||peripheralPlan.laser>.5,
       protectSmoke:Boolean(smokeProtection),reduced:calmBeats.matches,arrangement:dynamics.level});
+    if(openingActive){
+      // Four bars each: wall chase, overhead fan, then moving floor/wall patterns.
+      const beds=[{curtain:.78,fan:.18,gobo:.40},{curtain:.28,fan:.78,gobo:.46},{curtain:.32,fan:.24,gobo:.90}];
+      const bed=beds[openingSection],gain=(smokeProtection?.40:1)*(calmBeats.matches?.38:1);
+      for(const kind of ['curtain','fan','gobo'])accentCue[kind]=bed[kind]*gain;
+      if(smokeProtection){accentCue.curtain=0;accentCue.fan=0;}
+      accentCue.variant=openingSection;accentCue.gather=openingGather;accentCue.travel=0;
+    }
     const performancePhase=stageEvents.phase;
     const performancePriority=performancePhase&&performancePhase.kind!=='led'&&performancePhase.level<.75;
     if(!accentTest&&!effectPreview){accentCue.curtain*=supportLevel;accentCue.fan*=supportLevel;accentCue.gobo*=supportLevel;}
@@ -504,14 +529,14 @@ export function startLiveScene({
     // Every visual phrase restarts with the selected song at its loop boundary.
     const phraseBeat = playing ? (playback.phraseTime - (playback.track.firstBeat || 0)) * (playback.track.bpm || 120) / 60 : -1;
     const phase32 = phraseBeat % 32;
-    const gather = phase32 >= 30 ? (phase32 - 30) / 2 : 0;
+    const gather = Math.max(openingGather,phase32 >= 30 ? (phase32 - 30) / 2 : 0);
     const release = phraseBeat >= 32 && phase32 < 3 ? phase32 / 3 : -1;
     renderHouseLights(beats, !stageEvents.kind, preview||accentPreview ? -1 : release, playback?.track.bpm || 120, musicEnergy, strobing, effectPreview, Boolean(playing),dynamics.level,look);
     // Pick the upcoming phrase's color during the pickup and keep it through the release.
     const cue = {hex:look.primary,rgb:lookPrimary};
     const wallRelease = preview || celebrating ? -1 : release;
     // Times are measured in beats after the wall opens. Let neighboring surfaces overlap.
-    const cueBeat = playing && phraseBeat >= 32 && !preview && !celebrating ? phase32 : -1;
+    const cueBeat = startBeat>=0&&startBeat<5.2?startBeat:playing && phraseBeat >= 32 && !preview && !celebrating ? phase32 : -1;
     const ramp = (value, span) => Math.max(0, Math.min(1, value / span));
     boothFace.scaling.x = Math.max(.001, ramp(cueBeat - .10, .90));
     illuminate(boothFace, cue.rgb, ramp(cueBeat - .10, .18) * ramp(1.85 - cueBeat, .8));
@@ -524,7 +549,7 @@ export function startLiveScene({
     const lipGlow = ramp(cueBeat - 1.22, .28) * ramp(2.95 - cueBeat, .75);
     for (const lip of stageLips) illuminate(lip, cue.rgb, lipGlow);
     renderFloor(beats, celebrating, accent, cueBeat, cue.rgb, stageEvents.kind === 'laser' ? 1 : ['phoenix','whale','dragon','jellyfish','butterflies'].includes(stageEvents.kind) ? 2 : 0, roomPulse,look);
-    updateBoard(playing ? playback.track.title : null, beats, !preview && !celebrating, accent, gather, calmBeats.matches, phraseBeat, wallRelease, cue.hex, stageEvents.kind && stageEvents.kind !== 'led' ? effects[stageEvents.kind].label : null, strobing, roomPulse,look);
+    updateBoard(playing ? playback.track.title : null, beats, !preview && !celebrating, Math.max(accent,startBeat>=0&&startBeat<.78?(1-startBeat/.78)*.85:0), gather, calmBeats.matches, phraseBeat, wallRelease, cue.hex, stageEvents.kind && stageEvents.kind !== 'led' ? effects[stageEvents.kind].label : null, strobing, roomPulse,look);
     const phase = beats * Math.PI * 2,
       beatWave = Math.sin(phase);
     washes.forEach(({ light, base }, i) => {

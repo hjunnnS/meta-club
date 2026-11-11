@@ -479,6 +479,7 @@ function peripheralLighting(B,scene) {
       for(const {ray,halo,spread} of rays) {
         ray.setEnabled(cue.laser>.001);halo.setEnabled(cue.laser>.001);if(!ray.isEnabled())continue;
         target.set(Math.sign(origin.x)*(13.4+spread*1.1+.8*Math.sin(phase)),1.1+1.8*(.5+.5*Math.sin(phase*.8+spread)),origin.z-4+7*Math.sin(phase*.65+spread));
+        if(!calm.matches)target.z+=(-9.5-target.z)*(cue.gather||0);
         target.subtractToRef(origin,direction);ray.position.copyFrom(origin).addInPlace(direction.scale(.5));ray.scaling.y=direction.length();
         B.Quaternion.FromUnitVectorsToRef(B.Axis.Y,direction.normalize(),ray.rotationQuaternion);
         halo.position.copyFrom(ray.position);halo.scaling.copyFrom(ray.scaling);halo.rotationQuaternion.copyFrom(ray.rotationQuaternion);
@@ -529,6 +530,11 @@ export function houseLights(B, scene) {
   return (beat, visible, release, bpm=120, energy=0, strobing=false,preview=null,playing=true,arrangement=1,look=null) => {
     const cue=peripheralCue(beat,bpm,preview,playing,arrangement);
     if(!preview&&look){cue.laser*=look.support??1;cue.wash*=look.support??1;}
+    if(!preview&&Number.isInteger(look?.openingSection)){
+      cue.laser=Math.max(cue.laser,[.50,.28,.38][look.openingSection]);
+      cue.wash=Math.max(cue.wash,[.26,.42,.30][look.openingSection]);
+      cue.gather=look.openingGather||0;
+    }
     renderPeriphery(beat,bpm,energy,strobing,cue);
     if(look)lights.forEach((m,i)=>m.emissiveColor.copyFrom(B.Color3.FromHexString(i?look.primary:look.secondary)));
     rig.setEnabled(visible&&!cue.preview);

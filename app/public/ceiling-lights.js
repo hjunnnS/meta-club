@@ -195,12 +195,13 @@ export function strobeAccents(B,scene) {
     B.Quaternion.FromUnitVectorsToRef(B.Axis.Y,delta.normalize(),mesh.rotationQuaternion);
   }
   const levels={curtain:0,fan:0,gobo:0};
-  let centerClearance=0;
+  let centerClearance=0,gatherLevel=0;
   const palettes=[['#8edbff','#f5fbff'],['#f5fbff','#ffe56d'],['#ffe56d','#8edbff'],['#8edbff','#ffe56d']].map(pair=>pair.map(B.Color3.FromHexString));
   return (target,beat,bass=0,reduced=false,dt=null,protectCenter=false)=>{
     const blend=dt===null?1:1-Math.exp(-Math.max(0,Math.min(dt,1000))/220);
     for(const kind of ['curtain','fan','gobo'])levels[kind]+=(target[kind]-levels[kind])*blend;
     centerClearance+=((protectCenter?1:0)-centerClearance)*blend;
+    gatherLevel+=((reduced?0:target.gather||0)-gatherLevel)*blend;
     const cue=levels;
     for(const kind of ['curtain','fan','gobo'])rigs[kind].setEnabled(cue[kind]>.001);
     const motion=reduced?0:beat;
@@ -216,6 +217,7 @@ export function strobeAccents(B,scene) {
       const chase=reduced?1:.35+.65*(.5+.5*Math.cos(motion*Math.PI/2-z*.24-side*variant));
       mesh.visibility=chase;
       destination.set(side*(18.75+.95*Math.sin(motion*.40+z*.12+variant)),.36,z+i*.65+Math.sin(motion*.5+side)*1.8);
+      destination.z+=(-9.5-destination.z)*gatherLevel;
       aim(mesh,origin,destination);
     }
     if(cue.fan)for(const {mesh,origin,side,i} of fans){
@@ -223,10 +225,11 @@ export function strobeAccents(B,scene) {
       const spread=.55+.45*(.5+.5*Math.sin(motion*Math.PI/8+variant+travel));
       const originalX=side*(11.2+i*.78*spread),edgeX=side*(12+i*.72);
       destination.set(originalX+(edgeX-originalX)*centerClearance,3.5+Math.abs(i-4)*.20,15-1.4*Math.sin(motion*.18));
+      destination.z+=(-10.8-destination.z)*gatherLevel;
       aim(mesh,origin,destination);
     }
     if(cue.fan)for(const {mesh,vertices,side} of fanSheets){
-      const spread=.55+.45*(.5+.5*Math.sin(motion*Math.PI/8)),z=15-1.4*Math.sin(motion*.18);
+      const spread=.55+.45*(.5+.5*Math.sin(motion*Math.PI/8)),baseZ=15-1.4*Math.sin(motion*.18),z=baseZ+(-10.8-baseZ)*gatherLevel;
       const left=side*11.2,right=side*(11.2+6.2*spread);
       vertices.set([side*10.8,7.1,-16.7,left+(side*10-left)*centerClearance,4.3,z,right+(side*16-right)*centerClearance,4.3,z]);
       mesh.updateVerticesData(B.VertexBuffer.PositionKind,vertices,true);
@@ -238,10 +241,12 @@ export function strobeAccents(B,scene) {
         mesh.rotation.z=motion*.10*sign;
         mesh.position.y=5.05+.55*Math.sin(motion*.13+sign);
         mesh.position.z=6+3.4*Math.sin(motion*.10+sign*.7);
+        mesh.position.z+=(-9.5-mesh.position.z)*gatherLevel;
       }else{
         mesh.rotation.y=motion*.10*sign;
         mesh.position.x=sign*(9.4+1.2*Math.sin(motion*.16));
         mesh.position.z=6+2.6*Math.sin(motion*.12+sign*.6);
+        mesh.position.z+=(-7.5-mesh.position.z)*gatherLevel;
       }
     }
   };
