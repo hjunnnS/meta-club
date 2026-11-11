@@ -54,12 +54,11 @@ export function speakerPulse(beat,bands,playing,dt,previous=0,reduced=false) {
   const blend=1-Math.exp(-elapsed/(target>previous?20:95));
   const level=previous+(target-previous)*blend;
   const phase=Number.isFinite(beat)?((beat%1)+1)%1:0;
-  const hit=Math.exp(-phase*9);
   const downbeat=Number.isFinite(beat)&&((Math.floor(beat)%4)+4)%4===0;
   // Exaggerate the short outward stroke so it reads from the dance floor.
   // The cabinet and collision footprint remain fixed; only the diaphragm travels.
   return {level,travel:reduced?0:level*(.02+.25*Math.exp(-phase*6.5)),
-    light:.12+level*(reduced?.24:.22+(downbeat?2.8:1.8)*hit)};
+    light:.12+level*(reduced?.24:.12+(downbeat?6:4)*Math.exp(-Math.max(0,phase-.08)*6))};
 }
 export function musicSpeakers(B,scene) {
   const cones=[],strips=[],ink=[];
@@ -73,14 +72,16 @@ export function musicSpeakers(B,scene) {
       mesh.material=material;ink.push(material);strips.push(material);
     }
   }
-  const cyan=B.Color3.FromHexString('#55e4f5'),rose=B.Color3.FromHexString('#b75dff');
+  const palette=['#12dcff','#ff207b','#923bff'].map(hex=>B.Color3.FromHexString(hex));
   let previous=0;
   scene.onDisposeObservable.addOnce(()=>ink.forEach(m=>m.dispose()));
   return (beat,bands,playing,dt,reduced=false)=>{
     const state=speakerPulse(beat,bands,playing,dt,previous,reduced);
     previous=state.level;
     cones.forEach(({mesh,x})=>mesh.position.x=x+state.travel);
-    const color=B.Color3.Lerp(cyan,rose,Number.isFinite(beat)?(.5+.5*Math.sin(beat*Math.PI/8))*.45:0);
+    // Clearly separated cyan, pink and violet looks, one color per two music beats.
+    const index=playing&&bands.length>=3&&Number.isFinite(beat)?((Math.floor(beat/2)%3)+3)%3:0;
+    const color=palette[index];
     strips.forEach(material=>color.scaleToRef(state.light,material.emissiveColor));
   };
 }
