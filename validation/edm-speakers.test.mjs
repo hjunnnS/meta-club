@@ -8,7 +8,9 @@ test('speakers follow measured bass and the music beat, with quiet and reduced-m
   const hit=speakerPulse(0,[1,1,1],true,100);
   const tail=speakerPulse(.8,[1,1,1],true,100);
   assert.equal(silent.travel,0);assert(hit.travel>tail.travel);
-  assert(hit.light>tail.light);assert(hit.travel<=.105);
+  assert(hit.light>tail.light);assert(hit.travel<=.27);assert(hit.travel>.25);
+  assert(hit.light>2.8);
+  assert(hit.light>speakerPulse(1,[1,1,1],true,100).light);
   assert.equal(speakerPulse(0,[1,1,1],false,16,1).travel,0);
   assert.equal(speakerPulse(0,[],true,16,1).level,0);
   assert.equal(speakerPulse(0,[1,1,1],true,16,1,true).travel,0);

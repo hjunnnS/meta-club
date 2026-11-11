@@ -49,14 +49,17 @@ export function ceilingLights(B, scene) {
 export function speakerPulse(beat,bands,playing,dt,previous=0,reduced=false) {
   if(!playing||bands.length<3)return {level:0,travel:0,light:.12};
   const bass=bands.slice(0,3).reduce((n,v)=>n+(Number.isFinite(v)?Math.max(0,Math.min(1,v)):0),0)/3;
-  const target=Math.max(0,(bass-.025)/.975);
+  const target=Math.sqrt(Math.max(0,(bass-.025)/.975));
   const elapsed=Math.max(0,Math.min(100,Number.isFinite(dt)?dt:16));
-  const blend=1-Math.exp(-elapsed/(target>previous?32:135));
+  const blend=1-Math.exp(-elapsed/(target>previous?20:95));
   const level=previous+(target-previous)*blend;
   const phase=Number.isFinite(beat)?((beat%1)+1)%1:0;
   const hit=Math.exp(-phase*9);
-  return {level,travel:reduced?0:level*(.025+.08*hit),
-    light:.12+level*(reduced?.24:.38+.65*hit)};
+  const downbeat=Number.isFinite(beat)&&((Math.floor(beat)%4)+4)%4===0;
+  // Exaggerate the short outward stroke so it reads from the dance floor.
+  // The cabinet and collision footprint remain fixed; only the diaphragm travels.
+  return {level,travel:reduced?0:level*(.02+.25*Math.exp(-phase*6.5)),
+    light:.12+level*(reduced?.24:.22+(downbeat?2.8:1.8)*hit)};
 }
 export function musicSpeakers(B,scene) {
   const cones=[],strips=[],ink=[];
