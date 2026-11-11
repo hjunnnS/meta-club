@@ -77,9 +77,16 @@ for (const [i,z] of [16.6,12,7.4,2.8,-2,-6.8,-11.6,-16.2].entries()) {
   for (const [x,dz,yaw] of [[20.05,0,-Math.PI/2],[18.55,1.65,Math.PI],[18.55,-1.65,0]])
     edmSeats.push({x,y:.10,z:z+dz,yaw,table:i+1,exit:{x:16.6,y:0,z:z+dz,yaw:-Math.PI/2}});
 }
+// Append balcony cushions without changing the existing bar/table seat IDs.
+for(const [group,z]of [-17.8,-15.0,-10.7].entries())for(const [place,dz]of [-.72,0,.72].entries()){
+  const x=-12.59,sz=z+dz;
+  edmSeats.push({x,y:4.02,z:sz,yaw:Math.atan2(-(edmStage.screen.x-x),-(edmStage.screen.z-sz)),
+    balcony:true,label:'2층 소파 '+(group+1)+' · 좌석 '+(place+1),
+    exit:{x:-11.3+place*.5,y:4,z:z+1.2,yaw:-Math.PI/2}});
+}
 export function nearbyEdmSeats(actor) {
   if (!actor) return [];
   return edmSeats.map((seat,index)=>({seat,index,distance:Math.hypot(actor.x-seat.x,actor.z-seat.z)}))
-    .filter(({seat,distance})=>distance<(seat.table?3.8:2)&&Math.abs(actor.y-seat.y)<.5)
+    .filter(({seat,distance})=>distance<(seat.balcony?2.4:seat.table?3.8:2)&&Math.abs(actor.y-seat.y)<.5)
     .sort((a,b)=>a.distance-b.distance);
 }

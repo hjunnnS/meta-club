@@ -1,5 +1,5 @@
 import {rhythmGame} from './rhythm-game.js';
-import { nearbyEdmSeats } from './edm-layout.js';
+import { nearbyEdmSeats, edmSeats } from './edm-layout.js';
 import { dances, danceButtons } from './free-dance.js';
 import { initShop } from './shop.js';
 import { musicPlayer } from './music.js';
@@ -92,8 +92,9 @@ function display(data) {
   const nearest = nearbyEdmSeats(self).find(({index})=>!occupied.has(index));
   const sitting = self?.seat != null;
   el('seat').hidden = !sitting && (!nearest || riding);
-  el('seat').textContent = sitting ? (self.table ? self.table+'번 테이블 일어나기' : '일어나기')
-    : nearest?.seat.table ? nearest.seat.table+'번 테이블 앉기' : '바 의자 앉기';
+  const sittingLabel=sitting?edmSeats[self.seat]?.label:null;
+  el('seat').textContent = sitting ? (sittingLabel?sittingLabel+' 일어나기':self.table ? self.table+'번 테이블 일어나기' : '일어나기')
+    : nearest?.seat.label ? nearest.seat.label+' 앉기' : nearest?.seat.table ? nearest.seat.table+'번 테이블 앉기' : '바 의자 앉기';
   el('seat').dataset.seat = nearest ? String(nearest.index) : '';
   el('seat').disabled = riding;
   selectDance(self?.action, self?.seat != null || riding);

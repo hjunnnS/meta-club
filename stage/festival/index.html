@@ -332,7 +332,7 @@ async function open(){
        seated=actor.seat!=null || actor.trainSlot>0;
        cam.position.set(actor.x,actor.y+eyeHeight-(actor.seat != null ? .35 : 0),actor.z);
        walker.position.set(actor.x,actor.y+walker.ellipsoid.y+.12,actor.z);
-       cam.rotation.y=actor.yaw;cam.cameraRotation.set(0,0);
+       cam.rotation.y=actor.yaw;if(actor.seat!=null&&actor.y>3.5)cam.rotation.x=.04;cam.cameraRotation.set(0,0);
      }});
  }
 }

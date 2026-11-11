@@ -338,9 +338,17 @@ export function startLiveScene({
   };
   let seatTap = null,hoverAt=0;
   function pickedSeat(hit){
-    if(!hit?.hit||![hit.pickedMesh.name,hit.pickedMesh.parent?.name].some(name=>/^Wall booth (seat|table|back|base)$/.test(name)))return -1;
+    if(!hit?.hit)return -1;
+    const names=[hit.pickedMesh.name,hit.pickedMesh.parent?.name];
+    const balcony=names.some(name=>/^VIP sofa (base|cushion|back|arm|return)$/.test(name));
+    const booth=names.some(name=>/^Wall booth (seat|table|back|base)$/.test(name));
+    if(!balcony&&!booth)return -1;
     let index=-1,best=Infinity;
-    edmSeats.forEach((s,i)=>{const d=s.table?Math.hypot(s.x-hit.pickedPoint.x,s.z-hit.pickedPoint.z):Infinity;if(d<best){index=i;best=d;}});
+    edmSeats.forEach((s,i)=>{
+      if(balcony?!s.balcony:!s.table)return;
+      const d=Math.hypot(s.x-hit.pickedPoint.x,s.z-hit.pickedPoint.z);
+      if(d<best){index=i;best=d;}
+    });
     return index;
   }
   canvas.addEventListener('pointerleave',()=>feedback.seat(null));
@@ -351,7 +359,7 @@ export function startLiveScene({
     const index=pickedSeat(hit),occupied=[...models.values()].some(m=>m.actor.seat===index);
     const can=index>=0&&!occupied&&activeSeat===null&&!riding&&!speakerCamera&&connected&&!gameActive;
     feedback.seat(can?edmSeats[index]:null);canvas.style.cursor=can?'pointer':'grab';
-    canvas.title=can?edmSeats[index].table+'번 테이블 · 클릭하면 걸어가 앉습니다.':'';
+    canvas.title=can?(edmSeats[index].label||edmSeats[index].table+'번 테이블')+' · 클릭하면 걸어가 앉습니다.':'';
   });
   canvas.addEventListener('pointerdown', e=>{
     seatTap=e.button===0?{id:e.pointerId,x:e.clientX,y:e.clientY,drag:false}:null;
@@ -368,15 +376,8 @@ export function startLiveScene({
       (e.clientY-bounds.top)*engine.getRenderHeight()/bounds.height);
     if(!hit?.hit)return;
     const point=hit.pickedPoint,names=[hit.pickedMesh.name,hit.pickedMesh.parent?.name];
-    const booth=names.some(name=>/^Wall booth (seat|table|back|base)$/.test(name));
-    let selected=-1;
-    if(booth){
-      let distance=Infinity;
-      edmSeats.forEach((seat,index)=>{
-        if(!seat.table)return;
-        const d=Math.hypot(seat.x-point.x,seat.z-point.z);
-        if(d<distance){distance=d;selected=index;}
-      });
+    const selected=pickedSeat(hit);
+    if(selected>=0){
       if([...models.values()].some(m=>m.actor.seat===selected)){
         send('gate-notice','이미 앉아 있는 자리입니다. 다른 의자를 선택해 주세요.');return;
       }
@@ -387,8 +388,26 @@ export function startLiveScene({
       send('seat-request',selected);
     };
     feedback.seat(selected>=0?edmSeats[selected]:null);
-    if(!navigate(goal,arrived,(from,to)=>permittedPath(from,to,states)))
-      send('gate-notice','걸어갈 수 있는 경로가 없습니다. 가까운 열린 바닥을 선택해 주세요.');
+    const permit=(from,to)=>permittedPath(from,to,states);
+    const failed=()=>send('gate-notice','걸어갈 수 있는 경로가 없습니다. 가까운 열린 바닥을 선택해 주세요.');
+    if(selected>=0&&edmSeats[selected].balcony){
+      const route=[],foot=cam.position.y-eyeHeight;
+      if(foot<3.5){
+        const onRamp=Math.abs(cam.position.x+14.6)<1.45&&cam.position.z> -8.2&&cam.position.z<.2&&foot>.2;
+        if(!onRamp)route.push({x:-14.6,y:0,z:.55});
+        route.push({x:-14.6,y:4,z:-8.7});
+      }
+      if(foot<3.5||cam.position.x< -13.4){
+        route.push({x:-14.6,y:4,z:-13},{x:-9.95,y:4,z:-13},{x:-9.95,y:4,z:goal.z});
+      }
+      route.push(goal);
+      const advance=()=>{
+        const next=route.shift();
+        if(!next){arrived?.();return;}
+        if(!navigate(next,advance,permit))failed();
+      };
+      advance();
+    }else if(!navigate(goal,arrived,permit))failed();
 
   });
   window.addEventListener('blur', () => joystick(0, 0));

@@ -1,4 +1,4 @@
-import {edmStage} from './edm-layout.js';
+import {edmStage,edmSeats} from './edm-layout.js';
 const colors = { indigo: '#8973F2', teal: '#49C8B1', rose: '#F28BAB', gold: '#FFCC55' };
 export function avatarFactory(B, scene, glow) {
   const materials = new Map();
@@ -232,7 +232,7 @@ export function playerView(B, scene, cam, canvas, eyeHeight, controls, { followD
   const keyArrival=event=>{if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(event.code))cancelArrival();};
   canvas.addEventListener('pointerdown',cancelArrival);
   window.addEventListener('keydown',keyArrival);
-  let orbitYaw=0,orbitPitch=0,orbitReady=false,orbitDrag=null;
+  let orbitYaw=0,orbitPitch=0,orbitReady=false,orbitDrag=null,framedSeat=null;
   function orbitDown(event){
     if(!independentLook||!thirdPerson||preview||![0,2].includes(event.button))return;
     orbitDrag={id:event.pointerId,x:event.clientX,y:event.clientY};
@@ -342,6 +342,11 @@ export function playerView(B, scene, cam, canvas, eyeHeight, controls, { followD
   return {
     actor(next, activityCamera = null, stationary = false) {
       model = next;
+      const nextSeat=next?.actor.seat??null;
+      if(independentLook&&stationary&&nextSeat!==framedSeat&&edmSeats[nextSeat]?.balcony){
+        orbitYaw=next.actor.yaw;orbitPitch=.18;orbitReady=true;cancelArrival();
+      }
+      framedSeat=nextSeat;
       if(model&&!arrivalSeen){arrivalSeen=true;if(arrivalSeconds>0&&!calmArrival.matches)arrivalStart=performance.now();}
       activity = activityCamera;
       if (activity) activity.offset = activity.camera.position.subtract(activity.target);

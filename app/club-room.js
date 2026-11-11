@@ -142,7 +142,7 @@ export class EdmRoom extends Room {
         const idx = candidate.index;
         if (!this.positionMember(c.sessionId, m, seats[idx])) return;
         c.userData.preSeat = { x: m.x, y: m.y, z: m.z, yaw: m.yaw };
-        const {exit, ...pose} = seats[idx];
+        const {exit,label,balcony,...pose} = seats[idx];
         Object.assign(m, pose, { seat: idx, table: pose.table ?? null, action: 'sit' });
       }
       this.dirty = true;
