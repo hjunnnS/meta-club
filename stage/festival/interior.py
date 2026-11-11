@@ -102,10 +102,6 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
             for j in range(13):
                 yy=2.2+j*(y-2.4)/13
                 box('LED wing arrays',lamps[(i+j//5)%3],x-.14,x+.14,-17.23,-17.19,yy,yy+.15)
-        for j in range(5):
-            x=s*(6.5+.04*j);y=6.8-j*.48
-            box('Flown line arrays',black,x-.43,x+.43,-14.7,-14.08,y,y+.43)
-            for k in range(3):box('Array grille ribs',silver,x-.34,x+.34,-14.065,-14.05,y+.08+k*.10,y+.096+k*.10)
         for i in range(10):
             x=s*(.33+.28*i)
             box('Booth equalizer',cyan if i%3 else pink,x-.045,x+.045,-12.046,-12.02,1.56,1.7+.45*abs(math.sin(i)))
@@ -331,9 +327,6 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
         for j in range(10):
             zz=10.25+j*.92
             box('Lobby brass joints',brass,side*2.85-.24,side*2.85+.24,zz,zz+.026,.022,.023)
-        for j in range(4):
-            xx=side*(7.1+.55*j)
-            beam('Proscenium wing diagonals',lamps[j%3],(xx,1.7,-16.9),(xx+side*2.1,6.3-j*.28,-17.3),.055)
     def terrazzo(x,y):
         # Fine aggregate, tile reveals and coloured bounce from the arena halo.
         wx=(x+.5)/768*46-23;wz=(y+.5)/768*48-22
