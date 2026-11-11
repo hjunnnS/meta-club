@@ -120,8 +120,8 @@ function goboTextures(B,scene) {
     for(let y=0;y<size;y++)for(let x=0;x<size;x++){
       const u=(x+.5-size/2)/(size/2),v=(y+.5-size/2)/(size/2);
       const r=Math.hypot(u,v),angle=Math.atan2(v,u),offset=(y*size+x)*4;
-      const grid=t=>Math.abs(t-Math.round(t))<.085;
-      const mark=kind===0?(Math.abs(r-.76)<.040||Math.abs(r-.44)<.035||r>.2&&r<.87&&Math.abs(Math.sin(angle*8))<.16)
+      const grid=t=>Math.abs(t-Math.round(t))<.12;
+      const mark=kind===0?(Math.abs(r-.76)<.060||Math.abs(r-.44)<.048||r>.2&&r<.87&&Math.abs(Math.sin(angle*8))<.16)
         :kind===1?(grid(u*4)||grid(v*4))
         :(Math.abs(r-.67)<.065&&Math.cos(angle*12)>.35||Math.abs(r-.30)<.025);
       pixels[offset]=pixels[offset+1]=pixels[offset+2]=255;
@@ -142,11 +142,12 @@ export function strobeAccents(B,scene) {
     material.emissiveColor=B.Color3.FromHexString(color);material.alphaMode=B.Engine.ALPHA_ADD;
     material.backFaceCulling=false;material.disableDepthWrite=true;return material;
   };
-  const curtainInk=[ink('Curtain cyan','#52efff'),ink('Curtain pink','#ee6bff')];
-  const fanInk=ink('Overhead fan blue','#9295ff');
-  const curtains=[],fans=[],patterns=[],textures=goboTextures(B,scene);
-  function ray(name,rig,material){
-    const mesh=B.MeshBuilder.CreateCylinder(name,{height:1,diameter:.038,tessellation:5,cap:B.Mesh.NO_CAP},scene);
+  const curtainPalette=['#f5fbff','#ffe56d','#8edbff'].map(hex=>B.Color3.FromHexString(hex));
+  const curtainInk=[ink('Curtain white','#f5fbff'),ink('Curtain yellow','#ffe56d')];
+  const fanInk=ink('Overhead fan ice','#ddf5ff'),fanSheetInk=ink('Overhead fan luminous sheet','#92ddff');
+  const curtains=[],fans=[],fanSheets=[],patterns=[],textures=goboTextures(B,scene);
+  function ray(name,rig,material,diameter=.038){
+    const mesh=B.MeshBuilder.CreateCylinder(name,{height:1,diameter,tessellation:5,cap:B.Mesh.NO_CAP},scene);
     mesh.parent=rig;mesh.material=material;mesh.isPickable=false;mesh.checkCollisions=false;mesh.rotationQuaternion=new B.Quaternion();return mesh;
   }
   for(const side of [-1,1])for(const z of [-14,-8,-2,4,10,16])for(const i of [-1,0,1]){
@@ -154,20 +155,26 @@ export function strobeAccents(B,scene) {
     curtains.push({mesh:ray('Strobe wall curtain beam',rigs.curtain,curtainInk[side<0?0:1]),side,z,i,origin});
   }
   for(const side of [-1,1])for(let i=0;i<9;i++){
-    const origin=new B.Vector3(side*5.7,7.3,-10.9);
-    fans.push({mesh:ray('Strobe overhead fan beam',rigs.fan,fanInk),origin,side,i});
+    const origin=new B.Vector3(side*5.7,6.2,-10.3);
+    fans.push({mesh:ray('Strobe overhead fan beam',rigs.fan,fanInk,.085),origin,side,i});
+  }
+  for(const side of [-1,1]){
+    const mesh=new B.Mesh('Strobe overhead fan light sheet',scene),vertices=new Float32Array(9);
+    const data=new B.VertexData();data.positions=Array.from(vertices);data.indices=[0,1,2];data.normals=[0,1,0,0,1,0,0,1,0];data.applyToMesh(mesh,true);
+    mesh.parent=rigs.fan;mesh.material=fanSheetInk;mesh.isPickable=false;mesh.checkCollisions=false;
+    fanSheets.push({mesh,vertices,side});
   }
   for(const [i,[x,z]] of [[-9.4,6],[9.4,6]].entries()){
-    const material=ink('Strobe floor pattern '+i,i?'#ffbd6f':'#65f4ff');
-    const mesh=B.MeshBuilder.CreateGround('Strobe gobo floor',{width:5.0,height:5.0},scene);
+    const material=ink('Strobe floor pattern '+i,i?'#ffe27a':'#f3fbff');
+    const mesh=B.MeshBuilder.CreateGround('Strobe gobo floor',{width:7.2,height:7.2},scene);
     mesh.position.set(x,.075,z);mesh.parent=rigs.gobo;mesh.material=material;
     mesh.isPickable=false;mesh.checkCollisions=false;material.emissiveColor.scaleInPlace(1.6);material.opacityTexture=textures[0];
     patterns.push({mesh,material,wall:false,sign:i?1:-1});
   }
   for(const side of [-1,1]){
-    const material=ink('Strobe wall pattern '+side,side<0?'#72d9ff':'#dc83ff');
-    const mesh=B.MeshBuilder.CreatePlane('Strobe gobo wall',{size:3.6,sideOrientation:B.Mesh.DOUBLESIDE},scene);
-    mesh.parent=rigs.gobo;mesh.position.set(side*21.12,5.35,6);mesh.rotation.y=side*Math.PI/2;
+    const material=ink('Strobe wall pattern '+side,side<0?'#75dbff':'#f1f9ff');
+    const mesh=B.MeshBuilder.CreatePlane('Strobe gobo wall',{size:4.8,sideOrientation:B.Mesh.DOUBLESIDE},scene);
+    mesh.parent=rigs.gobo;mesh.position.set(side*21.12,5.05,6);mesh.rotation.y=side*Math.PI/2;
     mesh.material=material;mesh.isPickable=false;mesh.checkCollisions=false;material.emissiveColor.scaleInPlace(1.6);material.opacityTexture=textures[0];
     patterns.push({mesh,material,wall:true,sign:side});
   }
@@ -185,16 +192,24 @@ export function strobeAccents(B,scene) {
     for(const kind of ['curtain','fan','gobo'])rigs[kind].setEnabled(cue[kind]>.001);
     const motion=reduced?0:beat;
     const hit=reduced?0:Math.exp(-(((beat%1)+1)%1)*6)*Math.max(0,Math.min(1,bass));
-    curtainInk.forEach((material,i)=>material.alpha=cue.curtain*(.35+hit*.38)*(reduced?.65:.68+.32*Math.sin(beat*Math.PI+i*Math.PI)**2));
-    fanInk.alpha=cue.fan*(.38+hit*.30);
+    curtainInk.forEach((material,i)=>{
+      material.emissiveColor.copyFrom(curtainPalette[((Math.floor(Math.max(0,beat)/8)+i)%3)]);
+      material.alpha=cue.curtain*(.48+hit*.38)*(reduced?.65:.76+.24*Math.sin(beat*Math.PI+i*Math.PI)**2);
+    });
+    fanInk.alpha=cue.fan*(.70+hit*.22);fanSheetInk.alpha=cue.fan*(.065+hit*.035);
     if(cue.curtain)for(const {mesh,origin,side,z,i} of curtains){
       destination.set(side*(19.25+.65*Math.sin(motion*.65+z*.12)),.36,z+i*.65+Math.sin(motion*.6)*1.0);
       aim(mesh,origin,destination);
     }
     if(cue.fan)for(const {mesh,origin,side,i} of fans){
       const spread=.55+.45*(.5+.5*Math.sin(motion*Math.PI/8));
-      destination.set((i-4)*3.5*spread+side*1.1,4.3+Math.abs(i-4)*.22,16.5-2*Math.sin(motion*.18));
+      destination.set((i-4)*3.5*spread+side*1.1,3.5+Math.abs(i-4)*.20,15-1.4*Math.sin(motion*.18));
       aim(mesh,origin,destination);
+    }
+    if(cue.fan)for(const {mesh,vertices,side} of fanSheets){
+      const spread=.55+.45*(.5+.5*Math.sin(motion*Math.PI/8)),z=15-1.4*Math.sin(motion*.18);
+      vertices.set([side*5.7,6.2,-10.3,-14*spread+side*1.1,4.3,z,14*spread+side*1.1,4.3,z]);
+      mesh.updateVerticesData(B.VertexBuffer.PositionKind,vertices,true);
     }
     for(const {mesh,material,wall,sign} of patterns){
       material.alpha=cue.gobo*(.65+hit*.22);material.opacityTexture=textures[((Math.floor(Math.max(0,beat)/4)%3)+3)%3];

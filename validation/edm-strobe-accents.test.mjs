@@ -28,7 +28,7 @@ test('effect geometry never blocks paths and all three rigs stop cleanly',()=>{
   assert.equal(scene.lights.length,0);
   assert(scene.meshes.every(mesh=>!mesh.isPickable&&!mesh.checkCollisions));
   render({curtain:1,fan:1,gobo:1},4,.8);
-  assert.equal(scene.meshes.filter(mesh=>mesh.isEnabled()).length,58);
+  assert.equal(scene.meshes.filter(mesh=>mesh.isEnabled()).length,60);
   assert(scene.meshes.every(mesh=>Number.isFinite(mesh.position.x)&&Number.isFinite(mesh.scaling.y)));
   render({curtain:0,fan:0,gobo:0},4,0);
   assert(scene.meshes.every(mesh=>!mesh.isEnabled()));

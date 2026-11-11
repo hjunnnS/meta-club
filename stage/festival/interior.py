@@ -200,6 +200,40 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
             return [24,12,39]
         images[number]=(png(128,128,number_pixel),lambda x,y,zz,center=z+1.65:((zz-center+.14)/.28,(.49-y)/.26))
         box('Table number '+str(index),number,17.325,17.345,z+1.51,z+1.79,.23,.49)
+    # Two media players and a four-channel mixer sit on the relocated DJ booth.
+    gear=finish('DJ equipment charcoal',(.025,.029,.042),.28,.42)
+    platter=finish('DJ platter rubber',(.055,.060,.076),.22,.48)
+    play_green=finish('DJ play green',(.055,.65,.24),0,.45,(.025,.48,.10))
+    for side in [-1,1]:
+        x=side*1.77;z=-12.88
+        box('DJ player chassis',gear,x-.70,x+.70,z-.55,z+.55,2.46,2.56)
+        for i in range(32):
+            a,b=i*2*pi/32,(i+1)*2*pi/32
+            tri('DJ player jog disc',platter,(x,2.585,z+.12),
+                (x+.31*math.cos(b),2.585,z+.12+.31*math.sin(b)),
+                (x+.31*math.cos(a),2.585,z+.12+.31*math.sin(a)))
+        ellipse('DJ jog silver rim',silver,x,2.59,z+.12,.32,.32,.022,32)
+        ellipse('DJ jog inner mark',cyan,x,2.594,z+.12,.17,.17,.009,24)
+        box('DJ player screen housing',ink,x-.47,x+.47,z-.45,z-.26,2.56,2.75)
+        box('DJ player screen glass',black,x-.41,x+.41,z-.255,z-.241,2.60,2.72)
+        for j in range(17):
+            xx=x-.37+j*.045
+            box('DJ player waveform',cyan if side<0 else pink,xx,xx+.022,z-.239,z-.230,2.615,2.63+.07*abs(math.sin(j*.72)))
+        for j in range(4):
+            box('DJ deck cue pad',pink if j%2 else gold,x-.54+j*.16,x-.43+j*.16,z+.40,z+.49,2.56,2.59)
+        post('DJ play button',play_green,x+.51,2.56,z+.41,.055,.035)
+        box('DJ tempo slider rail',black,x+.49,x+.54,z-.08,z+.24,2.56,2.57)
+        box('DJ tempo slider cap',silver,x+.46,x+.57,z+.03,z+.08,2.57,2.60)
+    box('DJ central mixer',gear,-.65,.65,-13.43,-12.33,2.46,2.58)
+    for x in [-.39,-.13,.13,.39]:
+        for z in [-13.22,-13.03,-12.84]:post('DJ mixer EQ knob',silver,x,2.58,z,.038,.055)
+        box('DJ mixer fader rail',black,x-.025,x+.025,-12.73,-12.44,2.58,2.59)
+        box('DJ mixer channel fader',silver,x-.065,x+.065,-12.58+x*.12,-12.52+x*.12,2.59,2.62)
+    box('DJ mixer crossfader rail',black,-.39,.39,-12.40,-12.36,2.58,2.59)
+    box('DJ mixer crossfader',silver,.04,.19,-12.43,-12.33,2.59,2.62)
+    for j in range(8):
+        z=-13.25+j*.068
+        for x in [-.57,.54]:box('DJ mixer level meter',play_green if j<5 else gold,x,x+.035,z,z+.043,2.584,2.603)
     # Full-size speaker stacks on the west pad; the stair approach stays open.
     for z in [3.6,8.3]:
         box('West speaker plinth',ink,-19.65,-17.25,z-1.38,z+1.38,.055,.26)

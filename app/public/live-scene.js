@@ -172,7 +172,7 @@ export function startLiveScene({
   function speakerView(kind='speakers'){
     if(speakerCamera)return;
     const positions={speakers:[[-8.5,2.6,11.8],[-18.5,1.8,5.8]],
-      bartender:[[-11.3,1.95,14],[-13.6,1.4,17.4]],dj:[[0,3.5,-9.8],[0,3,-13.35]]};
+      bartender:[[-11.3,1.95,14],[-13.6,1.4,17.4]],dj:[[3.9,4.0,-9.2],[0,2.75,-12.9]]};
     const [eye,target]=positions[kind]||positions.speakers;
     speakerCamera=new B.FreeCamera('Club observation',B.Vector3.FromArray(eye),scene);
     speakerCamera.setTarget(B.Vector3.FromArray(target));
@@ -212,6 +212,7 @@ export function startLiveScene({
       accentPreview={kind:data,start:performance.now()};
       peripheralPreview={kind:'strobe-hold',start:accentPreview.start,duration:accentDurations[data]};
       stageEvents.stop();strobePreviewStarted=-Infinity;
+      send('gate-notice',({curtain:'벽 레이저 커튼: 양쪽 벽을 따라 내려오는 흰색·노랑·하늘색 광선입니다.',fan:'부채꼴 빛: 무대 양옆에서 객석 머리 위로 펼쳐지는 넓은 빛입니다.',gobo:'회전 무늬: 중앙 플로어 양옆 바닥과 양쪽 벽에서 회전하는 원·격자 무늬입니다.'})[data]);
     }
     if(kind==='peripheral-preview'&&Object.hasOwn(peripheralTests,data)){
       accentPreview=null;
@@ -366,7 +367,7 @@ export function startLiveScene({
     const previewAge = (performance.now()-strobePreviewStarted)/1000;
     // After either test, leave a normal-light gap before automatic accents resume.
     const smokeProtection=peripheralPlan.protectSmoke&&previewAge>=strobeDurations[strobePreviewPattern];
-    const effectBlocksStrobe=effectPreview&&effectPreview.kind!=='strobe-hold';
+    const effectBlocksStrobe=Boolean(accentPreview)||(effectPreview&&effectPreview.kind!=='strobe-hold');
     const roomPulse = renderAmbience(beats, audioBands, strobing||Boolean(effectBlocksStrobe)||Boolean(smokeProtection), Boolean(audibleTrack), playback?.track.bpm || 120, previewAge<strobeDurations[strobePreviewPattern]+1.6 ? previewAge : null, strobePreviewPattern,dynamics.level);
     renderCeiling(beats,strobing,musicEnergy,roomPulse);
     renderSpeakers(beats,audioBands,Boolean(playing),dt,calmBeats.matches);
@@ -387,7 +388,7 @@ export function startLiveScene({
     const phase32 = phraseBeat % 32;
     const gather = phase32 >= 30 ? (phase32 - 30) / 2 : 0;
     const release = phraseBeat >= 32 && phase32 < 3 ? phase32 / 3 : -1;
-    renderHouseLights(beats, !stageEvents.kind, preview ? -1 : release, playback?.track.bpm || 120, musicEnergy, strobing, effectPreview, Boolean(playing),dynamics.level);
+    renderHouseLights(beats, !stageEvents.kind, preview||accentPreview ? -1 : release, playback?.track.bpm || 120, musicEnergy, strobing, effectPreview, Boolean(playing),dynamics.level);
     // Pick the upcoming phrase's color during the pickup and keep it through the release.
     const cue = cueColors[Math.floor((Math.max(0, phraseBeat) + 2) / 32) % cueColors.length];
     const wallRelease = preview || celebrating ? -1 : release;

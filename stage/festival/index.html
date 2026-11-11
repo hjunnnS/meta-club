@@ -54,7 +54,7 @@ async function open(){
  finally{URL.revokeObjectURL(model);}
  for(const m of scene.materials)if('maxSimultaneousLights' in m)m.maxSimultaneousLights=10;
  const glow=new B.GlowLayer('light diffusion',scene,{blurKernelSize:48});glow.intensity=.53;
- const views={'입구':[[0,1.65,25],[0,3.4,-16]],'발코니':[[-10.1,5.65,-13],[0,.4,0]],'바': [[-13.6,1.7,14.45],[0,3.4,-16]],'테이블':[[6.5,4.1,19],[19,.9,4]],'스피커':[[-8.5,2.6,11.8],[-18.5,1.8,5.8]],'바 직원':[[-11.3,1.95,14],[-13.6,1.4,17.4]],'DJ':[[0,3.5,-9.8],[0,3,-13.35]],'무대':[[0,1.67,3],[0,3.6,-17]]};
+ const views={'입구':[[0,1.65,25],[0,3.4,-16]],'발코니':[[-10.1,5.65,-13],[0,.4,0]],'바': [[-13.6,1.7,14.45],[0,3.4,-16]],'테이블':[[6.5,4.1,19],[19,.9,4]],'스피커':[[-8.5,2.6,11.8],[-18.5,1.8,5.8]],'바 직원':[[-11.3,1.95,14],[-13.6,1.4,17.4]],'DJ':[[3.9,4.0,-9.2],[0,2.75,-12.9]],'부채꼴 빛':[[0,2.4,18.2],[0,5,-3.5]],'회전 무늬':[[0,7.4,17],[0,.2,3]],'벽 커튼':[[0,2.3,18.2],[0,4,-3]],'무대':[[0,1.67,3],[0,3.6,-17]]};
  const nav=document.querySelector('nav'), tour=document.querySelector('.tour');
  const play=document.querySelector('#play'), slider=tour.querySelector('input'), locationLabel=document.querySelector('#location');
  const points=reviewRoute.map(p=>B.Vector3.FromArray(p));
@@ -219,7 +219,7 @@ async function open(){
    function stop(){active=null;state.textContent='효과를 선택하세요';for(const button of buttons.children)button.setAttribute('aria-pressed','false');}
    for(const [kind,label] of Object.entries({curtain:'양쪽 벽 레이저 커튼',fan:'객석 위 부채꼴 빛',gobo:'회전 무늬 조명'})){
      const button=document.createElement('button');button.textContent=label+' · '+accentDurations[kind]+'초';
-     button.onclick=()=>{stop();active={kind,start:performance.now()};state.textContent=label+' 시험 중';button.setAttribute('aria-pressed','true');};buttons.append(button);
+     button.onclick=()=>{stop();active={kind,start:performance.now()};state.textContent=label+' 시험 중';select(({curtain:'벽 커튼',fan:'부채꼴 빛',gobo:'회전 무늬'})[kind]);button.setAttribute('aria-pressed','true');};buttons.append(button);
    }
    document.querySelector('#stop-effect').onclick=stop;panel.hidden=false;
    scene.onBeforeRenderObservable.add(()=>{
