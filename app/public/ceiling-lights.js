@@ -156,7 +156,7 @@ export function strobeAccents(B,scene) {
     curtains.push({mesh:ray('Strobe wall curtain beam',rigs.curtain,curtainInk[side<0?0:1]),side,z,i,origin});
   }
   for(const side of [-1,1])for(let i=0;i<9;i++){
-    const origin=new B.Vector3(side*5.7,6.2,-10.3);
+    const origin=new B.Vector3(side*10.8,7.1,-16.7);
     fans.push({mesh:ray('Strobe overhead fan beam',rigs.fan,fanInk,.0425),origin,side,i});
   }
   for(const side of [-1,1]){
@@ -206,14 +206,14 @@ export function strobeAccents(B,scene) {
     }
     if(cue.fan)for(const {mesh,origin,side,i} of fans){
       const spread=.55+.45*(.5+.5*Math.sin(motion*Math.PI/8));
-      const originalX=(i-4)*3.5*spread+side*1.1,edgeX=side*(10+i*.85);
+      const originalX=side*(11.2+i*.78*spread),edgeX=side*(12+i*.72);
       destination.set(originalX+(edgeX-originalX)*centerClearance,3.5+Math.abs(i-4)*.20,15-1.4*Math.sin(motion*.18));
       aim(mesh,origin,destination);
     }
     if(cue.fan)for(const {mesh,vertices,side} of fanSheets){
       const spread=.55+.45*(.5+.5*Math.sin(motion*Math.PI/8)),z=15-1.4*Math.sin(motion*.18);
-      const left=-14*spread+side*1.1,right=14*spread+side*1.1;
-      vertices.set([side*5.7,6.2,-10.3,left+(side*10-left)*centerClearance,4.3,z,right+(side*16-right)*centerClearance,4.3,z]);
+      const left=side*11.2,right=side*(11.2+6.2*spread);
+      vertices.set([side*10.8,7.1,-16.7,left+(side*10-left)*centerClearance,4.3,z,right+(side*16-right)*centerClearance,4.3,z]);
       mesh.updateVerticesData(B.VertexBuffer.PositionKind,vertices,true);
     }
     for(const {mesh,material,wall,sign} of patterns){

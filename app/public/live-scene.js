@@ -5,7 +5,7 @@ import {sceneLook} from './scene-look.js';
 import { rhythmFloor } from './rhythm-floor.js';
 import { playlistPosition, trackBeat, musicDynamics } from './music.js';
 import { effects, eventPlayer, ledScreen, houseScreen, houseLights, peripheralTests, peripheralCue } from '/stage/festival/events.js';
-import { permittedPath, edmCameraDistance, edmSeats } from './edm-layout.js';
+import { permittedPath, edmCameraDistance, edmSeats, edmStage } from './edm-layout.js';
 import { dances, danceCamera, animateDance } from './free-dance.js';
 import { avatarFactory, playerView, staffNPC, animateStaff } from './avatar.js';
 export function startLiveScene({
@@ -80,9 +80,15 @@ export function startLiveScene({
     mesh.setEnabled(false);
     return mesh;
   }
-  const boothFace = lightStrip('Booth center fill', 0, 1.91, -11.99, 5.98, .79);
-  const boothEnds = [-1, 1].map(side => lightStrip('Booth end glow', side*2.77, 1.91, -11.94, .45, .79));
+  const boothFace = lightStrip('Booth center fill', 0, 1.91, edmStage.booth.z+.91, 5.98, .79);
+  const boothEnds = [-1, 1].map(side => lightStrip('Booth end glow', side*2.77, 1.91, edmStage.booth.z+.96, .45, .79));
   const stageLips = [-1, 1].map(side => lightStrip('Stage lip cue', side*4.225, 1.15, -9.985, 4.05, .34));
+  const stageRelays=[];
+  for(const side of [-1,1])for(let i=0;i<6;i++){
+    const z=(edmStage.booth.z+1.26)*(1-i/5)+(-10.35)*(i/5);
+    const mesh=lightStrip('Stage floor light relay',side*1.8,1.365,z,.22,.025);
+    mesh.scaling.z=.48/.032;stageRelays.push({mesh,index:i});
+  }
   function illuminate(mesh, color, level) {
     mesh.setEnabled(level > 0);
     if (level <= 0) return;
@@ -115,12 +121,12 @@ export function startLiveScene({
   let djLightLevel=0;
   const djFocusLights=washes.slice(0,3).map(({light,base},i)=>{
     const tint=B.Color3.FromHexString(['#fff1d8','#b9e6ff','#d4b9ff'][i]);
-    const origin=B.Vector3.FromArray([[-1.8,3.85,-10.4],[2.4,3.5,-10.8],[1.2,5.1,-15.6]][i]);
+    const origin=B.Vector3.FromArray(edmStage.focusOrigins[i]);
     const material=new B.StandardMaterial('DJ focus beam '+i,scene);
     material.disableLighting=true;material.emissiveColor=tint;material.alpha=0;material.backFaceCulling=false;
     const beam=B.MeshBuilder.CreateCylinder('DJ focus cone '+i,{height:1,diameterTop:.10,diameterBottom:.82,tessellation:12,cap:B.Mesh.NO_CAP},scene);
     beam.material=material;beam.rotationQuaternion=new B.Quaternion();beam.isPickable=false;beam.setEnabled(false);
-    const target=new B.Vector3(0,2.9,-13.35),axis=target.subtract(origin);
+    const target=new B.Vector3(edmStage.dj.x,2.9,edmStage.dj.z),axis=target.subtract(origin);
     beam.position.copyFrom(origin).addInPlace(axis.scale(.5));beam.scaling.y=axis.length();
     B.Quaternion.FromUnitVectorsToRef(B.Axis.Y,axis.normalize(),beam.rotationQuaternion);
     return {light,base,tint,origin,beam,material,position:light.position.clone(),color:light.diffuse.clone(),
@@ -194,7 +200,7 @@ export function startLiveScene({
     if(speakerCamera)return;
     cancelWalk();
     const positions={speakers:[[-8.5,2.6,11.8],[-18.5,1.8,5.8]],
-      bartender:[[-11.3,1.95,14],[-13.6,1.4,17.4]],dj:[[3.9,4.0,-9.2],[0,2.75,-12.9]]};
+      bartender:[[-11.3,1.95,14],[-13.6,1.4,17.4]],dj:[[3.9,4.0,edmStage.booth.z+3.7],[0,2.75,edmStage.booth.z]]};
     const [eye,target]=positions[kind]||positions.speakers;
     speakerCamera=new B.FreeCamera('Club observation',B.Vector3.FromArray(eye),scene);
     speakerCamera.setTarget(B.Vector3.FromArray(target));
@@ -492,6 +498,10 @@ export function startLiveScene({
     illuminate(boothFace, cue.rgb, ramp(cueBeat - .10, .18) * ramp(1.85 - cueBeat, .8));
     const endGlow = ramp(cueBeat - .86, .16) * ramp(4.2 - cueBeat, .75);
     for (const end of boothEnds) illuminate(end, cue.rgb, endGlow);
+    for(const {mesh,index} of stageRelays){
+      const age=cueBeat-(1.08+index*.14);
+      illuminate(mesh,cue.rgb,ramp(age,.10)*ramp(.62-age,.30));
+    }
     const lipGlow = ramp(cueBeat - 1.22, .28) * ramp(2.95 - cueBeat, .75);
     for (const lip of stageLips) illuminate(lip, cue.rgb, lipGlow);
     renderFloor(beats, celebrating, accent, cueBeat, cue.rgb, stageEvents.kind === 'laser' ? 1 : ['phoenix','whale','dragon','jellyfish','butterflies'].includes(stageEvents.kind) ? 2 : 0, roomPulse,look);
@@ -505,13 +515,13 @@ export function startLiveScene({
     const djOnAir=Boolean(playing)&&boardSegment===1&&!preview&&!celebrating;
     djLightLevel+=((djOnAir?1:0)-djLightLevel)*(1-Math.exp(-Math.min(dt,100)/220));
     djFocusLights.forEach(({light,base,tint,origin,beam,material,position,color,excluded,included},i)=>{
-      if(djLightLevel>.015){
+      if(i===0||djLightLevel>.015){
         light.includedOnlyMeshes=djMeshes;
         light.excludedMeshes=excluded.filter(mesh=>!djMeshes.includes(mesh));
         light.position.copyFrom(origin);light.diffuse.copyFrom(tint);
         // Controlled absolute intensity avoids clipping from the original high-output room washes.
-        light.intensity=[28,20,14][i]*djLightLevel;
-        beam.setEnabled(true);material.alpha=.018*djLightLevel;
+        light.intensity=(i===0?6.5:0)+[21.5,20,14][i]*djLightLevel;
+        beam.setEnabled(true);material.alpha=(i===0?.008:0)+.018*djLightLevel;
       }else{
         light.includedOnlyMeshes=included;light.excludedMeshes=excluded;
         light.position.copyFrom(position);beam.setEnabled(false);
@@ -521,7 +531,10 @@ export function startLiveScene({
       B.Color3.Lerp(base,i%2?lookSecondary:lookPrimary,.72).scaleToRef(strobing ? .10 : look.decor*(dancers ? 1 + .14*Math.sin(phase/4+i*2) : 1), material.emissiveColor);
     });
     const viewport=scene.activeCamera.viewport.toGlobal(engine.getRenderWidth(),engine.getRenderHeight());
-    const screenRect=playing?protectedRectangle([-6.55,2.65,-18.1],[6.55,8.35,-18.03],viewport):null;
+    const display=scene.getMeshByName('EDM house screen');
+    display?.computeWorldMatrix(true);
+    const bounds=display?.getBoundingInfo().boundingBox;
+    const screenRect=display?.isEnabled()&&bounds?protectedRectangle(bounds.minimumWorld.asArray(),bounds.maximumWorld.asArray(),viewport):null;
     const hologramRect=stageFocus&&stageEvents.kind!=='laser'?protectedRectangle([-3,2,-6],[9,7,6],viewport):null;
     for(const mesh of scene.meshes){
       const houseBeam=/^(peripheral laser (ray|soft edge)|wall downward light cone|house fan|phrase laser ray)$/.test(mesh.name);
@@ -539,7 +552,7 @@ export function startLiveScene({
       const previous=beamClearance.get(mesh)??1,gain=previous+(targetGain-previous)*blend;
       beamClearance.set(mesh,gain);mesh.visibility=base*gain;
     }
-    scene.materials.filter(m=>['house wash','peripheral thin laser','peripheral laser halo','scanner beam','beam core','shaft glow','floor wash'].includes(m.name))
+    scene.materials.filter(m=>['house wash','peripheral thin laser','peripheral laser halo'].includes(m.name))
       .forEach((m,i)=>{if(m.emissiveColor)m.emissiveColor.copyFrom(i%2?lookSecondary:lookPrimary);});
     let detailed = 0,
       ai = 0,
@@ -625,8 +638,8 @@ export function startLiveScene({
     animateStaff(bartender,'bartender',beats,t,musicEnergy,calmBeats.matches);
     if ((segment === 1 || segment === 2) && !preview && !celebrating && now >= nextBroadcast) {
       if (segment === 1) {
-        broadcastCamera.position.set(0, 3.20, -10.2);
-        broadcastCamera.setTarget(new B.Vector3(0, 2.83, -13.35));
+        broadcastCamera.position.set(edmStage.dj.x,3.20,edmStage.dj.z+3.15);
+        broadcastCamera.setTarget(new B.Vector3(edmStage.dj.x,2.83,edmStage.dj.z));
         broadcastCamera.fov = .52;
         broadcast.renderList = dj.near.getChildMeshes();
       } else {

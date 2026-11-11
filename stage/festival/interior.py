@@ -91,25 +91,12 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
             if j%6==0:post('Suspension drops',ink,x,8.45,z,.025,2.55)
     halo=finish('Muted violet truss strip',(.11,.05,.22),0,.8,(.18,.06,.34))
     ellipse('LED halo',halo,0,7.91,0,8.44,8.44,.044)
-    # The LED artwork is baked into the actual GLB for independent viewers.
-    def led_pixel(x,y):
-        u=(x+.5)/768*2-1;v=1-(y+.5)/384*2
-        a=math.atan2(v-.04,u*1.55);r=math.hypot(u*1.55,v-.04)
-        warp=.19*math.sin(3*a+1.6*r)+.11*math.cos(5*a-4*r)
-        phase=12*(r+warp)+2.5*a
-        line=math.exp(-13*abs(math.sin(phase)))
-        fine=math.exp(-19*abs(math.sin(phase*2+.35)))
-        haze=.12+.23*(.5+.5*math.cos(phase))**4
-        t=.5+.5*math.sin(2*a+4*r)
-        rgb=(100+146*t,35+170*(1-t),250-32*t)
-        level=(haze+.88*line+.21*fine)*(.82 if y%3==0 else 1)
-        return [min(255,round(c*level+5)) for c in rgb]
-    screen=finish('LED / chromatic vortex',(1,1,1),0,.7,(1,1,1))
-    images[screen]=(png(768,384,led_pixel),lambda x,y,z:((x+6.55)/13.1,(8.35-y)/5.70))
-    box('Festival LED wall',screen,-6.55,6.55,-18.1,-18.03,2.65,8.35)
+    # A dark backing replaces the obsolete baked screen; the live screen sits just in front.
+    screen=finish('LED backing graphite',(.018,.018,.03),.12,.85)
+    box('Festival LED backing',screen,-9.15,9.15,-18.1,-18.03,2.64,9.08)
     for s in [-1,1]:
         for i in range(4):
-            x=s*(7.3+.53*i)
+            x=s*(9.85+.53*i)
             y=7.9-.47*i
             box('Wing blade housings',ink,x-.22,x+.22,-17.60,-17.24,2,y)
             for j in range(13):
@@ -254,6 +241,15 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
     for j in range(8):
         z=-13.25+j*.068
         for x in [-.57,.54]:box('DJ mixer level meter',play_green if j<5 else gold,x,x+.035,z,z+.043,2.584,2.603)
+    # Visible housings for the same three stage lights used by the DJ, matching edmStage.focusOrigins.
+    for x,y,z in [(-1.8,3.85,-13.10),(2.4,3.5,-13.50),(1.2,5.1,-17.15)]:
+        direction=(0-x,2.9-y,-16.05-z)
+        length=math.sqrt(sum(v*v for v in direction));direction=tuple(v/length for v in direction)
+        origin=(x,y,z);back=tuple(origin[i]-direction[i]*.28 for i in range(3))
+        lens=tuple(origin[i]+direction[i]*.025 for i in range(3))
+        beam('DJ focus fixture body',ink,back,origin,.13)
+        beam('DJ focus fixture lens',white,origin,lens,.075)
+        beam('DJ focus fixture suspension',ink,(back[0],7.5,back[2]),back,.025)
     # Full-size speaker stacks on the west pad; the stair approach stays open.
     for z in [3.6,8.3]:
         box('West speaker plinth',ink,-19.65,-17.25,z-1.38,z+1.38,.055,.26)

@@ -1,3 +1,4 @@
+import {edmStage} from '/clubs/edm/edm-layout.js';
 import { celebration } from './celebration.js';
 import { hologram } from './holograms.js';
 // Channel performances and local previews share the same durations.
@@ -86,7 +87,7 @@ export function ledScreen(B, scene, message, nickname = '', overlay = lettering(
   material.disableLighting = true;
   material.backFaceCulling = false;
   const screen = B.MeshBuilder.CreatePlane('LED message', { width: 12.8, height: 5.3 }, scene);
-  screen.position.set(0, 5.5, -17.90);
+  screen.position.set(edmStage.screen.x,edmStage.screen.y,edmStage.screen.z+.025);
   screen.material = material;
   screen.isPickable = false;
   return screen;
@@ -135,7 +136,7 @@ export function houseScreen(B, scene, broadcast) {
   const screen = ledScreen(B, scene, 'EDM CLUB');
   screen.name = 'EDM house screen';
   screen.scaling.set(1.42, 1.21, 1);
-  screen.position.set(3.2, 5.85, -13.95);
+  screen.position.set(edmStage.screen.x,edmStage.screen.y,edmStage.screen.z);
   const flashInk=paint(B,scene,'screen synchronized flash','#fff3df');
   flashInk.disableLighting=true;flashInk.backFaceCulling=false;
   const flashPanel=B.MeshBuilder.CreatePlane('screen flash accent',{width:12.8,height:5.3},scene);
@@ -182,7 +183,7 @@ export function houseScreen(B, scene, broadcast) {
       ctx.strokeStyle=look?.primary||cueColor;ctx.lineWidth=5;ctx.strokeRect(13,12,998,360);
       ctx.fillStyle='#e9f7ff';ctx.font='bold 22px system-ui';ctx.textAlign='left';
       ctx.fillText(segment===1?'DJ LIVE':'DANCE FLOOR',30,38);
-      ctx.font='18px system-ui';ctx.fillText(track||'EDM CLUB',30,361);
+      ctx.font='18px system-ui';ctx.fillText(track||'EDM CLUB',30,68);
     }else if (track) playWall(ctx, calm ? 0 : Math.max(0, phraseBeat),look);
     else mediaWall(ctx, beats * 0.36);
     // Mirrored neon wings leave the dark central field clear for the title.
@@ -474,8 +475,7 @@ function peripheralLighting(B,scene) {
       haloInk.alpha=rayInk.alpha*.13;
       for(const {ray,halo,spread} of rays) {
         ray.setEnabled(cue.laser>.001);halo.setEnabled(cue.laser>.001);if(!ray.isEnabled())continue;
-        const fan=calm.matches?3:1.5+5*(.5-.5*Math.cos(beat*Math.PI/2));
-        target.set(origin.x*.35+spread*fan,1.1+1.8*(.5+.5*Math.sin(phase*.8+spread)),origin.z-4+7*Math.sin(phase*.65+spread));
+        target.set(Math.sign(origin.x)*(13.4+spread*1.1+.8*Math.sin(phase)),1.1+1.8*(.5+.5*Math.sin(phase*.8+spread)),origin.z-4+7*Math.sin(phase*.65+spread));
         target.subtractToRef(origin,direction);ray.position.copyFrom(origin).addInPlace(direction.scale(.5));ray.scaling.y=direction.length();
         B.Quaternion.FromUnitVectorsToRef(B.Axis.Y,direction.normalize(),ray.rotationQuaternion);
         halo.position.copyFrom(ray.position);halo.scaling.copyFrom(ray.scaling);halo.rotationQuaternion.copyFrom(ray.rotationQuaternion);
@@ -501,7 +501,7 @@ export function houseLights(B, scene) {
   const beams = [];
   for (const side of [-1, 1]) {
     for (let i = 0; i < 4; i++) {
-      const origin = new B.Vector3(side * (3.4 + 1.35 * i), 6.7, -12 + i * .6);
+      const origin = new B.Vector3(side*(10.8+i*.8),7.1,-16.5+i*.3);
       const mesh = attach(B.MeshBuilder.CreateCylinder('house fan', {
         height: 1, diameterTop: .09, diameterBottom: .0175, tessellation: 8, cap: B.Mesh.NO_CAP
       }, scene), rig, lights[side === 1 ? 0 : 1]);
@@ -520,7 +520,7 @@ export function houseLights(B, scene) {
     }, scene), rig, material);
     ray.rotationQuaternion = new B.Quaternion();
     ray.setEnabled(false);
-    return { side, ray, material, origin: new B.Vector3(side * 4.2, 4.7, -12.2) };
+    return { side, ray, material, origin: new B.Vector3(side*10.8,6.6,-16.8) };
   });
   const delta = new B.Vector3();
   return (beat, visible, release, bpm=120, energy=0, strobing=false,preview=null,playing=true,arrangement=1,look=null) => {
@@ -539,7 +539,7 @@ export function houseLights(B, scene) {
       // Reach the acoustic wall before fading, short of the lounge sign at z=10.15.
       const t = Math.min(1, release / .78);
       const spread = t * t * (3 - 2 * t);
-      delta.set(side * (4.5 + 17 * spread), 3.45 + 2.8 * spread, -5 + 13 * spread);
+      delta.set(side*(12+7*spread), 3.45 + 2.8 * spread, -5 + 13 * spread);
       delta.subtractInPlace(origin);
       ray.position.copyFrom(delta).scaleInPlace(.5).addInPlace(origin);
       ray.scaling.y = delta.length();
@@ -548,7 +548,7 @@ export function houseLights(B, scene) {
     }
     const phase = calm.matches ? 0 : beat * Math.PI / 16;
     for (const {mesh, side, i, origin} of beams) {
-      delta.set(side * (i * 3.3 - 6 + 4 * Math.sin(phase + i * .22)), 3.8 + i * .32, 9 + i * 1.8);
+      delta.set(side*(11.2+i*1.1+1.4*Math.sin(phase+i*.22)), 3.8 + i * .32, 9 + i * 1.8);
       delta.subtractInPlace(origin);
       mesh.position.copyFrom(delta).scaleInPlace(.5).addInPlace(origin);
       mesh.scaling.y = delta.length();
@@ -562,9 +562,8 @@ function lasers(B, scene, root, event, fastFlash) {
   optics.parent = root;
   root = optics;
   const cuts = laserBlackouts(event.start,event.seconds);
-  const lime = '#cfff3c', violet = '#bc3aff', amber = '#ffae1e';
   const spectrum = ['#30ecff', '#fe309b', '#4673ff', '#6bff56', '#ffd540', '#ff4141'];
-  const palette = Object.fromEntries([...spectrum, lime, violet, amber].map(hex => [hex, B.Color3.FromHexString(hex)]));
+  const colorPairs=[['#5edfff','#a66dff'],['#ff6cc7','#609bff'],['#ffda6b','#effaff']].map(pair=>pair.map(B.Color3.FromHexString));
   const gradient = new B.DynamicTexture('spotlight falloff', 64, scene, false);
   const ctx = gradient.getContext();
   const pool = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
@@ -625,7 +624,7 @@ function lasers(B, scene, root, event, fastFlash) {
     const side = i < 14 ? -1 : 1;
     return {
       side, spread: (i % 14) / 13 * 2 - 1,
-      origin: new B.Vector3(side * 6.7, 4.2, -15.6),
+      origin: new B.Vector3(side*10.8,5.4,-16.7),
       mesh: beam('scanning fan', 0.0325, 0.009, fanMaterials[i % spectrum.length]),
     };
   });
@@ -642,10 +641,13 @@ function lasers(B, scene, root, event, fastFlash) {
     if (!lightsOn) return;
     const musicalBeat = t * (event.bpm || 120) / 60;
     const phase = Math.min(3, Math.floor(musicalBeat / 8));
+    const showBeats=(event.seconds||effects.laser.seconds)*(event.bpm||120)/60;
+    const colorPhase=Math.min(2,Math.floor(musicalBeat/showBeats*3));
+    const pair=colorPairs[colorPhase];
+    fanMaterials.forEach((material,i)=>material.emissiveColor.copyFrom(pair[i%2]));
     for (const [i, head] of heads.entries()) {
       const a = head.angle + musicalBeat * .36;
-      const color = palette[phase === 0 ? (i % 2 ? lime : violet)
-        : phase === 2 ? amber : spectrum[(i + phase) % spectrum.length]];
+      const color=pair[i%2];
       for (const mat of [head.core, head.light, head.footprint]) mat.emissiveColor.copyFrom(color);
       const side = i % 2 ? 1 : -1;
       if (phase === 0) target.set(8 * Math.cos(a), .08, 3 + 8 * Math.sin(a));
@@ -662,10 +664,10 @@ function lasers(B, scene, root, event, fastFlash) {
       mesh.setEnabled(phase === 1 || phase === 3);
       if (!mesh.isEnabled()) continue;
       if (phase === 1) {
-        target.set(-side * 12 + spread * 8, 3.8 + 1.7 * spread * side + Math.sin(t * 1.8), 20 + spread * 3);
+        target.set(side*(13.8+spread*2.2), 3.8 + 1.7 * spread * side + Math.sin(t * 1.8), 20 + spread * 3);
       } else {
         const angle = t * 1.15 + spread * 1.5;
-        target.set(-side * 14 + 6 * Math.cos(angle), 4.8 + 1.8 * Math.sin(angle) * side, 9 + 12 * Math.cos(angle * 0.6));
+        target.set(side*(14+3*Math.cos(angle)), 4.8 + 1.8 * Math.sin(angle) * side, 9 + 12 * Math.cos(angle * 0.6));
       }
       aim(mesh, origin, target);
     }

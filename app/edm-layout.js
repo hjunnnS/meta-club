@@ -1,3 +1,9 @@
+// Presentation anchors shared by the EDM scene, staff, equipment overlays and media wall.
+export const edmStage={
+  screen:{x:0,y:5.85,z:-17.95,width:12.8*1.42,height:5.3*1.21},
+  booth:{x:0,z:-15.6},dj:{x:0,y:1.35,z:-16.05},
+  focusOrigins:[[-1.8,3.85,-13.10],[2.4,3.5,-13.50],[1.2,5.1,-17.15]],
+};
 // Foot positions in the approved festival GLB (stage/build.py): metres, Y up.
 export function edmCameraDistance(target,direction,length) {
   const margin=.48;

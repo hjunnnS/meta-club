@@ -117,7 +117,7 @@ octagon("DJ platform",deck,0,-14.2,15,8.4,1.15,-.03,1.35,True)
 rect("DJ access",deck,-2.0,2.0,-10.05,-7.6,1.35,0,-.01,True)
 for x1,x2 in [(-6.25,-2.2),(2.2,6.25)]:
     box("Stage lip",pink,x1,x2,-10.13,-10.02,1.18,1.31)
-booth_z = -12.9 if festival else -15.75
+booth_z = -15.6 if festival else -15.75
 octagon("DJ booth",metal,0,booth_z,6.9,1.65,.45,1.35,2.45)
 box("Booth trim",ice,-3,3,booth_z+.81,booth_z+.85,2.32,2.43)
 box("Stage backdrop",indigo,-6.8,6.8,-18.8,-18.45,1.35,8.0)
@@ -193,6 +193,10 @@ if festival:
     from festival.interior import scenery
     VERSION = 'EDM v3 · festival interior'
     images, lights = scenery(materials, material, box, octagon, ring, beam, tri)
+    # Match edmStage.booth: move the original deck/mixer and front display with the booth.
+    for (group,mat),(positions,normals) in list(parts.items()):
+        if group=='Booth equalizer' or (group.startswith('DJ ') and group not in {'DJ booth','DJ platform','DJ access','DJ focus fixture body','DJ focus fixture lens','DJ focus fixture suspension'}):
+            parts[(group,mat)]=([(x,y,z-2.7) for x,y,z in positions],normals)
     # Retire the old decorative frame behind the enlarged screen, preserving backdrop/rear wall.
     obsolete={'Stage fan','Stage pylons','Pylon trim','Stage surround','Stage surround trim'}
     for key in list(parts):
