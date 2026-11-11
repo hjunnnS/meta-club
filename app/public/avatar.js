@@ -359,7 +359,7 @@ export function staffNPC(B,scene,make,role) {
     }
     model.torso.scaling.y=.90;model.torso.position.y=1.02;
     for(const side of [-1,1])
-      part('tank shoulder strap','CreateBox',{width:.095,height:.16,depth:.13},[side*.165,1.365,.025],fabric);
+      part('tank shoulder strap','CreateBox',{width:.095/3,height:.16,depth:.13},[side*.165,1.365,.025],fabric);
     part('tank hem','CreateBox',{width:.43,height:.035,depth:.32},[0,.91,.015],accent);
   }
   const hips=part('uniform hips','CreateSphere',{diameter:.54,segments:12},[0,.79,0],dark);
