@@ -34,6 +34,18 @@ html=html.replace('<h1>EDM 클럽</h1>','<h1>EDM · 개인 체험</h1>')
 html=html.replace('<script src="/clubs/edm/sdk.js"></script>','')
 html=re.sub(r'<dialog id="shop-dialog".*?</dialog>','',html,flags=re.S)
 html=html.replace('공연 미리보기 · 시험 회원','공연 미리보기 · 개인 체험').replace('로비로 돌아가기','체험 안내')
+# Personal trial has no running train. Keep server-backed club guidance untouched.
+html=html.replace('무드봉을 들거나 운행 중인 기차에 합류할 수 있습니다.','무드봉을 들고 춤출 수 있습니다.')
+html=html.replace('춤·무드봉·기차는','춤·무드봉은')
+# Preserve the delegated button handler and all data attributes inside a native disclosure.
+html=re.sub(r'<span id="particle-tests" hidden aria-label="공연 효과 시험">(.*?)</span>',
+ lambda match:'<details id="particle-tests" class="trial-effects" hidden aria-label="공연 효과 시험">'
+ '<summary>효과 시험</summary><div class="trial-effects-panel">'+match.group(1)+'</div></details>',html,flags=re.S)
+html=html.replace('</style>','''
+.trial-effects{position:relative}.trial-effects>summary{cursor:pointer;white-space:nowrap;color:#d3bfdc;padding:.34rem .75rem;border:1px solid #514360;border-radius:1rem}
+.trial-effects-panel{position:absolute;right:0;top:calc(100% + .5rem);z-index:5;width:min(34rem,90vw);max-height:55dvh;overflow:auto;display:flex;flex-wrap:wrap;gap:.5rem;padding:.75rem;background:#21192b;border:1px solid #60566f;border-radius:.6rem;box-shadow:0 8px 24px #08061099}
+.trial-effects:not([open])>.trial-effects-panel{display:none}
+</style>''')
 put('clubs/edm/index.html',html)
 client=(ROOT/'app/public/channel-client.js').read_text()
 client=client.replace("import { initShop } from './shop.js';","import {PersonalRoom} from './local-room.js';\nconst initShop=()=>({channel(){}});")
@@ -72,7 +84,7 @@ landing='''<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="view
 <style>*{box-sizing:border-box}body{margin:0;background:#100e18;color:#f2edff;font:16px system-ui;min-height:100dvh;display:grid;place-items:center}main{width:min(720px,92vw);padding:32px 20px}h1{font-size:30px}p{line-height:1.7;color:#c8c0d7}a{color:#aff7ea}.enter{display:inline-block;background:#b9f4e7;color:#11221f;padding:13px 24px;border-radius:24px;text-decoration:none;font-weight:700}section{margin:26px 0;border-top:1px solid #393044;padding:16px 0}.clubs{display:flex;gap:18px;flex-wrap:wrap}.clubs span{color:#aaa0b8}small{line-height:1.7;color:#aaa0b8}</style>
 <main><h1>메타 클럽 · EDM 개인 체험</h1><p>맵을 걸어보고 춤·무드봉·공연·테이블·7키 리듬게임을 확인하세요.<br>각 방문자가 독립적으로 체험하며, 다른 접속자와 위치나 좌석을 공유하지 않습니다.</p>
 <a class="enter" href="/clubs/edm/">EDM 들어가기</a>
-<section><strong>조작 안내</strong><p>바닥 클릭 / WASD 이동 · 드래그로 둘러보기 · 휠로 거리 조절<br>소파를 클릭하면 걸어가 앉습니다. 하단 버튼으로 일어날 수 있습니다.<br>음악 시작 후 7키 리듬게임과 공연 시험 버튼을 사용할 수 있습니다.</p></section>
+<section><strong>조작 안내</strong><p>바닥 클릭 / WASD 이동 · 드래그로 둘러보기 · 휠로 거리 조절<br>소파를 클릭하면 걸어가 앉습니다. 하단 버튼으로 일어날 수 있습니다.<br>음악 시작 후 7키 리듬게임을 즐길 수 있습니다. 상단의 ‘효과 시험’을 펼치면 공연 시험 버튼을 사용할 수 있습니다.</p></section>
 <div class="clubs"><strong>EDM · 체험 가능</strong><span>힙합 · 준비 중</span><span>소셜 라운지 · 준비 중</span><span>레트로 디스코 · 준비 중</span></div>
 <p><small>데스크톱 화면 검토용 · 체험판의 구역은 둘러볼 수 있도록 열려 있습니다.<br>실제 채널 정원·공유 좌석·서버 성능을 검증하는 버전은 아닙니다.</small></p></main></html>'''
 put('index.html',landing);put('lobby/index.html',landing)
