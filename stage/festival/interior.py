@@ -28,7 +28,7 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
         if emission: materials[i]['emissiveFactor']=emission
         textured={'Powder coated steel':'metal','Anodised aluminium':'metal','Satin champagne':'metal',
                   'Obsidian counter':'stone','Booth smoked stone':'stone','Aubergine velvet':'cloth',
-                  'Booth midnight plum':'cloth','Fluted walnut':'wood'}
+                  'Booth midnight plum':'cloth','VIP plum velvet':'cloth','VIP lilac cushions':'cloth','Fluted walnut':'wood'}
         kind=textured.get(name)
         if kind:
             p['baseColorFactor']=[1,1,1,1]
@@ -131,11 +131,38 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
             beam('Roof ribs',ink,(s*7.5,11,z),(0,11.25,z),.10)
         if s > 0:
             continue
-        # Leave the inner part of each elevated deck and its ramp clear.
-        for j in range(3):
-            x=s*18.05;z=-18+j*2.9
-            octagon('Deck banquettes',seat,x,z,2.25,2.2,.20,4.14,4.55)
-            box('Deck backrests',seat,x-.94,x+.94,z-.98,z-.66,4.42,5.06)
+        # Three open, stage-facing lounge groups stay outboard of the ramp and the approved route.
+        velvet=finish('VIP plum velvet',(.22,.075,.31),0,.96)
+        cushion=finish('VIP lilac cushions',(.33,.14,.42),0,.96)
+        table=finish('VIP smoked stone',(.075,.060,.105),.22,.40)
+        rug=finish('VIP woven rug',(.065,.052,.085),0,.98)
+        cove=finish('VIP warm cove',(.52,.26,.10),0,.72,(.55,.29,.12))
+        soft=finish('VIP violet cove',(.18,.08,.28),0,.78,(.26,.10,.38))
+        for j,z in enumerate([-17.4,-14.4,-11.4]):
+            x=-18.15
+            octagon('VIP rug',rug,-17.8,z,4.0,2.72,.22,4.006,4.016)
+            octagon('VIP sofa base',ink,x,z,1.70,2.40,.15,4.10,4.28)
+            for dz in [-.72,0,.72]:
+                octagon('VIP sofa cushion',velvet,x+.06,z+dz,1.45,.69,.12,4.28,4.49)
+                beam('VIP cushion seam',cushion,(x+.70,4.48,z+dz-.25),(x+.70,4.48,z+dz+.25),.012)
+            # Backrest on the outer wall side: the open seat faces the DJ stage to the east.
+            octagon('VIP sofa back',velvet,x-.75,z,.22,2.42,.08,4.28,4.91)
+            for dz in [-.72,0,.72]:
+                box('VIP back upholstery',cushion,x-.625,x-.60,z+dz-.29,z+dz+.29,4.51,4.82)
+            for side in [-1,1]:
+                octagon('VIP sofa arm',velvet,x+.03,z+side*1.11,1.62,.20,.07,4.28,4.72)
+            octagon('VIP sofa return',velvet,x+1.03,z-.94,1.05,.63,.12,4.14,4.49)
+            beam('VIP sofa brass reveal',brass,(x+.84,4.24,z-1.04),(x+.84,4.24,z+1.04),.018)
+            beam('VIP sofa underglow',cove,(x+.85,4.13,z-1.02),(x+.85,4.13,z+1.02),.022)
+            beam('VIP outer floor glow',soft,(x-.83,4.04,z-1.08),(x-.83,4.04,z+1.08),.018)
+            # A low table sits beside the group, leaving the central x=-14.6 route clear.
+            tx=-16.25
+            octagon('VIP low table top',table,tx,z+.22,1.10,1.28,.16,4.43,4.51)
+            for dx in [-.36,.36]:
+                for dz in [-.44,.44]:post('VIP table leg',brass,tx+dx,4.04,z+.22+dz,.034,.39)
+            beam('VIP table edge glow',cove,(tx+.55,4.445,z-.22),(tx+.55,4.445,z+.66),.015)
+            post('VIP table lamp base',brass,tx,4.51,z+.22,.10,.025)
+            post('VIP table lamp diffuser',cove,tx,4.535,z+.22,.065,.13)
     # Rotate the complete bar 180 degrees around (-13.65, 16.2).
     # The tall bottle display moves behind the stools, clearing the stage sightline.
     def bar_box(name,mat,x1,x2,z1,z2,lo,hi):
