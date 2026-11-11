@@ -338,7 +338,9 @@ export function strobeSchedule(beat,bpm=120) {
   const smokeAt=normalAt+strobeDurations.normal+.25;
   let smokeTime=seconds-smokeAt;
   if(smokeTime<0)smokeTime=cycle>0?smokeTime+period:-1;
-  return {kind:seconds<normalAt?'transition':'normal',elapsed:beat<0?-1:seconds<normalAt?seconds:seconds-normalAt,smokeTime:beat<0?-1:smokeTime};
+  const kind=seconds<normalAt?'transition':'normal',sceneIndex=((cycle%3)+3)%3;
+  const flash=sceneIndex===0?kind==='transition':sceneIndex===1?kind==='normal':false;
+  return {kind,flash,elapsed:beat<0?-1:seconds<normalAt?seconds:seconds-normalAt,smokeTime:beat<0?-1:smokeTime};
 }
 export const peripheralTests = {smoke:6, laser:4, wash:4};
 export function peripheralCue(beat,bpm=120,preview=null,playing=true,arrangement=1) {
@@ -352,7 +354,7 @@ export function peripheralCue(beat,bpm=120,preview=null,playing=true,arrangement
   if(!playing||beat<0)return {smokeTime:0,smoke:false,laser:0,wash:0,preview:false};
   const phase=((beat%32)+32)%32;
   const timing=strobeSchedule(beat,bpm),{smokeTime}=timing;
-  if(arrangement<.55)return {smokeTime:0,smoke:false,laser:0,wash:.16+.10*(.5+.5*Math.sin(beat*Math.PI/8)),preview:false,protectSmoke:false};
+  if(arrangement<.55)return {smokeTime:0,smoke:false,laser:0,wash:.25+.13*(.5+.5*Math.sin(beat*Math.PI/8)),preview:false,protectSmoke:false};
   const strong=arrangement>=.82;
   return {smokeTime,smoke:strong&&smokeTime>=0&&smokeTime<5.5,
     laser:fade(phase,9,11)*(1-fade(phase,20,24))*(strong?1:.40),

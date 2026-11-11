@@ -1,12 +1,12 @@
-// Background guests approach the west booths and wait in the aisle in front.
+// Background guests approach the current east booths and wait in the aisle in front.
 const stops = [
-  [-6, 20],
+  [-3, 18.5],
   [-1, 10],
-  [-3, 4],
-  [-7, -4],
-  [-10, -10],
-  [-16.6, -10],
-  [-16.6, -11.6],
+  [3, 4],
+  [7, -4],
+  [10, -7],
+  [16.0, -7],
+  [16.0, -9],
 ];
 const durations = [8, 5, 4, 4, 3, 1];
 function along(path, elapsed) {
@@ -68,7 +68,7 @@ export function background(slot, seconds) {
 const groups = [
   { y: .018, spots: [[-4.9, -4.6, -.8], [-3.2, -4.1, .4], [-4.4, -2.8, .1]] },
   { y: .018, spots: [[4.0, -3.4, .7], [5.7, -2.8, .2], [4.4, -1.5, -.4]] },
-  { y: 0, spots: [[-14.8, 19.6, -.5], [-13.1, 19.5, .5]] }, // bar, beyond the stools
+  { y: 0, spots: [[-16.8, 12.4, -.5], [-14.0, 11.9, .5]] }, // visible in front of the rotated bar
   { y: 0, spots: [[-8.8, 12.5, -.9], [-7.1, 13.2, .6]] }, // bar approach
   { y: 0, spots: [[10.4, 12.1, -.7], [12.1, 12.0, .2], [13.7, 12.5, .9]] }, // east open floor
   { y: 0, spots: [[5.2, 10.7, -.4], [6.0, 12.2, .8]] }, // beside the east approach

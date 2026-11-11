@@ -27,6 +27,26 @@ export function musicDynamics(position) {
   return {level:current[0]<.55?current[0]:level,bass:previous[1]+(current[1]-previous[1])*mix};
 }
 
+// Build an in-memory, whole-phrase loop; the supplied source file stays untouched.
+export function prepareTrackBuffer(ctx,decoded,track) {
+  if(Math.abs(decoded.duration-(track.sourceDuration??track.duration))>.1)throw Error('Unexpected source duration');
+  if(track.loopStart===undefined)return decoded;
+  const start=Math.round(track.loopStart*decoded.sampleRate),end=Math.round(track.loopEnd*decoded.sampleRate);
+  if(!Number.isFinite(start)||!Number.isFinite(end)||start<0||end>decoded.length||end<=start||
+    Math.abs((end-start)/decoded.sampleRate-track.duration)>.01)throw Error('Invalid music loop range');
+  const buffer=ctx.createBuffer(decoded.numberOfChannels,end-start,decoded.sampleRate);
+  // A 3ms cosine edge prevents a waveform click without adding a silent outro.
+  const edge=Math.min(Math.round(decoded.sampleRate*.003),Math.floor(buffer.length/2));
+  for(let c=0;c<decoded.numberOfChannels;c++){
+    const samples=buffer.getChannelData(c);samples.set(decoded.getChannelData(c).subarray(start,end));
+    for(let i=0;i<edge;i++){
+      const gain=(1-Math.cos(Math.PI*i/Math.max(1,edge-1)))/2;
+      samples[i]*=gain;samples[samples.length-1-i]*=gain;
+    }
+  }
+  return buffer;
+}
+
 export function musicPlayer(notice, playing, failed) {
   let ctx, analyser, frequencies,
     source,
@@ -115,9 +135,9 @@ export function musicPlayer(notice, playing, failed) {
       if (!buffer) {
         const res = await fetch(next.track.url);
         if (!res.ok) throw Error();
-        buffer = await ctx.decodeAudioData(await res.arrayBuffer());
+        const decoded = await ctx.decodeAudioData(await res.arrayBuffer());
         if (ticket !== generation) return;
-        if (Math.abs(buffer.duration - next.track.duration) > 0.1) throw Error();
+        buffer = prepareTrackBuffer(ctx,decoded,next.track);
         cache.set(id, buffer);
       }
       if (ticket !== generation) return;

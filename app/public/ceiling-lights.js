@@ -95,20 +95,23 @@ export function strobeAccentCue({beat,bpm=120,playing=false,preview=null,strobeP
   if(preview&&Object.hasOwn(accentDurations,preview.kind)){
     age=preview.age;duration=accentDurations[preview.kind];look=preview.kind;
   }else{
-    if(!Number.isFinite(beat)||beat<0||(!strobePreview&&(!playing||arrangement<.55)))return off;
+    if(!Number.isFinite(beat)||beat<0||(!strobePreview&&!playing))return off;
+    if(!strobePreview&&arrangement<.55)return {curtain:protectSmoke?0:.18*(overlap?.24:1)*(reduced?.30:1),fan:0,gobo:.48*(overlap?.35:1)*(reduced?.50:1)};
     const timing=strobeSchedule(beat,bpm),kind=strobePreview?.kind||timing.kind;
     if(!Object.hasOwn(strobeDurations,kind))return off;
     age=strobePreview?.age??timing.elapsed;
     duration=strobeDurations[kind];
     const cycle=Math.floor(beat/32);
-    look=kind==='transition'?'fan':['curtain','gobo','mixed'][((cycle%3)+3)%3];
+    const variety=((cycle+Math.floor(cycle/3))%3+3)%3;
+    look=kind==='transition'?(strobePreview?'fan':['fan','mixed','gobo'][variety]):['curtain','gobo','mixed'][variety];
   }
-  if(!Number.isFinite(age)||age<0||age>=duration)return off;
+  const baseline=preview||strobePreview?0:.16*(overlap?.35:1)*(reduced?.50:1);
+  if(!Number.isFinite(age)||age<0||age>=duration)return {...off,gobo:baseline};
   const envelope=Math.min(1,preview?1:age/.30,(duration-age)/.65);
   const level=envelope*(overlap?.24:1)*(reduced?.30:1);
   return {curtain:protectSmoke?0:level*(look==='curtain'?1:look==='mixed'?.55:0),
     fan:protectSmoke?0:level*(look==='fan'?1:0),
-    gobo:level*(look==='gobo'?1:look==='mixed'?.65:look==='fan'?.28:0)};
+    gobo:Math.max(baseline,level*(look==='gobo'?1:look==='mixed'?.65:look==='fan'?.28:0))};
 }
 
 function goboTextures(B,scene) {
@@ -174,7 +177,11 @@ export function strobeAccents(B,scene) {
     mesh.position.copyFrom(origin).addInPlace(delta.scale(.5));mesh.scaling.y=delta.length();
     B.Quaternion.FromUnitVectorsToRef(B.Axis.Y,delta.normalize(),mesh.rotationQuaternion);
   }
-  return (cue,beat,bass=0,reduced=false)=>{
+  const levels={curtain:0,fan:0,gobo:0};
+  return (target,beat,bass=0,reduced=false,dt=null)=>{
+    const blend=dt===null?1:1-Math.exp(-Math.max(0,Math.min(dt,1000))/220);
+    for(const kind of ['curtain','fan','gobo'])levels[kind]+=(target[kind]-levels[kind])*blend;
+    const cue=levels;
     for(const kind of ['curtain','fan','gobo'])rigs[kind].setEnabled(cue[kind]>.001);
     const motion=reduced?0:beat;
     const hit=reduced?0:Math.exp(-(((beat%1)+1)%1)*6)*Math.max(0,Math.min(1,bass));

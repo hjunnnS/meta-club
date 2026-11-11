@@ -7,8 +7,8 @@ function performanceAt(epoch, index, tracks) {
   if (!music) return null;
   const bpm = music.track.bpm || 120;
   const beat = ((music.phraseTime ?? music.time) - (music.track.firstBeat || 0)) * bpm / 60;
-  const remaining = ((32 - beat % 32) % 32 + 32) % 32;
-  // A loop restarts the song's first bar, even when its length is not a full eight-bar phrase.
+  const remaining = Math.max(0,Math.ceil(beat-1e-6)-beat);
+  // Start on the next beat, without postponing 30s/90s targets by eight bars.
   const nextLoopBeat = (music.track.duration - music.time + Math.max(0,music.track.firstBeat || 0)) * 1000;
   const start = due + Math.min(remaining * 60000 / bpm, nextLoopBeat);
   const startMusic = playlistPosition(tracks, epoch, start);

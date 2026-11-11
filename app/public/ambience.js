@@ -57,7 +57,8 @@ export function clubAmbience(B, scene) {
     const bass=((values[0]||0)+(values[1]||0)+(values[2]||0))/3;
     if (bass<.02) return 0;
     // Normal accent halfway through the phrase; the large accent owns its transition.
-    const {kind,elapsed}=strobeSchedule(beat,bpm);
+    const {kind,elapsed,flash}=strobeSchedule(beat,bpm);
+    if(!flash)return 0;
     return strobePattern(elapsed,kind)*(.7+.3*bass)*Math.min(1,arrangement);
   };
 }

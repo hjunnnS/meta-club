@@ -6,11 +6,12 @@ const B=createRequire(import.meta.url)('../dance/node_modules/babylonjs/babylon.
 const cue=(beat,extra={})=>strobeAccentCue({beat,bpm:132,playing:true,...extra});
 test('three looks follow existing normal/large strobe timing, with previews and overlap protection',()=>{
  assert(cue(2).fan>0);assert.equal(cue(2).curtain,0);
- assert(cue(19).curtain>0);assert.equal(cue(19).gobo,0);
+ assert(cue(19).curtain>0);assert(cue(19).gobo>0);
  assert(cue(51).gobo>0);assert.equal(cue(51).curtain,0);
  assert(cue(83).gobo>0&&cue(83).curtain>0);
  assert.deepEqual(cue(19,{playing:false}),{curtain:0,fan:0,gobo:0});
- assert.deepEqual(cue(19,{arrangement:.3}),{curtain:0,fan:0,gobo:0});
+ assert(cue(19,{arrangement:.3}).gobo>0);
+ assert(cue(19,{arrangement:.3}).fan===0);
  assert(cue(19,{overlap:true}).curtain<cue(19).curtain);
  assert.equal(cue(19,{protectSmoke:true}).curtain,0);
  assert(cue(19,{reduced:true}).curtain<cue(19).curtain);

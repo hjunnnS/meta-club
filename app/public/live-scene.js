@@ -377,7 +377,7 @@ export function startLiveScene({
       preview:accentTest,strobePreview:previewAge<strobeDurations[strobePreviewPattern]?{kind:strobePreviewPattern,age:previewAge}:null,
       overlap:stageEvents.kind&&stageEvents.kind!=='led'||peripheralPlan.laser>.5,
       protectSmoke:Boolean(smokeProtection),reduced:calmBeats.matches,arrangement:dynamics.level});
-    renderAccents(accentCue,beats,accentTest?.75:musicEnergy,calmBeats.matches);
+    renderAccents(accentCue,beats,accentTest?.75:musicEnergy,calmBeats.matches,dt);
     if (ambient) ambient.intensity = (smokeProtection?.42:.52) + roomPulse * 1.65;
     // The first beat of each four-beat bar accents both surfaces on the same frame.
     const barPhase = ((beats % 4) + 4) % 4;
