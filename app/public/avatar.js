@@ -325,7 +325,7 @@ export function staffNPC(B,scene,make,role) {
     nickname:dj?'DJ':'바 직원',x:dj?0:-13.6,y:dj?1.35:0,z:dj?-13.35:17.4,yaw:dj?0:Math.PI};
   const model=make(actor),own=[];
   model.root.metadata={ageGroup:'adult',gender:'woman',role,decorative:true};
-  const fabric=model.torso.material.clone(role+' fitted blouse');own.push(fabric);
+  const fabric=model.torso.material.clone(role+(dj?' tank top':' fitted blouse'));own.push(fabric);
   fabric.diffuseColor=B.Color3.FromHexString(dj?'#9a3d90':'#258f92');
   fabric.emissiveColor=fabric.diffuseColor.scale(.12);
   const source=model.torso.material;
@@ -346,6 +346,21 @@ export function staffNPC(B,scene,make,role) {
     part('side hair','CreateCapsule',{radius:.065,height:.48,tessellation:8},[side*.17,1.5,-.015],hair);
     part('eye','CreateBox',{width:.035,height:.042,depth:.012},[side*.062,1.58,.155],eyes);
   }
+  if(dj){
+    model.root.metadata.outfit='opaque sleeveless tank top';
+    const skin=model.near.getChildMeshes().find(mesh=>mesh.name==='head')?.material;
+    if(skin){
+      for(const joint of [model.limbs[0],model.limbs[2]])
+        for(const mesh of joint.getChildMeshes())if(mesh.name==='arm')mesh.material=skin;
+      // A shallow neckline and broad opaque straps distinguish the sleeveless top.
+      const neckline=part('tank neckline','CreateSphere',{diameter:1,segments:12},[0,1.365,.184],skin);
+      neckline.scaling.set(.24,.115,.075);
+    }
+    model.torso.scaling.y=.90;model.torso.position.y=1.02;
+    for(const side of [-1,1])
+      part('tank shoulder strap','CreateBox',{width:.095,height:.16,depth:.13},[side*.165,1.365,.025],fabric);
+    part('tank hem','CreateBox',{width:.43,height:.035,depth:.32},[0,.91,.015],accent);
+  }
   const hips=part('uniform hips','CreateSphere',{diameter:.54,segments:12},[0,.79,0],dark);
   hips.scaling.set(1,.55,.65);
   part('waist band','CreateBox',{width:.45,height:.065,depth:.34},[0,.89,0],dark);
@@ -353,7 +368,7 @@ export function staffNPC(B,scene,make,role) {
   crown.scaling.set(1,.65,.95);
   part('back hair','CreateCapsule',{radius:.17,height:dj?.46:.61,tessellation:8},[0,dj?1.50:1.38,-.14],hair);
   part('mouth','CreateBox',{width:.062,height:.014,depth:.012},[0,1.48,.16],accent);
-  part('staff badge','CreateBox',{width:.075,height:.045,depth:.018},[-.13,1.365,.17],accent);
+  if(!dj)part('staff badge','CreateBox',{width:.075,height:.045,depth:.018},[-.13,1.365,.17],accent);
   if(dj) {
     for(const side of [-1,1])part('headphone ear','CreateBox',{width:.08,height:.19,depth:.22},[side*.205,1.61,0],dark);
     part('headphone band','CreateBox',{width:.47,height:.055,depth:.13},[0,1.82,0],dark);
