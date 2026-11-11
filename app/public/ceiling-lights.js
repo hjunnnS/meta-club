@@ -117,8 +117,8 @@ function goboTextures(B,scene) {
     for(let y=0;y<size;y++)for(let x=0;x<size;x++){
       const u=(x+.5-size/2)/(size/2),v=(y+.5-size/2)/(size/2);
       const r=Math.hypot(u,v),angle=Math.atan2(v,u),offset=(y*size+x)*4;
-      const grid=t=>Math.abs(t-Math.round(t))<.055;
-      const mark=kind===0?(Math.abs(r-.76)<.027||Math.abs(r-.44)<.022||r>.2&&r<.87&&Math.abs(Math.sin(angle*8))<.10)
+      const grid=t=>Math.abs(t-Math.round(t))<.085;
+      const mark=kind===0?(Math.abs(r-.76)<.040||Math.abs(r-.44)<.035||r>.2&&r<.87&&Math.abs(Math.sin(angle*8))<.16)
         :kind===1?(grid(u*4)||grid(v*4))
         :(Math.abs(r-.67)<.065&&Math.cos(angle*12)>.35||Math.abs(r-.30)<.025);
       pixels[offset]=pixels[offset+1]=pixels[offset+2]=255;
@@ -154,18 +154,18 @@ export function strobeAccents(B,scene) {
     const origin=new B.Vector3(side*5.7,7.3,-10.9);
     fans.push({mesh:ray('Strobe overhead fan beam',rigs.fan,fanInk),origin,side,i});
   }
-  for(const [i,[x,z]] of [[-4.8,.5],[4.5,-2.2]].entries()){
-    const material=ink('Strobe floor pattern '+i,i?'#bd80ff':'#62dcff');
+  for(const [i,[x,z]] of [[-9.4,6],[9.4,6]].entries()){
+    const material=ink('Strobe floor pattern '+i,i?'#ffbd6f':'#65f4ff');
     const mesh=B.MeshBuilder.CreateGround('Strobe gobo floor',{width:5.0,height:5.0},scene);
-    mesh.position.set(x,.066,z);mesh.parent=rigs.gobo;mesh.material=material;
-    mesh.isPickable=false;mesh.checkCollisions=false;material.opacityTexture=textures[0];
+    mesh.position.set(x,.075,z);mesh.parent=rigs.gobo;mesh.material=material;
+    mesh.isPickable=false;mesh.checkCollisions=false;material.emissiveColor.scaleInPlace(1.6);material.opacityTexture=textures[0];
     patterns.push({mesh,material,wall:false,sign:i?1:-1});
   }
   for(const side of [-1,1]){
     const material=ink('Strobe wall pattern '+side,side<0?'#72d9ff':'#dc83ff');
     const mesh=B.MeshBuilder.CreatePlane('Strobe gobo wall',{size:3.6,sideOrientation:B.Mesh.DOUBLESIDE},scene);
     mesh.parent=rigs.gobo;mesh.position.set(side*21.12,5.35,6);mesh.rotation.y=side*Math.PI/2;
-    mesh.material=material;mesh.isPickable=false;mesh.checkCollisions=false;material.opacityTexture=textures[0];
+    mesh.material=material;mesh.isPickable=false;mesh.checkCollisions=false;material.emissiveColor.scaleInPlace(1.6);material.opacityTexture=textures[0];
     patterns.push({mesh,material,wall:true,sign:side});
   }
   const delta=new B.Vector3(),destination=new B.Vector3();
@@ -190,7 +190,7 @@ export function strobeAccents(B,scene) {
       aim(mesh,origin,destination);
     }
     for(const {mesh,material,wall,sign} of patterns){
-      material.alpha=cue.gobo*(.50+hit*.25);material.opacityTexture=textures[((Math.floor(Math.max(0,beat)/4)%3)+3)%3];
+      material.alpha=cue.gobo*(.65+hit*.22);material.opacityTexture=textures[((Math.floor(Math.max(0,beat)/4)%3)+3)%3];
       if(wall)mesh.rotation.z=motion*.10*sign;else mesh.rotation.y=motion*.10*sign;
     }
   };

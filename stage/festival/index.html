@@ -211,6 +211,8 @@ async function open(){
    const state=document.querySelector('#effect-state');let active=null;
    panel.querySelector('h1').textContent='싸이키 보조 연출 시험';
    panel.querySelectorAll('label').forEach(label=>label.hidden=true);
+   const repeatLabel=document.createElement('label'),repeat=document.createElement('input');
+   repeat.type='checkbox';repeat.checked=true;repeatLabel.append(repeat,' 반복 보기');panel.append(repeatLabel);
    function stop(){active=null;state.textContent='효과를 선택하세요';for(const button of buttons.children)button.setAttribute('aria-pressed','false');}
    for(const [kind,label] of Object.entries({curtain:'양쪽 벽 레이저 커튼',fan:'객석 위 부채꼴 빛',gobo:'회전 무늬 조명'})){
      const button=document.createElement('button');button.textContent=label+' · '+accentDurations[kind]+'초';
@@ -218,8 +220,9 @@ async function open(){
    }
    document.querySelector('#stop-effect').onclick=stop;panel.hidden=false;
    scene.onBeforeRenderObservable.add(()=>{
-     const seconds=performance.now()/1000,age=active?(performance.now()-active.start)/1000:0;
-     if(active&&age>=accentDurations[active.kind])stop();
+     const seconds=performance.now()/1000;let age=active?(performance.now()-active.start)/1000:0;
+     if(active&&repeat.checked)age%=accentDurations[active.kind]+.8;
+     else if(active&&age>=accentDurations[active.kind])stop();
      const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
      render(strobeAccentCue({beat:seconds*132/60,preview:active?{kind:active.kind,age}:null,reduced}),seconds*132/60,.75,reduced);
    });
