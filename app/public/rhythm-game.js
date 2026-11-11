@@ -1,5 +1,6 @@
 const defaults=['KeyS','KeyD','KeyF','Space','KeyJ','KeyK','KeyL'];
 const names=code=>code==='Space'?'SPACE':code.replace(/^Key|^Digit/,'');
+const windows={perfect:60,great:110,good:180};
 const weights={PERFECT:1,GREAT:.8,GOOD:.5,MISS:0};
 // Scores stay in this browser. The shared track is never sought or restarted.
 export function rhythmGame({music,startMusic,canPlay,lock}){
@@ -10,14 +11,21 @@ export function rhythmGame({music,startMusic,canPlay,lock}){
  <canvas tabindex="0" aria-label="노트가 아래로 내려오는 7개 레인. 표시된 건반을 판정선에서 누르세요." width="630" height="490"></canvas>
  <p class="rhythm-status" role="status">음악은 그대로 이어집니다. 연습 시작을 누르세요.</p>
  <div class="rhythm-actions"><button type="button" data-start>연습 시작</button><button type="button" data-speed>속도 · 보통</button><button type="button" data-settings>키 설정</button></div>
+ <label class="rhythm-offset">입력 보정(ms) <input data-offset type="number" min="-150" max="150" step="10" value="0" style="width:5rem"> <small>+값: 늦게 전달되는 입력 보정</small></label>
  <div class="rhythm-keys" hidden></div>
- <p class="rhythm-help">노트가 하단 선에 닿을 때 누르세요. PERFECT ±60ms · GREAT ±110ms · GOOD ±180ms<br>단일 노트 연습 · 점수는 개인 화면에만 표시됩니다.</p>`;
+ <p class="rhythm-help">노트가 하단 선에 닿을 때 누르세요. PERFECT ±60ms · GREAT ±110ms · GOOD ±180ms<br>빨·주·노·초·파·남·보 7레인 · 처음 2마디는 기본 박자부터 시작합니다.<br>판정 아래 빠름·늦음 표시를 참고하세요. 점수는 개인 화면에만 표시됩니다.</p>`;
  document.body.append(dialog);
  const $=s=>dialog.querySelector(s),canvas=$('canvas'),ctx=canvas.getContext('2d'),status=$('.rhythm-status');
  const startButton=$('[data-start]'),speedButton=$('[data-speed]'),settings=$('.rhythm-keys');
  let keys=defaults.slice(),chart=null,loading=null,round=null,frame=0,speed=1,opening=false;
  let pressed=new Set(),flashes=Array(7).fill(0),judgement='',judgementUntil=0;
- const colors=['#d4b7ff','#69ddff','#d4b7ff','#ffe399','#d4b7ff','#69ddff','#d4b7ff'];
+ const colors=['#ff7185','#ffad66','#ffe477','#80dda1','#71c9ff','#969bff','#ce91ef'];
+ const offsetInput=$('[data-offset]');
+ let inputOffset=0,timingText='',hitBursts=Array(7).fill(null);
+ try{const saved=Number(localStorage.getItem('edm-rhythm-offset'));if(Number.isFinite(saved))inputOffset=Math.max(-150,Math.min(150,saved));}catch{}
+ offsetInput.value=String(inputOffset);
+ offsetInput.onchange=()=>{inputOffset=Math.max(-150,Math.min(150,Math.round((Number(offsetInput.value)||0)/10)*10));offsetInput.value=String(inputOffset);try{localStorage.setItem('edm-rhythm-offset',String(inputOffset));}catch{}};
+ const inputBeat=now=>now.beat-(round?.inputOffset??inputOffset)*now.track.bpm/60000;
  try{const saved=JSON.parse(localStorage.getItem('edm-rhythm-keys')||'null');
   if(Array.isArray(saved)&&saved.length===7&&new Set(saved).size===7&&saved.every(k=>/^(Key[A-Z]|Digit[0-9]|Space|Arrow(Left|Right|Up|Down))$/.test(k)))keys=saved;
  }catch{}
@@ -45,15 +53,18 @@ export function rhythmGame({music,startMusic,canPlay,lock}){
   $('[data-combo]').textContent='콤보 '+round.combo+' · 최고 '+round.maxCombo;
   $('[data-accuracy]').textContent='정확도 '+(round.judged?(round.credit/round.judged*100).toFixed(1)+'%':'—');
  }
- function judge(note,label){
+ function judge(note,label,delta=null){
   note.done=true;note.result=label;round.judged++;round.credit+=weights[label];
   round.combo=label==='MISS'?0:round.combo+1;round.maxCombo=Math.max(round.maxCombo,round.combo);
-  judgement=label;judgementUntil=performance.now()+450;meters();
+  judgement=label;judgementUntil=performance.now()+500;
+  timingText=delta===null?'놓친 노트':Math.abs(delta)<20?'정확해요':(delta<0?'빠름 ':'늦음 ')+Math.round(Math.abs(delta))+'ms';
+  if(label!=='MISS'){flashes[note.lane]=performance.now()+150;hitBursts[note.lane]={at:performance.now(),label};}
+  meters();
  }
  function finish(reason,complete=false){
   if(!round?.running){if(reason)setStatus(reason);return;}
   round.running=false;pressed.clear();flashes.fill(0);
-  startButton.disabled=false;speedButton.disabled=false;$('[data-settings]').disabled=false;
+  startButton.disabled=false;speedButton.disabled=false;offsetInput.disabled=false;$('[data-settings]').disabled=false;
   startButton.textContent='다음 라운드';
   const counts=Object.keys(weights).map(k=>k+' '+round.notes.filter(n=>n.result===k).length).join(' · ');
   setStatus((complete?'라운드 완료. ':reason+' ')+counts);meters();
@@ -77,11 +88,11 @@ export function rhythmGame({music,startMusic,canPlay,lock}){
    if(now.track.id!==data.trackId)throw Error('이 패턴은 Neon Horizon 전용입니다.');
    const start=Math.ceil((now.beat+4)/4)*4,end=start+data.roundBars*4,notes=[];
    for(let cycle=Math.floor(start/data.beats);cycle<=Math.floor(end/data.beats);cycle++)
-    for(const n of data.notes){const beat=cycle*data.beats+n.beat;const grid=cycle*data.beats+(n.gridBeat??n.beat);if(grid>=start&&grid<end)notes.push({...n,beat,done:false});}
+    for(const n of data.notes){const beat=cycle*data.beats+n.beat;const grid=cycle*data.beats+(n.gridBeat??n.beat);if(grid>=start&&grid<end&&(grid>=start+8||Math.abs(grid-Math.round(grid))<.01))notes.push({...n,beat,done:false});}
    notes.sort((a,b)=>a.beat-b.beat||a.lane-b.lane);
-   round={running:true,trackId:now.track.id,start,end,notes,credit:0,judged:0,combo:0,maxCombo:0,lastBeat:now.beat};
-   settings.hidden=true;speedButton.disabled=true;$('[data-settings]').disabled=true;
-   pressed.clear();flashes.fill(0);judgement='';meters();canvas.focus();
+   round={running:true,trackId:now.track.id,start,end,notes,credit:0,judged:0,combo:0,maxCombo:0,lastBeat:now.beat,inputOffset};
+   settings.hidden=true;speedButton.disabled=true;offsetInput.disabled=true;$('[data-settings]').disabled=true;
+   pressed.clear();flashes.fill(0);hitBursts.fill(null);judgement='';timingText='';meters();canvas.focus();
   }catch(error){setStatus(error.message);startButton.disabled=false;}
   finally{opening=false;if(!round?.running)startButton.disabled=false;}
  }
@@ -96,13 +107,15 @@ export function rhythmGame({music,startMusic,canPlay,lock}){
    else if(b<round.lastBeat-.3)finish('음악 위치가 바뀌어 라운드를 중단했습니다.');
    else{
     round.lastBeat=Math.max(round.lastBeat,b);
-    const windowBeat=.18*now.track.bpm/60;
-    for(const n of round.notes)if(!n.done&&b-n.beat>windowBeat)judge(n,'MISS');
+    // One short dispatch allowance prevents a queued key event losing to the draw frame.
+    const judgedBeat=inputBeat(now),windowBeat=(windows.good+34)*now.track.bpm/60000;
+    for(const n of round.notes)if(!n.done&&judgedBeat-n.beat>windowBeat)judge(n,'MISS');
     if(b<round.start)setStatus('준비 · '+Math.ceil(round.start-b)+'박 후 시작');
     else setStatus('진행 '+Math.min(32,Math.floor((b-round.start)/4)+1)+' / 32마디 · 음악은 그대로 이어집니다.');
-    if(b>=round.end+windowBeat)finish('',true);
+    if(judgedBeat>=round.end+windowBeat)finish('',true);
    }
   }
+  const pixelsPerSecond=speed===1?200:270;
   for(let lane=0;lane<7;lane++){
    const x=left+lane*laneWidth;
    ctx.fillStyle=lane%2?'#121c2e':'#171629';ctx.fillRect(x+1,top,laneWidth-2,bottom-top);
@@ -111,41 +124,53 @@ export function rhythmGame({music,startMusic,canPlay,lock}){
     ctx.fillStyle=gradient;ctx.fillRect(x+1,bottom-170,laneWidth-2,170);
    }
    ctx.fillStyle=pressed.has(lane)?colors[lane]:'#282d43';ctx.fillRect(x+2,bottom+15,laneWidth-4,43);
+   ctx.fillStyle=colors[lane];ctx.fillRect(x+2,bottom+15,laneWidth-4,3);
    ctx.fillStyle=pressed.has(lane)?'#0a0d18':'#f4f7ff';ctx.font='bold '+(keys[lane]==='Space'?13:17)+'px system-ui';ctx.textAlign='center';
    ctx.fillText(names(keys[lane]),x+laneWidth/2,bottom+43);
+   const hit=hitBursts[lane],age=hit?(performance.now()-hit.at)/1000:1;
+   if(age<.28){ctx.save();ctx.globalAlpha=1-age/.28;ctx.strokeStyle=colors[lane];ctx.lineWidth=hit.label==='PERFECT'?3:2;ctx.strokeRect(x+5-age*10,bottom-6-age*22,laneWidth-10+age*20,12+age*44);ctx.restore();}
   }
   ctx.strokeStyle='#edf8ff';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(left,bottom);ctx.lineTo(W-left,bottom);ctx.stroke();
-  const pixelsPerSecond=speed===1?200:270;
+  if(now.playing){
+   const visibleBeats=(bottom-top)/pixelsPerSecond*now.track.bpm/60;
+   for(let tick=Math.ceil(b);tick<=b+visibleBeats;tick++){
+    const y=bottom-(tick-b)*60/now.track.bpm*pixelsPerSecond;
+    if(y<top)continue;ctx.strokeStyle=tick%4===0?'#ffffff30':'#ffffff0d';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(W-left,y);ctx.stroke();
+   }
+  }
   if(round){
    for(const n of round.notes){
     if(n.done)continue;
     const y=bottom-(n.beat-b)*60/(now.track?.bpm||132)*pixelsPerSecond;
     if(y<top||y>bottom+12)continue;
-    ctx.fillStyle=colors[n.lane];ctx.fillRect(left+n.lane*laneWidth+5,y-5,laneWidth-10,10);
+    ctx.fillStyle=colors[n.lane];ctx.fillRect(left+n.lane*laneWidth+5,y-6,laneWidth-10,12);
+    if(n.accent){ctx.fillStyle='#ffffff28';ctx.fillRect(left+n.lane*laneWidth+5,y-9,laneWidth-10,3);}
     ctx.fillStyle='#fff';ctx.fillRect(left+n.lane*laneWidth+5,y-5,laneWidth-10,2);
    }
   }
   if(judgementUntil>performance.now()){
    ctx.textAlign='center';ctx.font='bold 29px system-ui';ctx.fillStyle=judgement==='MISS'?'#ff8c9d':'#f5faff';ctx.fillText(judgement,W/2,H*.46);
    ctx.font='bold 19px system-ui';ctx.fillText((round?.combo||0)+' COMBO',W/2,H*.46+29);
+   ctx.font='14px system-ui';ctx.fillStyle='#d0d6e9';ctx.fillText(timingText,W/2,H*.46+52);
   }
   if(!round){ctx.textAlign='center';ctx.font='18px system-ui';ctx.fillStyle='#e8e8ff';ctx.fillText('7개의 건반으로 음악을 따라 연주하세요',W/2,H*.38);}
   frame=requestAnimationFrame(draw);
  }
  function keydown(e){
-  if(!dialog.open||e.ctrlKey||e.altKey||e.metaKey||e.target.closest('.rhythm-keys'))return;
+  if(!dialog.open||e.ctrlKey||e.altKey||e.metaKey||e.target.closest('.rhythm-keys,.rhythm-offset'))return;
   const lane=keys.indexOf(e.code);if(lane<0)return;
   if(!round?.running&&e.target.tagName==='BUTTON'&&e.code==='Space')return;
   e.preventDefault();e.stopPropagation();if(e.repeat||pressed.has(lane))return;
   pressed.add(lane);flashes[lane]=performance.now()+100;
   if(!round?.running)return;
   const now=music.status(Number.isFinite(e.timeStamp)&&e.timeStamp<1e10?e.timeStamp:performance.now());
-  if(!now.playing||now.beat<round.start-.4)return;
+  if(!now.playing||now.track.id!==round.trackId||now.beat<round.start-.4)return;
+  const beat=inputBeat(now);
   const note=round.notes.filter(n=>!n.done&&n.lane===lane)
-   .reduce((best,n)=>!best||Math.abs(n.beat-now.beat)<Math.abs(best.beat-now.beat)?n:best,null);
+   .reduce((best,n)=>!best||Math.abs(n.beat-beat)<Math.abs(best.beat-beat)?n:best,null);
   if(!note)return;
-  const delta=Math.abs(note.beat-now.beat)*60/now.track.bpm*1000;
-  if(delta<=180)judge(note,delta<=60?'PERFECT':delta<=110?'GREAT':'GOOD');
+  const delta=(beat-note.beat)*60000/now.track.bpm,absolute=Math.abs(delta);
+  if(absolute<=windows.good)judge(note,absolute<=windows.perfect?'PERFECT':absolute<=windows.great?'GREAT':'GOOD',delta);
  }
  function release(e){const lane=keys.indexOf(e.code);if(lane>=0)pressed.delete(lane);}
  function close(){if(round?.running)finish('라운드를 종료했습니다.');dialog.close();}

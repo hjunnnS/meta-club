@@ -1,11 +1,11 @@
 {
   "trackId": "neon-horizon-treblo",
-  "version": 1,
+  "version": 2,
   "bpm": 132,
   "beats": 448,
   "roundBars": 32,
   "lanes": 7,
-  "authoring": "Authored percussion-response motifs by arrangement section, aligned within 24ms to source PCM transients. Initial chart for user review; no play validation performed.",
+  "authoring": "Revision 2: preserve source-aligned transient times, replace simultaneous stacks with single notes, alternate hand motifs and use adjacent-lane rises. Quiet sections keep integer beats. User play review pending; no additional testing.",
   "sections": [
     {
       "beat": 0,
@@ -304,3547 +304,3908 @@
     {
       "beat": 0.0352,
       "gridBeat": 0,
-      "lane": 0
+      "lane": 3,
+      "accent": true
     },
     {
       "beat": 0.9911,
       "gridBeat": 1,
-      "lane": 2
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 1.99122,
       "gridBeat": 2,
-      "lane": 4
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 2.99112,
       "gridBeat": 3,
-      "lane": 6
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 3.99124,
       "gridBeat": 4,
-      "lane": 0
+      "lane": 1,
+      "accent": true
     },
     {
       "beat": 4.99114,
       "gridBeat": 5,
-      "lane": 2
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 5.99126,
       "gridBeat": 6,
-      "lane": 4
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 6.99116,
       "gridBeat": 7,
-      "lane": 6
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 7.99128,
       "gridBeat": 8,
-      "lane": 6
+      "lane": 3,
+      "accent": true
     },
     {
       "beat": 8.99118,
       "gridBeat": 9,
-      "lane": 4
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 9.9913,
       "gridBeat": 10,
-      "lane": 2
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 10.9912,
       "gridBeat": 11,
-      "lane": 0
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 11.9911,
       "gridBeat": 12,
-      "lane": 6
+      "lane": 1,
+      "accent": true
     },
     {
       "beat": 12.99122,
       "gridBeat": 13,
-      "lane": 4
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 13.99112,
       "gridBeat": 14,
-      "lane": 2
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 15.00004,
       "gridBeat": 15,
-      "lane": 0
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 15.99114,
       "gridBeat": 16,
-      "lane": 0
+      "lane": 3,
+      "accent": true
     },
     {
       "beat": 16.99126,
       "gridBeat": 17,
-      "lane": 2
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 17.99116,
       "gridBeat": 18,
-      "lane": 4
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 18.99128,
       "gridBeat": 19,
-      "lane": 6
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 19.99118,
       "gridBeat": 20,
-      "lane": 0
+      "lane": 1,
+      "accent": true
     },
     {
       "beat": 20.9913,
       "gridBeat": 21,
-      "lane": 2
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 21.9912,
       "gridBeat": 22,
-      "lane": 4
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 22.9911,
       "gridBeat": 23,
-      "lane": 6
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 23.99122,
       "gridBeat": 24,
-      "lane": 6
+      "lane": 3,
+      "accent": true
     },
     {
       "beat": 24.99112,
       "gridBeat": 25,
-      "lane": 4
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 25.99124,
       "gridBeat": 26,
-      "lane": 2
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 26.99114,
       "gridBeat": 27,
-      "lane": 0
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 27.99126,
       "gridBeat": 28,
-      "lane": 6
+      "lane": 1,
+      "accent": true
     },
     {
       "beat": 28.99116,
       "gridBeat": 29,
-      "lane": 4
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 29.99128,
       "gridBeat": 30,
-      "lane": 2
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 30.99118,
       "gridBeat": 31,
-      "lane": 0
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 31.9913,
       "gridBeat": 32,
-      "lane": 0
-    },
-    {
-      "beat": 31.9913,
-      "gridBeat": 32,
-      "lane": 6
+      "lane": 3,
+      "accent": true
     },
     {
       "beat": 32.49114,
       "gridBeat": 32.5,
-      "lane": 2
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 32.9912,
       "gridBeat": 33,
-      "lane": 4
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 33.9911,
       "gridBeat": 34,
-      "lane": 1
-    },
-    {
-      "beat": 33.9911,
-      "gridBeat": 34,
-      "lane": 5
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 34.50876,
       "gridBeat": 34.5,
-      "lane": 3
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 34.99122,
       "gridBeat": 35,
-      "lane": 6
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 35.50888,
       "gridBeat": 35.5,
-      "lane": 4
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 35.99112,
       "gridBeat": 36,
-      "lane": 6
+      "lane": 5,
+      "accent": true
     },
     {
       "beat": 36.99124,
       "gridBeat": 37,
-      "lane": 4
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 37.4913,
       "gridBeat": 37.5,
-      "lane": 3
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 37.99114,
       "gridBeat": 38,
-      "lane": 2
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 38.99126,
       "gridBeat": 39,
-      "lane": 0
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 39.4911,
       "gridBeat": 39.5,
-      "lane": 1
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 39.99116,
       "gridBeat": 40,
-      "lane": 6
+      "lane": 1,
+      "accent": true
     },
     {
       "beat": 40.49122,
       "gridBeat": 40.5,
-      "lane": 5
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 40.99128,
       "gridBeat": 41,
-      "lane": 3
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 41.99118,
       "gridBeat": 42,
-      "lane": 2
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 42.50004,
       "gridBeat": 42.5,
-      "lane": 1
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 42.9913,
       "gridBeat": 43,
-      "lane": 0
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 43.9912,
       "gridBeat": 44,
-      "lane": 0
+      "lane": 5,
+      "accent": true
     },
     {
       "beat": 44.9911,
       "gridBeat": 45,
-      "lane": 2
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 45.49116,
       "gridBeat": 45.5,
-      "lane": 3
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 45.99122,
       "gridBeat": 46,
-      "lane": 4
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 46.99112,
       "gridBeat": 47,
-      "lane": 6
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 47.49998,
       "gridBeat": 47.5,
-      "lane": 5
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 47.99124,
       "gridBeat": 48,
-      "lane": 0
+      "lane": 1,
+      "accent": true
     },
     {
       "beat": 48.4913,
       "gridBeat": 48.5,
-      "lane": 1
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 48.99114,
       "gridBeat": 49,
-      "lane": 3
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 49.99126,
       "gridBeat": 50,
-      "lane": 4
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 50.5087,
       "gridBeat": 50.5,
-      "lane": 5
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 50.99116,
       "gridBeat": 51,
-      "lane": 6
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 51.99128,
       "gridBeat": 52,
-      "lane": 6
+      "lane": 5,
+      "accent": true
     },
     {
       "beat": 52.99118,
       "gridBeat": 53,
-      "lane": 4
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 53.49124,
       "gridBeat": 53.5,
-      "lane": 3
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 53.9913,
       "gridBeat": 54,
-      "lane": 2
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 54.9912,
       "gridBeat": 55,
-      "lane": 0
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 55.49126,
       "gridBeat": 55.5,
-      "lane": 1
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 55.9911,
       "gridBeat": 56,
-      "lane": 6
+      "lane": 1,
+      "accent": true
     },
     {
       "beat": 56.49116,
       "gridBeat": 56.5,
-      "lane": 5
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 56.99122,
       "gridBeat": 57,
-      "lane": 3
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 57.99112,
       "gridBeat": 58,
-      "lane": 2
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 58.49118,
       "gridBeat": 58.5,
-      "lane": 1
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 58.99124,
       "gridBeat": 59,
-      "lane": 0
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 59.99114,
       "gridBeat": 60,
-      "lane": 6
+      "lane": 0,
+      "accent": true
     },
     {
       "beat": 60.4912,
       "gridBeat": 60.5,
-      "lane": 4
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 60.98246,
       "gridBeat": 61,
-      "lane": 2
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 61.4911,
       "gridBeat": 61.5,
-      "lane": 0
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 61.99116,
       "gridBeat": 62,
-      "lane": 1
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 62.49122,
       "gridBeat": 62.5,
-      "lane": 3
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 62.98248,
       "gridBeat": 63,
-      "lane": 5
+      "lane": 6,
+      "accent": false
     },
     {
       "beat": 63.49112,
       "gridBeat": 63.5,
-      "lane": 3
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 63.99118,
       "gridBeat": 64,
-      "lane": 0
-    },
-    {
-      "beat": 63.99118,
-      "gridBeat": 64,
-      "lane": 6
+      "lane": 3,
+      "accent": true
     },
     {
       "beat": 64.49124,
       "gridBeat": 64.5,
-      "lane": 2
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 64.9913,
       "gridBeat": 65,
-      "lane": 4
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 65.9912,
       "gridBeat": 66,
-      "lane": 1
-    },
-    {
-      "beat": 65.9912,
-      "gridBeat": 66,
-      "lane": 5
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 66.49126,
       "gridBeat": 66.5,
-      "lane": 3
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 66.9911,
       "gridBeat": 67,
-      "lane": 6
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 67.46476,
       "gridBeat": 67.5,
-      "lane": 4
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 67.99122,
       "gridBeat": 68,
-      "lane": 6
+      "lane": 5,
+      "accent": true
     },
     {
       "beat": 68.98232,
       "gridBeat": 69,
-      "lane": 4
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 69.49118,
       "gridBeat": 69.5,
-      "lane": 3
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 69.99124,
       "gridBeat": 70,
-      "lane": 2
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 70.99114,
       "gridBeat": 71,
-      "lane": 0
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 71.4912,
       "gridBeat": 71.5,
-      "lane": 1
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 71.99126,
       "gridBeat": 72,
-      "lane": 6
+      "lane": 1,
+      "accent": true
     },
     {
       "beat": 72.4911,
       "gridBeat": 72.5,
-      "lane": 5
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 72.99116,
       "gridBeat": 73,
-      "lane": 3
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 73.99128,
       "gridBeat": 74,
-      "lane": 2
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 74.48232,
       "gridBeat": 74.5,
-      "lane": 1
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 74.99118,
       "gridBeat": 75,
-      "lane": 0
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 75.9825,
       "gridBeat": 76,
-      "lane": 0
+      "lane": 5,
+      "accent": true
     },
     {
       "beat": 76.9824,
       "gridBeat": 77,
-      "lane": 2
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 77.49126,
       "gridBeat": 77.5,
-      "lane": 3
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 77.9911,
       "gridBeat": 78,
-      "lane": 4
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 78.98242,
       "gridBeat": 79,
-      "lane": 6
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 79.49128,
       "gridBeat": 79.5,
-      "lane": 5
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 79.98232,
       "gridBeat": 80,
-      "lane": 0
+      "lane": 1,
+      "accent": true
     },
     {
       "beat": 80.49118,
       "gridBeat": 80.5,
-      "lane": 1
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 80.98244,
       "gridBeat": 81,
-      "lane": 3
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 81.98234,
       "gridBeat": 82,
-      "lane": 4
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 82.4824,
       "gridBeat": 82.5,
-      "lane": 5
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 82.98246,
       "gridBeat": 83,
-      "lane": 6
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 83.98236,
       "gridBeat": 84,
-      "lane": 6
+      "lane": 5,
+      "accent": true
     },
     {
       "beat": 84.98248,
       "gridBeat": 85,
-      "lane": 4
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 85.49112,
       "gridBeat": 85.5,
-      "lane": 3
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 85.99118,
       "gridBeat": 86,
-      "lane": 2
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 86.9825,
       "gridBeat": 87,
-      "lane": 0
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 87.49114,
       "gridBeat": 87.5,
-      "lane": 1
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 87.9912,
       "gridBeat": 88,
-      "lane": 6
+      "lane": 1,
+      "accent": true
     },
     {
       "beat": 88.48246,
       "gridBeat": 88.5,
-      "lane": 5
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 88.9823,
       "gridBeat": 89,
-      "lane": 3
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 89.98242,
       "gridBeat": 90,
-      "lane": 2
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 90.48248,
       "gridBeat": 90.5,
-      "lane": 1
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 90.98232,
       "gridBeat": 91,
-      "lane": 0
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 91.98244,
       "gridBeat": 92,
-      "lane": 6
+      "lane": 0,
+      "accent": true
     },
     {
       "beat": 92.4825,
       "gridBeat": 92.5,
-      "lane": 4
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 92.98234,
       "gridBeat": 93,
-      "lane": 2
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 93.4824,
       "gridBeat": 93.5,
-      "lane": 0
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 93.99126,
       "gridBeat": 94,
-      "lane": 1
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 94.4823,
       "gridBeat": 94.5,
-      "lane": 3
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 94.98236,
       "gridBeat": 95,
-      "lane": 5
+      "lane": 6,
+      "accent": false
     },
     {
       "beat": 95.48242,
       "gridBeat": 95.5,
-      "lane": 3
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 95.98248,
       "gridBeat": 96,
-      "lane": 0
-    },
-    {
-      "beat": 95.98248,
-      "gridBeat": 96,
-      "lane": 6
+      "lane": 3,
+      "accent": true
     },
     {
       "beat": 96.49112,
       "gridBeat": 96.5,
-      "lane": 2
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 96.98238,
       "gridBeat": 97,
-      "lane": 4
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 97.9825,
       "gridBeat": 98,
-      "lane": 1
-    },
-    {
-      "beat": 97.9825,
-      "gridBeat": 98,
-      "lane": 5
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 98.48234,
       "gridBeat": 98.5,
-      "lane": 3
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 98.9824,
       "gridBeat": 99,
-      "lane": 6
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 99.46486,
       "gridBeat": 99.5,
-      "lane": 4
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 99.9823,
       "gridBeat": 100,
-      "lane": 6
+      "lane": 5,
+      "accent": true
     },
     {
       "beat": 100.98242,
       "gridBeat": 101,
-      "lane": 4
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 101.50008,
       "gridBeat": 101.5,
-      "lane": 3
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 101.99112,
       "gridBeat": 102,
-      "lane": 2
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 102.98244,
       "gridBeat": 103,
-      "lane": 0
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 103.4825,
       "gridBeat": 103.5,
-      "lane": 1
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 103.98234,
       "gridBeat": 104,
-      "lane": 6
+      "lane": 1,
+      "accent": true
     },
     {
       "beat": 104.4824,
       "gridBeat": 104.5,
-      "lane": 5
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 104.98246,
       "gridBeat": 105,
-      "lane": 3
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 105.98236,
       "gridBeat": 106,
-      "lane": 2
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 106.48242,
       "gridBeat": 106.5,
-      "lane": 1
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 106.98248,
       "gridBeat": 107,
-      "lane": 0
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 107.98238,
       "gridBeat": 108,
-      "lane": 0
+      "lane": 5,
+      "accent": true
     },
     {
       "beat": 108.9825,
       "gridBeat": 109,
-      "lane": 2
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 109.49114,
       "gridBeat": 109.5,
-      "lane": 3
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 109.9824,
       "gridBeat": 110,
-      "lane": 4
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 110.9823,
       "gridBeat": 111,
-      "lane": 6
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 111.49116,
       "gridBeat": 111.5,
-      "lane": 5
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 111.98242,
       "gridBeat": 112,
-      "lane": 0
+      "lane": 1,
+      "accent": true
     },
     {
       "beat": 112.49128,
       "gridBeat": 112.5,
-      "lane": 1
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 112.98232,
       "gridBeat": 113,
-      "lane": 3
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 113.98244,
       "gridBeat": 114,
-      "lane": 4
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 114.4825,
       "gridBeat": 114.5,
-      "lane": 5
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 114.98234,
       "gridBeat": 115,
-      "lane": 6
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 115.98246,
       "gridBeat": 116,
-      "lane": 6
+      "lane": 5,
+      "accent": true
     },
     {
       "beat": 116.98236,
       "gridBeat": 117,
-      "lane": 4
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 117.50002,
       "gridBeat": 117.5,
-      "lane": 3
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 117.98248,
       "gridBeat": 118,
-      "lane": 2
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 118.98238,
       "gridBeat": 119,
-      "lane": 0
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 119.48244,
       "gridBeat": 119.5,
-      "lane": 1
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 119.9825,
       "gridBeat": 120,
-      "lane": 6
+      "lane": 1,
+      "accent": true
     },
     {
       "beat": 120.48234,
       "gridBeat": 120.5,
-      "lane": 5
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 120.9824,
       "gridBeat": 121,
-      "lane": 3
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 121.9823,
       "gridBeat": 122,
-      "lane": 2
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 122.48236,
       "gridBeat": 122.5,
-      "lane": 1
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 122.98242,
       "gridBeat": 123,
-      "lane": 0
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 123.98232,
       "gridBeat": 124,
-      "lane": 6
+      "lane": 0,
+      "accent": true
     },
     {
       "beat": 124.48238,
       "gridBeat": 124.5,
-      "lane": 4
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 124.98244,
       "gridBeat": 125,
-      "lane": 2
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 125.4825,
       "gridBeat": 125.5,
-      "lane": 0
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 125.98234,
       "gridBeat": 126,
-      "lane": 1
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 126.4824,
       "gridBeat": 126.5,
-      "lane": 3
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 126.98246,
       "gridBeat": 127,
-      "lane": 5
+      "lane": 6,
+      "accent": false
     },
     {
       "beat": 127.4823,
       "gridBeat": 127.5,
-      "lane": 3
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 127.98236,
       "gridBeat": 128,
-      "lane": 1
+      "lane": 3,
+      "accent": true
     },
     {
       "beat": 130.00878,
       "gridBeat": 130,
-      "lane": 5
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 132.044,
       "gridBeat": 132,
-      "lane": 1
+      "lane": 4,
+      "accent": true
     },
     {
       "beat": 133.98242,
       "gridBeat": 134,
-      "lane": 5
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 136.03524,
       "gridBeat": 136,
-      "lane": 5
+      "lane": 3,
+      "accent": true
     },
     {
       "beat": 138.01766,
       "gridBeat": 138,
-      "lane": 1
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 140.00008,
       "gridBeat": 140,
-      "lane": 5
+      "lane": 4,
+      "accent": true
     },
     {
       "beat": 141.9825,
       "gridBeat": 142,
-      "lane": 1
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 144.0263,
       "gridBeat": 144,
-      "lane": 1
+      "lane": 3,
+      "accent": true
     },
     {
       "beat": 145.96472,
       "gridBeat": 146,
-      "lane": 5
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 148.04394,
       "gridBeat": 148,
-      "lane": 1
+      "lane": 4,
+      "accent": true
     },
     {
       "beat": 149.98236,
       "gridBeat": 150,
-      "lane": 5
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 151.99998,
       "gridBeat": 152,
-      "lane": 5
+      "lane": 3,
+      "accent": true
     },
     {
       "beat": 153.9736,
       "gridBeat": 154,
-      "lane": 1
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 155.97362,
       "gridBeat": 156,
-      "lane": 5
+      "lane": 4,
+      "accent": true
     },
     {
       "beat": 157.97364,
       "gridBeat": 158,
-      "lane": 1
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 159.98246,
       "gridBeat": 160,
-      "lane": 0
-    },
-    {
-      "beat": 159.98246,
-      "gridBeat": 160,
-      "lane": 6
+      "lane": 3,
+      "accent": true
     },
     {
       "beat": 160.4823,
       "gridBeat": 160.5,
-      "lane": 2
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 160.97356,
       "gridBeat": 161,
-      "lane": 4
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 161.98248,
       "gridBeat": 162,
-      "lane": 1
-    },
-    {
-      "beat": 161.98248,
-      "gridBeat": 162,
-      "lane": 5
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 162.47352,
       "gridBeat": 162.5,
-      "lane": 3
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 162.97358,
       "gridBeat": 163,
-      "lane": 6
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 163.50004,
       "gridBeat": 163.5,
-      "lane": 4
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 163.9737,
       "gridBeat": 164,
-      "lane": 6
+      "lane": 5,
+      "accent": true
     },
     {
       "beat": 164.9736,
       "gridBeat": 165,
-      "lane": 4
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 165.48246,
       "gridBeat": 165.5,
-      "lane": 3
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 165.9735,
       "gridBeat": 166,
-      "lane": 2
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 166.97362,
       "gridBeat": 167,
-      "lane": 0
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 167.48248,
       "gridBeat": 167.5,
-      "lane": 1
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 167.98232,
       "gridBeat": 168,
-      "lane": 6
+      "lane": 1,
+      "accent": true
     },
     {
       "beat": 168.48238,
       "gridBeat": 168.5,
-      "lane": 5
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 168.97364,
       "gridBeat": 169,
-      "lane": 3
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 169.97354,
       "gridBeat": 170,
-      "lane": 2
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 170.4736,
       "gridBeat": 170.5,
-      "lane": 1
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 170.98246,
       "gridBeat": 171,
-      "lane": 0
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 171.97356,
       "gridBeat": 172,
-      "lane": 0
+      "lane": 5,
+      "accent": true
     },
     {
       "beat": 172.97368,
       "gridBeat": 173,
-      "lane": 2
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 173.48232,
       "gridBeat": 173.5,
-      "lane": 3
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 173.97358,
       "gridBeat": 174,
-      "lane": 4
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 174.9737,
       "gridBeat": 175,
-      "lane": 6
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 175.47354,
       "gridBeat": 175.5,
-      "lane": 5
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 175.9736,
       "gridBeat": 176,
-      "lane": 0
+      "lane": 1,
+      "accent": true
     },
     {
       "beat": 176.48246,
       "gridBeat": 176.5,
-      "lane": 1
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 176.9735,
       "gridBeat": 177,
-      "lane": 3
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 177.97362,
       "gridBeat": 178,
-      "lane": 4
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 178.47368,
       "gridBeat": 178.5,
-      "lane": 5
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 178.97352,
       "gridBeat": 179,
-      "lane": 6
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 179.97364,
       "gridBeat": 180,
-      "lane": 6
+      "lane": 5,
+      "accent": true
     },
     {
       "beat": 180.97354,
       "gridBeat": 181,
-      "lane": 4
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 181.4824,
       "gridBeat": 181.5,
-      "lane": 3
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 181.97366,
       "gridBeat": 182,
-      "lane": 2
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 182.97356,
       "gridBeat": 183,
-      "lane": 0
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 183.47362,
       "gridBeat": 183.5,
-      "lane": 1
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 183.97368,
       "gridBeat": 184,
-      "lane": 6
+      "lane": 1,
+      "accent": true
     },
     {
       "beat": 184.48232,
       "gridBeat": 184.5,
-      "lane": 5
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 184.97358,
       "gridBeat": 185,
-      "lane": 3
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 185.9737,
       "gridBeat": 186,
-      "lane": 2
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 186.47354,
       "gridBeat": 186.5,
-      "lane": 1
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 186.9736,
       "gridBeat": 187,
-      "lane": 0
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 187.9735,
       "gridBeat": 188,
-      "lane": 6
+      "lane": 0,
+      "accent": true
     },
     {
       "beat": 188.47356,
       "gridBeat": 188.5,
-      "lane": 4
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 188.97362,
       "gridBeat": 189,
-      "lane": 2
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 189.48248,
       "gridBeat": 189.5,
-      "lane": 0
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 189.97352,
       "gridBeat": 190,
-      "lane": 1
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 190.47358,
       "gridBeat": 190.5,
-      "lane": 3
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 190.97364,
       "gridBeat": 191,
-      "lane": 5
+      "lane": 6,
+      "accent": false
     },
     {
       "beat": 191.4737,
       "gridBeat": 191.5,
-      "lane": 3
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 191.97354,
       "gridBeat": 192,
-      "lane": 0
-    },
-    {
-      "beat": 191.97354,
-      "gridBeat": 192,
-      "lane": 6
+      "lane": 3,
+      "accent": true
     },
     {
       "beat": 192.4824,
       "gridBeat": 192.5,
-      "lane": 2
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 192.97366,
       "gridBeat": 193,
-      "lane": 4
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 193.97356,
       "gridBeat": 194,
-      "lane": 1
-    },
-    {
-      "beat": 193.97356,
-      "gridBeat": 194,
-      "lane": 5
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 194.47362,
       "gridBeat": 194.5,
-      "lane": 3
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 194.97368,
       "gridBeat": 195,
-      "lane": 6
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 195.45592,
       "gridBeat": 195.5,
-      "lane": 4
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 195.97358,
       "gridBeat": 196,
-      "lane": 6
+      "lane": 5,
+      "accent": true
     },
     {
       "beat": 196.9737,
       "gridBeat": 197,
-      "lane": 4
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 197.48234,
       "gridBeat": 197.5,
-      "lane": 3
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 197.9736,
       "gridBeat": 198,
-      "lane": 2
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 198.9735,
       "gridBeat": 199,
-      "lane": 0
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 199.47356,
       "gridBeat": 199.5,
-      "lane": 1
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 199.97362,
       "gridBeat": 200,
-      "lane": 6
+      "lane": 1,
+      "accent": true
     },
     {
       "beat": 200.47368,
       "gridBeat": 200.5,
-      "lane": 5
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 200.97352,
       "gridBeat": 201,
-      "lane": 3
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 201.97364,
       "gridBeat": 202,
-      "lane": 2
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 202.4737,
       "gridBeat": 202.5,
-      "lane": 1
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 202.97354,
       "gridBeat": 203,
-      "lane": 0
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 203.97366,
       "gridBeat": 204,
-      "lane": 0
+      "lane": 5,
+      "accent": true
     },
     {
       "beat": 204.97356,
       "gridBeat": 205,
-      "lane": 2
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 205.48242,
       "gridBeat": 205.5,
-      "lane": 3
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 205.97368,
       "gridBeat": 206,
-      "lane": 4
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 206.97358,
       "gridBeat": 207,
-      "lane": 6
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 207.47364,
       "gridBeat": 207.5,
-      "lane": 5
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 207.9737,
       "gridBeat": 208,
-      "lane": 0
+      "lane": 1,
+      "accent": true
     },
     {
       "beat": 208.47354,
       "gridBeat": 208.5,
-      "lane": 1
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 208.9736,
       "gridBeat": 209,
-      "lane": 3
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 209.9735,
       "gridBeat": 210,
-      "lane": 4
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 210.47356,
       "gridBeat": 210.5,
-      "lane": 5
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 210.97362,
       "gridBeat": 211,
-      "lane": 6
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 211.97352,
       "gridBeat": 212,
-      "lane": 6
+      "lane": 5,
+      "accent": true
     },
     {
       "beat": 212.97364,
       "gridBeat": 213,
-      "lane": 4
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 213.4825,
       "gridBeat": 213.5,
-      "lane": 3
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 213.97354,
       "gridBeat": 214,
-      "lane": 2
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 214.97366,
       "gridBeat": 215,
-      "lane": 0
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 215.4823,
       "gridBeat": 215.5,
-      "lane": 1
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 215.97356,
       "gridBeat": 216,
-      "lane": 6
+      "lane": 1,
+      "accent": true
     },
     {
       "beat": 216.47362,
       "gridBeat": 216.5,
-      "lane": 5
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 216.97368,
       "gridBeat": 217,
-      "lane": 3
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 217.97358,
       "gridBeat": 218,
-      "lane": 2
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 218.47364,
       "gridBeat": 218.5,
-      "lane": 1
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 218.9737,
       "gridBeat": 219,
-      "lane": 0
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 219.9736,
       "gridBeat": 220,
-      "lane": 6
+      "lane": 0,
+      "accent": true
     },
     {
       "beat": 220.47366,
       "gridBeat": 220.5,
-      "lane": 4
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 220.9735,
       "gridBeat": 221,
-      "lane": 2
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 221.47356,
       "gridBeat": 221.5,
-      "lane": 0
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 221.97362,
       "gridBeat": 222,
-      "lane": 1
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 222.47368,
       "gridBeat": 222.5,
-      "lane": 3
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 222.97352,
       "gridBeat": 223,
-      "lane": 5
+      "lane": 6,
+      "accent": false
     },
     {
       "beat": 223.47358,
       "gridBeat": 223.5,
-      "lane": 3
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 223.97364,
       "gridBeat": 224,
-      "lane": 0
-    },
-    {
-      "beat": 223.97364,
-      "gridBeat": 224,
-      "lane": 6
+      "lane": 3,
+      "accent": true
     },
     {
       "beat": 224.4737,
       "gridBeat": 224.5,
-      "lane": 2
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 224.96474,
       "gridBeat": 225,
-      "lane": 4
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 225.97366,
       "gridBeat": 226,
-      "lane": 1
-    },
-    {
-      "beat": 225.97366,
-      "gridBeat": 226,
-      "lane": 5
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 226.4647,
       "gridBeat": 226.5,
-      "lane": 3
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 226.96476,
       "gridBeat": 227,
-      "lane": 6
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 227.49122,
       "gridBeat": 227.5,
-      "lane": 4
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 227.97368,
       "gridBeat": 228,
-      "lane": 6
+      "lane": 5,
+      "accent": true
     },
     {
       "beat": 228.97358,
       "gridBeat": 229,
-      "lane": 4
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 229.47364,
       "gridBeat": 229.5,
-      "lane": 3
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 229.9737,
       "gridBeat": 230,
-      "lane": 2
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 230.9736,
       "gridBeat": 231,
-      "lane": 0
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 231.47366,
       "gridBeat": 231.5,
-      "lane": 1
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 231.9735,
       "gridBeat": 232,
-      "lane": 6
+      "lane": 1,
+      "accent": true
     },
     {
       "beat": 232.47356,
       "gridBeat": 232.5,
-      "lane": 5
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 232.97362,
       "gridBeat": 233,
-      "lane": 3
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 233.97352,
       "gridBeat": 234,
-      "lane": 2
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 234.47358,
       "gridBeat": 234.5,
-      "lane": 1
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 234.97364,
       "gridBeat": 235,
-      "lane": 0
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 235.97354,
       "gridBeat": 236,
-      "lane": 0
+      "lane": 5,
+      "accent": true
     },
     {
       "beat": 236.97366,
       "gridBeat": 237,
-      "lane": 2
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 237.4735,
       "gridBeat": 237.5,
-      "lane": 3
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 237.97356,
       "gridBeat": 238,
-      "lane": 4
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 238.97368,
       "gridBeat": 239,
-      "lane": 6
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 239.47352,
       "gridBeat": 239.5,
-      "lane": 5
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 239.97358,
       "gridBeat": 240,
-      "lane": 0
+      "lane": 1,
+      "accent": true
     },
     {
       "beat": 240.47364,
       "gridBeat": 240.5,
-      "lane": 1
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 240.9649,
       "gridBeat": 241,
-      "lane": 3
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 241.9736,
       "gridBeat": 242,
-      "lane": 4
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 242.46486,
       "gridBeat": 242.5,
-      "lane": 5
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 242.9647,
       "gridBeat": 243,
-      "lane": 6
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 243.96482,
       "gridBeat": 244,
-      "lane": 6
+      "lane": 5,
+      "accent": true
     },
     {
       "beat": 244.97352,
       "gridBeat": 245,
-      "lane": 4
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 245.47358,
       "gridBeat": 245.5,
-      "lane": 3
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 245.97364,
       "gridBeat": 246,
-      "lane": 2
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 246.96474,
       "gridBeat": 247,
-      "lane": 0
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 247.4736,
       "gridBeat": 247.5,
-      "lane": 1
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 247.96486,
       "gridBeat": 248,
-      "lane": 6
+      "lane": 1,
+      "accent": true
     },
     {
       "beat": 248.4647,
       "gridBeat": 248.5,
-      "lane": 5
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 248.96476,
       "gridBeat": 249,
-      "lane": 3
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 249.97368,
       "gridBeat": 250,
-      "lane": 2
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 250.46472,
       "gridBeat": 250.5,
-      "lane": 1
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 250.96478,
       "gridBeat": 251,
-      "lane": 0
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 251.9737,
       "gridBeat": 252,
-      "lane": 6
+      "lane": 0,
+      "accent": true
     },
     {
       "beat": 252.47354,
       "gridBeat": 252.5,
-      "lane": 4
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 252.9648,
       "gridBeat": 253,
-      "lane": 2
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 253.47366,
       "gridBeat": 253.5,
-      "lane": 0
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 253.9735,
       "gridBeat": 254,
-      "lane": 1
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 254.46476,
       "gridBeat": 254.5,
-      "lane": 3
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 254.96482,
       "gridBeat": 255,
-      "lane": 5
+      "lane": 6,
+      "accent": false
     },
     {
       "beat": 255.47368,
       "gridBeat": 255.5,
-      "lane": 3
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 255.96472,
       "gridBeat": 256,
-      "lane": 0
-    },
-    {
-      "beat": 255.96472,
-      "gridBeat": 256,
-      "lane": 6
+      "lane": 3,
+      "accent": true
     },
     {
       "beat": 256.48238,
       "gridBeat": 256.5,
-      "lane": 2
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 256.96484,
       "gridBeat": 257,
-      "lane": 4
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 257.97354,
       "gridBeat": 258,
-      "lane": 1
-    },
-    {
-      "beat": 257.97354,
-      "gridBeat": 258,
-      "lane": 5
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 258.4648,
       "gridBeat": 258.5,
-      "lane": 3
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 258.96486,
       "gridBeat": 259,
-      "lane": 6
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 259.4911,
       "gridBeat": 259.5,
-      "lane": 4
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 259.96476,
       "gridBeat": 260,
-      "lane": 0
-    },
-    {
-      "beat": 259.96476,
-      "gridBeat": 260,
-      "lane": 6
+      "lane": 2,
+      "accent": true
     },
     {
       "beat": 260.47362,
       "gridBeat": 260.5,
-      "lane": 2
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 260.96488,
       "gridBeat": 261,
-      "lane": 4
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 261.97358,
       "gridBeat": 262,
-      "lane": 1
-    },
-    {
-      "beat": 261.97358,
-      "gridBeat": 262,
-      "lane": 5
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 262.46484,
       "gridBeat": 262.5,
-      "lane": 3
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 262.9649,
       "gridBeat": 263,
-      "lane": 6
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 263.55274,
       "gridBeat": 263.5,
-      "lane": 4
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 263.9648,
       "gridBeat": 264,
-      "lane": 0
-    },
-    {
-      "beat": 263.9648,
-      "gridBeat": 264,
-      "lane": 6
+      "lane": 4,
+      "accent": true
     },
     {
       "beat": 264.47366,
       "gridBeat": 264.5,
-      "lane": 4
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 264.9647,
       "gridBeat": 265,
-      "lane": 2
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 265.97362,
       "gridBeat": 266,
-      "lane": 1
-    },
-    {
-      "beat": 265.97362,
-      "gridBeat": 266,
-      "lane": 5
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 266.46488,
       "gridBeat": 266.5,
-      "lane": 3
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 266.96472,
       "gridBeat": 267,
-      "lane": 0
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 267.44718,
       "gridBeat": 267.5,
-      "lane": 2
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 267.96484,
       "gridBeat": 268,
-      "lane": 0
-    },
-    {
-      "beat": 267.96484,
-      "gridBeat": 268,
-      "lane": 6
+      "lane": 3,
+      "accent": true
     },
     {
       "beat": 268.4737,
       "gridBeat": 268.5,
-      "lane": 4
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 268.96474,
       "gridBeat": 269,
-      "lane": 2
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 269.97366,
       "gridBeat": 270,
-      "lane": 1
-    },
-    {
-      "beat": 269.97366,
-      "gridBeat": 270,
-      "lane": 5
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 270.4647,
       "gridBeat": 270.5,
-      "lane": 3
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 270.96476,
       "gridBeat": 271,
-      "lane": 0
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 271.47362,
       "gridBeat": 271.5,
-      "lane": 2
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 271.97368,
       "gridBeat": 272,
-      "lane": 0
-    },
-    {
-      "beat": 271.97368,
-      "gridBeat": 272,
-      "lane": 6
+      "lane": 5,
+      "accent": true
     },
     {
       "beat": 272.47352,
       "gridBeat": 272.5,
-      "lane": 2
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 272.96478,
       "gridBeat": 273,
-      "lane": 4
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 273.9649,
       "gridBeat": 274,
-      "lane": 1
-    },
-    {
-      "beat": 273.9649,
-      "gridBeat": 274,
-      "lane": 5
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 274.46474,
       "gridBeat": 274.5,
-      "lane": 3
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 274.9648,
       "gridBeat": 275,
-      "lane": 6
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 275.52646,
       "gridBeat": 275.5,
-      "lane": 4
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 275.9647,
       "gridBeat": 276,
-      "lane": 0
-    },
-    {
-      "beat": 275.9647,
-      "gridBeat": 276,
-      "lane": 6
+      "lane": 2,
+      "accent": true
     },
     {
       "beat": 276.47356,
       "gridBeat": 276.5,
-      "lane": 2
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 276.96482,
       "gridBeat": 277,
-      "lane": 4
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 277.97352,
       "gridBeat": 278,
-      "lane": 1
-    },
-    {
-      "beat": 277.97352,
-      "gridBeat": 278,
-      "lane": 5
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 278.46478,
       "gridBeat": 278.5,
-      "lane": 3
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 278.96484,
       "gridBeat": 279,
-      "lane": 6
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 279.5529,
       "gridBeat": 279.5,
-      "lane": 4
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 279.96474,
       "gridBeat": 280,
-      "lane": 0
-    },
-    {
-      "beat": 279.96474,
-      "gridBeat": 280,
-      "lane": 6
+      "lane": 4,
+      "accent": true
     },
     {
       "beat": 280.4736,
       "gridBeat": 280.5,
-      "lane": 4
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 280.96486,
       "gridBeat": 281,
-      "lane": 2
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 281.96476,
       "gridBeat": 282,
-      "lane": 1
-    },
-    {
-      "beat": 281.96476,
-      "gridBeat": 282,
-      "lane": 5
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 282.46482,
       "gridBeat": 282.5,
-      "lane": 3
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 282.96488,
       "gridBeat": 283,
-      "lane": 0
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 283.44712,
       "gridBeat": 283.5,
-      "lane": 2
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 283.96478,
       "gridBeat": 284,
-      "lane": 6
+      "lane": 0,
+      "accent": true
     },
     {
       "beat": 284.46484,
       "gridBeat": 284.5,
-      "lane": 4
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 284.9649,
       "gridBeat": 285,
-      "lane": 2
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 285.47354,
       "gridBeat": 285.5,
-      "lane": 0
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 285.9648,
       "gridBeat": 286,
-      "lane": 1
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 286.46486,
       "gridBeat": 286.5,
-      "lane": 3
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 286.9647,
       "gridBeat": 287,
-      "lane": 5
+      "lane": 6,
+      "accent": false
     },
     {
       "beat": 287.55276,
       "gridBeat": 287.5,
-      "lane": 3
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 287.96482,
       "gridBeat": 288,
-      "lane": 0
-    },
-    {
-      "beat": 287.96482,
-      "gridBeat": 288,
-      "lane": 6
+      "lane": 3,
+      "accent": true
     },
     {
       "beat": 288.52648,
       "gridBeat": 288.5,
-      "lane": 2
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 288.96472,
       "gridBeat": 289,
-      "lane": 4
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 289.96484,
       "gridBeat": 290,
-      "lane": 1
-    },
-    {
-      "beat": 289.96484,
-      "gridBeat": 290,
-      "lane": 5
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 290.5265,
       "gridBeat": 290.5,
-      "lane": 3
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 290.96474,
       "gridBeat": 291,
-      "lane": 6
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 291.5264,
       "gridBeat": 291.5,
-      "lane": 4
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 291.96486,
       "gridBeat": 292,
-      "lane": 0
-    },
-    {
-      "beat": 291.96486,
-      "gridBeat": 292,
-      "lane": 6
+      "lane": 2,
+      "accent": true
     },
     {
       "beat": 292.4647,
       "gridBeat": 292.5,
-      "lane": 2
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 292.96476,
       "gridBeat": 293,
-      "lane": 4
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 293.96488,
       "gridBeat": 294,
-      "lane": 1
-    },
-    {
-      "beat": 293.96488,
-      "gridBeat": 294,
-      "lane": 5
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 294.47352,
       "gridBeat": 294.5,
-      "lane": 3
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 294.96478,
       "gridBeat": 295,
-      "lane": 6
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 295.46484,
       "gridBeat": 295.5,
-      "lane": 4
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 295.9649,
       "gridBeat": 296,
-      "lane": 0
-    },
-    {
-      "beat": 295.9649,
-      "gridBeat": 296,
-      "lane": 6
+      "lane": 4,
+      "accent": true
     },
     {
       "beat": 296.45594,
       "gridBeat": 296.5,
-      "lane": 4
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 296.9648,
       "gridBeat": 297,
-      "lane": 2
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 297.9647,
       "gridBeat": 298,
-      "lane": 1
-    },
-    {
-      "beat": 297.9647,
-      "gridBeat": 298,
-      "lane": 5
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 298.52636,
       "gridBeat": 298.5,
-      "lane": 3
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 298.96482,
       "gridBeat": 299,
-      "lane": 0
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 299.52648,
       "gridBeat": 299.5,
-      "lane": 2
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 299.96472,
       "gridBeat": 300,
-      "lane": 0
-    },
-    {
-      "beat": 299.96472,
-      "gridBeat": 300,
-      "lane": 6
+      "lane": 3,
+      "accent": true
     },
     {
       "beat": 300.46478,
       "gridBeat": 300.5,
-      "lane": 4
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 300.96484,
       "gridBeat": 301,
-      "lane": 2
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 301.96474,
       "gridBeat": 302,
-      "lane": 1
-    },
-    {
-      "beat": 301.96474,
-      "gridBeat": 302,
-      "lane": 5
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 302.5352,
       "gridBeat": 302.5,
-      "lane": 3
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 302.96486,
       "gridBeat": 303,
-      "lane": 0
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 303.4647,
       "gridBeat": 303.5,
-      "lane": 2
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 303.96476,
       "gridBeat": 304,
-      "lane": 0
-    },
-    {
-      "beat": 303.96476,
-      "gridBeat": 304,
-      "lane": 6
+      "lane": 5,
+      "accent": true
     },
     {
       "beat": 304.46482,
       "gridBeat": 304.5,
-      "lane": 2
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 304.96488,
       "gridBeat": 305,
-      "lane": 4
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 305.96478,
       "gridBeat": 306,
-      "lane": 1
-    },
-    {
-      "beat": 305.96478,
-      "gridBeat": 306,
-      "lane": 5
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 306.52644,
       "gridBeat": 306.5,
-      "lane": 3
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 306.9649,
       "gridBeat": 307,
-      "lane": 6
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 307.52634,
       "gridBeat": 307.5,
-      "lane": 4
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 307.9648,
       "gridBeat": 308,
-      "lane": 0
-    },
-    {
-      "beat": 307.9648,
-      "gridBeat": 308,
-      "lane": 6
+      "lane": 2,
+      "accent": true
     },
     {
       "beat": 308.44726,
       "gridBeat": 308.5,
-      "lane": 2
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 308.9647,
       "gridBeat": 309,
-      "lane": 4
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 309.96482,
       "gridBeat": 310,
-      "lane": 1
-    },
-    {
-      "beat": 309.96482,
-      "gridBeat": 310,
-      "lane": 5
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 310.52648,
       "gridBeat": 310.5,
-      "lane": 3
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 310.96472,
       "gridBeat": 311,
-      "lane": 6
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 311.46478,
       "gridBeat": 311.5,
-      "lane": 4
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 311.96484,
       "gridBeat": 312,
-      "lane": 0
-    },
-    {
-      "beat": 311.96484,
-      "gridBeat": 312,
-      "lane": 6
+      "lane": 4,
+      "accent": true
     },
     {
       "beat": 312.4649,
       "gridBeat": 312.5,
-      "lane": 4
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 312.96474,
       "gridBeat": 313,
-      "lane": 2
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 313.96486,
       "gridBeat": 314,
-      "lane": 1
-    },
-    {
-      "beat": 313.96486,
-      "gridBeat": 314,
-      "lane": 5
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 314.5263,
       "gridBeat": 314.5,
-      "lane": 3
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 314.96476,
       "gridBeat": 315,
-      "lane": 0
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 315.48242,
       "gridBeat": 315.5,
-      "lane": 2
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 315.96488,
       "gridBeat": 316,
-      "lane": 6
+      "lane": 0,
+      "accent": true
     },
     {
       "beat": 316.46472,
       "gridBeat": 316.5,
-      "lane": 4
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 316.96478,
       "gridBeat": 317,
-      "lane": 2
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 317.46484,
       "gridBeat": 317.5,
-      "lane": 0
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 317.9649,
       "gridBeat": 318,
-      "lane": 1
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 318.53514,
       "gridBeat": 318.5,
-      "lane": 3
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 318.9648,
       "gridBeat": 319,
-      "lane": 5
+      "lane": 6,
+      "accent": false
     },
     {
       "beat": 319.55286,
       "gridBeat": 319.5,
-      "lane": 3
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 319.9647,
       "gridBeat": 320,
-      "lane": 0
-    },
-    {
-      "beat": 319.9647,
-      "gridBeat": 320,
-      "lane": 6
+      "lane": 3,
+      "accent": true
     },
     {
       "beat": 320.46476,
       "gridBeat": 320.5,
-      "lane": 2
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 320.95602,
       "gridBeat": 321,
-      "lane": 4
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 321.96472,
       "gridBeat": 322,
-      "lane": 1
-    },
-    {
-      "beat": 321.96472,
-      "gridBeat": 322,
-      "lane": 5
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 322.45598,
       "gridBeat": 322.5,
-      "lane": 3
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 322.96484,
       "gridBeat": 323,
-      "lane": 6
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 323.4825,
       "gridBeat": 323.5,
-      "lane": 4
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 323.96474,
       "gridBeat": 324,
-      "lane": 0
-    },
-    {
-      "beat": 323.96474,
-      "gridBeat": 324,
-      "lane": 6
+      "lane": 2,
+      "accent": true
     },
     {
       "beat": 324.4648,
       "gridBeat": 324.5,
-      "lane": 2
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 324.95606,
       "gridBeat": 325,
-      "lane": 4
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 325.96476,
       "gridBeat": 326,
-      "lane": 1
-    },
-    {
-      "beat": 325.96476,
-      "gridBeat": 326,
-      "lane": 5
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 326.45602,
       "gridBeat": 326.5,
-      "lane": 3
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 326.95608,
       "gridBeat": 327,
-      "lane": 6
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 327.55272,
       "gridBeat": 327.5,
-      "lane": 4
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 327.96478,
       "gridBeat": 328,
-      "lane": 0
-    },
-    {
-      "beat": 327.96478,
-      "gridBeat": 328,
-      "lane": 6
+      "lane": 4,
+      "accent": true
     },
     {
       "beat": 328.46484,
       "gridBeat": 328.5,
-      "lane": 4
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 328.9561,
       "gridBeat": 329,
-      "lane": 2
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 329.9648,
       "gridBeat": 330,
-      "lane": 1
-    },
-    {
-      "beat": 329.9648,
-      "gridBeat": 330,
-      "lane": 5
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 330.45606,
       "gridBeat": 330.5,
-      "lane": 3
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 330.9559,
       "gridBeat": 331,
-      "lane": 0
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 331.51756,
       "gridBeat": 331.5,
-      "lane": 2
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 331.96482,
       "gridBeat": 332,
-      "lane": 0
-    },
-    {
-      "beat": 331.96482,
-      "gridBeat": 332,
-      "lane": 6
+      "lane": 3,
+      "accent": true
     },
     {
       "beat": 332.46488,
       "gridBeat": 332.5,
-      "lane": 4
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 332.95592,
       "gridBeat": 333,
-      "lane": 2
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 333.96484,
       "gridBeat": 334,
-      "lane": 1
-    },
-    {
-      "beat": 333.96484,
-      "gridBeat": 334,
-      "lane": 5
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 334.4561,
       "gridBeat": 334.5,
-      "lane": 3
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 334.95594,
       "gridBeat": 335,
-      "lane": 0
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 335.4648,
       "gridBeat": 335.5,
-      "lane": 2
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 335.96486,
       "gridBeat": 336,
-      "lane": 0
-    },
-    {
-      "beat": 335.96486,
-      "gridBeat": 336,
-      "lane": 6
+      "lane": 5,
+      "accent": true
     },
     {
       "beat": 336.4647,
       "gridBeat": 336.5,
-      "lane": 2
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 336.95596,
       "gridBeat": 337,
-      "lane": 4
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 337.96488,
       "gridBeat": 338,
-      "lane": 1
-    },
-    {
-      "beat": 337.96488,
-      "gridBeat": 338,
-      "lane": 5
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 338.45592,
       "gridBeat": 338.5,
-      "lane": 3
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 338.95598,
       "gridBeat": 339,
-      "lane": 6
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 339.48244,
       "gridBeat": 339.5,
-      "lane": 4
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 339.9561,
       "gridBeat": 340,
-      "lane": 0
-    },
-    {
-      "beat": 339.9561,
-      "gridBeat": 340,
-      "lane": 6
+      "lane": 2,
+      "accent": true
     },
     {
       "beat": 340.46474,
       "gridBeat": 340.5,
-      "lane": 2
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 340.956,
       "gridBeat": 341,
-      "lane": 4
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 341.9647,
       "gridBeat": 342,
-      "lane": 1
-    },
-    {
-      "beat": 341.9647,
-      "gridBeat": 342,
-      "lane": 5
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 342.45596,
       "gridBeat": 342.5,
-      "lane": 3
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 342.95602,
       "gridBeat": 343,
-      "lane": 6
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 343.46488,
       "gridBeat": 343.5,
-      "lane": 4
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 343.95592,
       "gridBeat": 344,
-      "lane": 0
-    },
-    {
-      "beat": 343.95592,
-      "gridBeat": 344,
-      "lane": 6
+      "lane": 4,
+      "accent": true
     },
     {
       "beat": 344.46478,
       "gridBeat": 344.5,
-      "lane": 4
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 344.95604,
       "gridBeat": 345,
-      "lane": 2
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 345.96474,
       "gridBeat": 346,
-      "lane": 1
-    },
-    {
-      "beat": 345.96474,
-      "gridBeat": 346,
-      "lane": 5
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 346.456,
       "gridBeat": 346.5,
-      "lane": 3
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 346.95606,
       "gridBeat": 347,
-      "lane": 0
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 347.4823,
       "gridBeat": 347.5,
-      "lane": 2
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 347.95596,
       "gridBeat": 348,
-      "lane": 6
+      "lane": 0,
+      "accent": true
     },
     {
       "beat": 348.45602,
       "gridBeat": 348.5,
-      "lane": 4
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 348.95608,
       "gridBeat": 349,
-      "lane": 2
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 349.46472,
       "gridBeat": 349.5,
-      "lane": 0
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 349.96478,
       "gridBeat": 350,
-      "lane": 1
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 350.46484,
       "gridBeat": 350.5,
-      "lane": 3
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 350.9561,
       "gridBeat": 351,
-      "lane": 5
+      "lane": 6,
+      "accent": false
     },
     {
       "beat": 351.46474,
       "gridBeat": 351.5,
-      "lane": 3
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 351.9648,
       "gridBeat": 352,
-      "lane": 0
-    },
-    {
-      "beat": 351.9648,
-      "gridBeat": 352,
-      "lane": 6
+      "lane": 3,
+      "accent": true
     },
     {
       "beat": 352.46486,
       "gridBeat": 352.5,
-      "lane": 2
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 352.9559,
       "gridBeat": 353,
-      "lane": 4
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 353.96482,
       "gridBeat": 354,
-      "lane": 1
-    },
-    {
-      "beat": 353.96482,
-      "gridBeat": 354,
-      "lane": 5
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 354.45608,
       "gridBeat": 354.5,
-      "lane": 3
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 354.95592,
       "gridBeat": 355,
-      "lane": 6
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 355.51758,
       "gridBeat": 355.5,
-      "lane": 4
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 355.95604,
       "gridBeat": 356,
-      "lane": 6
+      "lane": 5,
+      "accent": true
     },
     {
       "beat": 356.95594,
       "gridBeat": 357,
-      "lane": 4
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 357.4648,
       "gridBeat": 357.5,
-      "lane": 3
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 357.95606,
       "gridBeat": 358,
-      "lane": 2
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 358.95596,
       "gridBeat": 359,
-      "lane": 0
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 359.47362,
       "gridBeat": 359.5,
-      "lane": 1
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 359.95608,
       "gridBeat": 360,
-      "lane": 6
+      "lane": 1,
+      "accent": true
     },
     {
       "beat": 360.46472,
       "gridBeat": 360.5,
-      "lane": 5
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 360.95598,
       "gridBeat": 361,
-      "lane": 3
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 361.9561,
       "gridBeat": 362,
-      "lane": 2
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 362.45594,
       "gridBeat": 362.5,
-      "lane": 1
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 362.956,
       "gridBeat": 363,
-      "lane": 0
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 363.9559,
       "gridBeat": 364,
-      "lane": 0
+      "lane": 5,
+      "accent": true
     },
     {
       "beat": 364.95602,
       "gridBeat": 365,
-      "lane": 2
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 365.46488,
       "gridBeat": 365.5,
-      "lane": 3
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 365.95592,
       "gridBeat": 366,
-      "lane": 4
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 366.95604,
       "gridBeat": 367,
-      "lane": 6
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 367.5441,
       "gridBeat": 367.5,
-      "lane": 5
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 367.95594,
       "gridBeat": 368,
-      "lane": 0
+      "lane": 1,
+      "accent": true
     },
     {
       "beat": 368.4648,
       "gridBeat": 368.5,
-      "lane": 1
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 368.95606,
       "gridBeat": 369,
-      "lane": 3
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 369.95596,
       "gridBeat": 370,
-      "lane": 4
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 370.45602,
       "gridBeat": 370.5,
-      "lane": 5
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 370.95608,
       "gridBeat": 371,
-      "lane": 6
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 371.95598,
       "gridBeat": 372,
-      "lane": 6
+      "lane": 5,
+      "accent": true
     },
     {
       "beat": 372.9561,
       "gridBeat": 373,
-      "lane": 4
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 373.46474,
       "gridBeat": 373.5,
-      "lane": 3
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 373.956,
       "gridBeat": 374,
-      "lane": 2
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 374.9559,
       "gridBeat": 375,
-      "lane": 0
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 375.54396,
       "gridBeat": 375.5,
-      "lane": 1
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 375.95602,
       "gridBeat": 376,
-      "lane": 6
+      "lane": 1,
+      "accent": true
     },
     {
       "beat": 376.45608,
       "gridBeat": 376.5,
-      "lane": 5
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 376.95592,
       "gridBeat": 377,
-      "lane": 3
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 377.95604,
       "gridBeat": 378,
-      "lane": 2
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 378.4561,
       "gridBeat": 378.5,
-      "lane": 1
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 378.95594,
       "gridBeat": 379,
-      "lane": 0
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 379.95606,
       "gridBeat": 380,
-      "lane": 6
+      "lane": 0,
+      "accent": true
     },
     {
       "beat": 380.4559,
       "gridBeat": 380.5,
-      "lane": 4
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 380.95596,
       "gridBeat": 381,
-      "lane": 2
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 381.45602,
       "gridBeat": 381.5,
-      "lane": 0
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 381.95608,
       "gridBeat": 382,
-      "lane": 1
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 382.45592,
       "gridBeat": 382.5,
-      "lane": 3
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 382.95598,
       "gridBeat": 383,
-      "lane": 5
+      "lane": 6,
+      "accent": false
     },
     {
       "beat": 383.54404,
       "gridBeat": 383.5,
-      "lane": 3
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 383.9561,
       "gridBeat": 384,
-      "lane": 0
-    },
-    {
-      "beat": 383.9561,
-      "gridBeat": 384,
-      "lane": 6
+      "lane": 3,
+      "accent": true
     },
     {
       "beat": 384.45594,
       "gridBeat": 384.5,
-      "lane": 2
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 384.956,
       "gridBeat": 385,
-      "lane": 4
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 385.9559,
       "gridBeat": 386,
-      "lane": 1
-    },
-    {
-      "beat": 385.9559,
-      "gridBeat": 386,
-      "lane": 5
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 386.45596,
       "gridBeat": 386.5,
-      "lane": 3
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 386.95602,
       "gridBeat": 387,
-      "lane": 6
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 387.51768,
       "gridBeat": 387.5,
-      "lane": 4
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 387.95592,
       "gridBeat": 388,
-      "lane": 6
+      "lane": 5,
+      "accent": true
     },
     {
       "beat": 388.95604,
       "gridBeat": 389,
-      "lane": 4
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 389.4649,
       "gridBeat": 389.5,
-      "lane": 3
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 389.95594,
       "gridBeat": 390,
-      "lane": 2
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 390.95606,
       "gridBeat": 391,
-      "lane": 0
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 391.5439,
       "gridBeat": 391.5,
-      "lane": 1
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 391.95596,
       "gridBeat": 392,
-      "lane": 6
+      "lane": 1,
+      "accent": true
     },
     {
       "beat": 392.45602,
       "gridBeat": 392.5,
-      "lane": 5
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 392.95608,
       "gridBeat": 393,
-      "lane": 3
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 393.95598,
       "gridBeat": 394,
-      "lane": 2
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 394.45604,
       "gridBeat": 394.5,
-      "lane": 1
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 394.9561,
       "gridBeat": 395,
-      "lane": 0
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 395.956,
       "gridBeat": 396,
-      "lane": 0
+      "lane": 5,
+      "accent": true
     },
     {
       "beat": 396.9559,
       "gridBeat": 397,
-      "lane": 2
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 397.45596,
       "gridBeat": 397.5,
-      "lane": 3
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 397.95602,
       "gridBeat": 398,
-      "lane": 4
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 398.95592,
       "gridBeat": 399,
-      "lane": 6
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 399.45598,
       "gridBeat": 399.5,
-      "lane": 5
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 399.95604,
       "gridBeat": 400,
-      "lane": 0
+      "lane": 1,
+      "accent": true
     },
     {
       "beat": 400.4561,
       "gridBeat": 400.5,
-      "lane": 1
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 400.95594,
       "gridBeat": 401,
-      "lane": 3
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 401.95606,
       "gridBeat": 402,
-      "lane": 4
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 402.4559,
       "gridBeat": 402.5,
-      "lane": 5
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 402.95596,
       "gridBeat": 403,
-      "lane": 6
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 403.95608,
       "gridBeat": 404,
-      "lane": 6
+      "lane": 5,
+      "accent": true
     },
     {
       "beat": 404.95598,
       "gridBeat": 405,
-      "lane": 4
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 405.45604,
       "gridBeat": 405.5,
-      "lane": 3
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 405.9561,
       "gridBeat": 406,
-      "lane": 2
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 406.956,
       "gridBeat": 407,
-      "lane": 0
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 407.54406,
       "gridBeat": 407.5,
-      "lane": 1
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 407.9559,
       "gridBeat": 408,
-      "lane": 6
+      "lane": 1,
+      "accent": true
     },
     {
       "beat": 408.45596,
       "gridBeat": 408.5,
-      "lane": 5
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 408.95602,
       "gridBeat": 409,
-      "lane": 3
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 409.95592,
       "gridBeat": 410,
-      "lane": 2
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 410.45598,
       "gridBeat": 410.5,
-      "lane": 1
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 410.95604,
       "gridBeat": 411,
-      "lane": 0
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 411.95594,
       "gridBeat": 412,
-      "lane": 6
+      "lane": 0,
+      "accent": true
     },
     {
       "beat": 412.456,
       "gridBeat": 412.5,
-      "lane": 4
+      "lane": 1,
+      "accent": false
     },
     {
       "beat": 412.95606,
       "gridBeat": 413,
-      "lane": 2
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 413.4559,
       "gridBeat": 413.5,
-      "lane": 0
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 414.00876,
       "gridBeat": 414,
-      "lane": 1
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 414.45602,
       "gridBeat": 414.5,
-      "lane": 3
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 414.95608,
       "gridBeat": 415,
-      "lane": 5
+      "lane": 6,
+      "accent": false
     },
     {
       "beat": 415.53512,
       "gridBeat": 415.5,
-      "lane": 3
+      "lane": 5,
+      "accent": false
     },
     {
       "beat": 415.95598,
       "gridBeat": 416,
-      "lane": 0
+      "lane": 3,
+      "accent": true
     },
     {
       "beat": 416.9561,
       "gridBeat": 417,
-      "lane": 3
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 417.956,
       "gridBeat": 418,
-      "lane": 6
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 419.95602,
       "gridBeat": 420,
-      "lane": 0
+      "lane": 3,
+      "accent": true
     },
     {
       "beat": 420.95592,
       "gridBeat": 421,
-      "lane": 3
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 421.95604,
       "gridBeat": 422,
-      "lane": 6
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 423.94726,
       "gridBeat": 424,
-      "lane": 6
+      "lane": 2,
+      "accent": true
     },
     {
       "beat": 424.95596,
       "gridBeat": 425,
-      "lane": 3
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 425.94728,
       "gridBeat": 426,
-      "lane": 0
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 427.9561,
       "gridBeat": 428,
-      "lane": 6
+      "lane": 4,
+      "accent": true
     },
     {
       "beat": 428.9472,
       "gridBeat": 429,
-      "lane": 3
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 429.9471,
       "gridBeat": 430,
-      "lane": 0
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 431.95592,
       "gridBeat": 432,
-      "lane": 0
+      "lane": 3,
+      "accent": true
     },
     {
       "beat": 432.95604,
       "gridBeat": 433,
-      "lane": 3
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 433.94714,
       "gridBeat": 434,
-      "lane": 6
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 435.94716,
       "gridBeat": 436,
-      "lane": 0
+      "lane": 3,
+      "accent": true
     },
     {
       "beat": 436.94728,
       "gridBeat": 437,
-      "lane": 3
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 437.95598,
       "gridBeat": 438,
-      "lane": 6
+      "lane": 4,
+      "accent": false
     },
     {
       "beat": 439.956,
       "gridBeat": 440,
-      "lane": 6
+      "lane": 2,
+      "accent": true
     },
     {
       "beat": 440.9471,
       "gridBeat": 441,
-      "lane": 3
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 441.95602,
       "gridBeat": 442,
-      "lane": 0
+      "lane": 3,
+      "accent": false
     },
     {
       "beat": 443.94724,
       "gridBeat": 444,
-      "lane": 6
+      "lane": 4,
+      "accent": true
     },
     {
       "beat": 444.94714,
       "gridBeat": 445,
-      "lane": 3
+      "lane": 2,
+      "accent": false
     },
     {
       "beat": 445.94726,
       "gridBeat": 446,
-      "lane": 0
+      "lane": 3,
+      "accent": false
     }
   ]
 }
