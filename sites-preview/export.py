@@ -10,6 +10,8 @@ def copy(source,relative):
  p=dist/relative;p.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(ROOT/source,p)
 modules=['live-scene.js','music.js','free-dance.js','avatar.js','ceiling-lights.js','ambience.js','rhythm-floor.js','click-walk.js','scene-look.js','activity-feedback.js','rhythm-game.js','neon-horizon-chart.json']
 for name in modules:copy('app/public/'+name,'clubs/edm/'+name)
+# The Node server exposes live-scene.js at scene.js; preserve that public URL.
+copy('app/public/live-scene.js','clubs/edm/scene.js')
 copy('app/edm-layout.js','clubs/edm/edm-layout.js');copy('app/visitors.js','clubs/edm/visitors.js')
 put('clubs/edm/local-room.js',(ROOT/'sites-preview/local-room.js').read_text())
 put('clubs/edm/club-performances.js',(ROOT/'app/club-performances.js').read_text().replace("'./public/music.js'","'./music.js'"))
