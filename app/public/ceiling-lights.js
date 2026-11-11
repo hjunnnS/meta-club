@@ -186,9 +186,11 @@ export function strobeAccents(B,scene) {
     B.Quaternion.FromUnitVectorsToRef(B.Axis.Y,delta.normalize(),mesh.rotationQuaternion);
   }
   const levels={curtain:0,fan:0,gobo:0};
-  return (target,beat,bass=0,reduced=false,dt=null)=>{
+  let centerClearance=0;
+  return (target,beat,bass=0,reduced=false,dt=null,protectCenter=false)=>{
     const blend=dt===null?1:1-Math.exp(-Math.max(0,Math.min(dt,1000))/220);
     for(const kind of ['curtain','fan','gobo'])levels[kind]+=(target[kind]-levels[kind])*blend;
+    centerClearance+=((protectCenter?1:0)-centerClearance)*blend;
     const cue=levels;
     for(const kind of ['curtain','fan','gobo'])rigs[kind].setEnabled(cue[kind]>.001);
     const motion=reduced?0:beat;
@@ -197,19 +199,21 @@ export function strobeAccents(B,scene) {
       material.emissiveColor.copyFrom(curtainPalette[((Math.floor(Math.max(0,beat)/8)+i)%3)]);
       material.alpha=cue.curtain*(.48+hit*.38)*(reduced?.65:.76+.24*Math.sin(beat*Math.PI+i*Math.PI)**2);
     });
-    fanInk.alpha=cue.fan*(.70+hit*.22);fanSheetInk.alpha=cue.fan*(.065+hit*.035);
+    fanInk.alpha=cue.fan*(.70+hit*.22);fanSheetInk.alpha=cue.fan*(.065+hit*.035)*(1-.88*centerClearance);
     if(cue.curtain)for(const {mesh,origin,side,z,i} of curtains){
       destination.set(side*(19.25+.65*Math.sin(motion*.65+z*.12)),.36,z+i*.65+Math.sin(motion*.6)*1.0);
       aim(mesh,origin,destination);
     }
     if(cue.fan)for(const {mesh,origin,side,i} of fans){
       const spread=.55+.45*(.5+.5*Math.sin(motion*Math.PI/8));
-      destination.set((i-4)*3.5*spread+side*1.1,3.5+Math.abs(i-4)*.20,15-1.4*Math.sin(motion*.18));
+      const originalX=(i-4)*3.5*spread+side*1.1,edgeX=side*(10+i*.85);
+      destination.set(originalX+(edgeX-originalX)*centerClearance,3.5+Math.abs(i-4)*.20,15-1.4*Math.sin(motion*.18));
       aim(mesh,origin,destination);
     }
     if(cue.fan)for(const {mesh,vertices,side} of fanSheets){
       const spread=.55+.45*(.5+.5*Math.sin(motion*Math.PI/8)),z=15-1.4*Math.sin(motion*.18);
-      vertices.set([side*5.7,6.2,-10.3,-14*spread+side*1.1,4.3,z,14*spread+side*1.1,4.3,z]);
+      const left=-14*spread+side*1.1,right=14*spread+side*1.1;
+      vertices.set([side*5.7,6.2,-10.3,left+(side*10-left)*centerClearance,4.3,z,right+(side*16-right)*centerClearance,4.3,z]);
       mesh.updateVerticesData(B.VertexBuffer.PositionKind,vertices,true);
     }
     for(const {mesh,material,wall,sign} of patterns){

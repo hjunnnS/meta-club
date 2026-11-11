@@ -396,6 +396,11 @@ export function staffNPC(B,scene,make,role) {
     if(mesh.material?.specularColor)mesh.material.specularColor.set(0,0,0);
     for(const light of scene.lights)if(light.getTypeID()!==3)light.excludedMeshes.push(mesh);
   }
+  if(dj){
+    // Private DJ skin material: a small fill preserves facial detail without bleaching the top/hair.
+    const skin=model.near.getChildMeshes().find(mesh=>mesh.name==='head')?.material;
+    if(skin?.emissiveColor)skin.emissiveColor=skin.diffuseColor.scale(.09);
+  }
   model.root.scaling.setAll(1.1);
   model.far.setEnabled(false);model.label.setEnabled(!dj);
   const dispose=model.dispose.bind(model);

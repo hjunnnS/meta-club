@@ -115,7 +115,7 @@ export function startLiveScene({
   let djLightLevel=0;
   const djFocusLights=washes.slice(0,3).map(({light,base},i)=>{
     const tint=B.Color3.FromHexString(['#fff1d8','#b9e6ff','#d4b9ff'][i]);
-    const origin=B.Vector3.FromArray([[-3,5.4,-10.7],[3,4.8,-11.6],[1.2,5.8,-15.6]][i]);
+    const origin=B.Vector3.FromArray([[-1.8,3.85,-10.4],[2.4,3.5,-10.8],[1.2,5.1,-15.6]][i]);
     const material=new B.StandardMaterial('DJ focus beam '+i,scene);
     material.disableLighting=true;material.emissiveColor=tint;material.alpha=0;material.backFaceCulling=false;
     const beam=B.MeshBuilder.CreateCylinder('DJ focus cone '+i,{height:1,diameterTop:.10,diameterBottom:.82,tessellation:12,cap:B.Mesh.NO_CAP},scene);
@@ -126,6 +126,28 @@ export function startLiveScene({
     return {light,base,tint,origin,beam,material,position:light.position.clone(),color:light.diffuse.clone(),
       excluded:light.excludedMeshes.slice(),included:light.includedOnlyMeshes.slice()};
   });
+  // Dim only a foreground beam whose projected line crosses the screen or featured hologram.
+  const beamClearance=new WeakMap(),projectionIdentity=B.Matrix.Identity();
+  function protectedRectangle(min,max,viewport){
+    const points=[];
+    for(const x of [min[0],max[0]])for(const y of [min[1],max[1]])for(const z of [min[2],max[2]]){
+      const p=B.Vector3.Project(new B.Vector3(x,y,z),projectionIdentity,scene.getTransformMatrix(),viewport);
+      if(p.z>0&&p.z<1)points.push(p);
+    }
+    if(!points.length)return null;
+    return {left:Math.min(...points.map(p=>p.x))-8,right:Math.max(...points.map(p=>p.x))+8,
+      top:Math.min(...points.map(p=>p.y))-8,bottom:Math.max(...points.map(p=>p.y))+8};
+  }
+  function crossesRectangle(a,b,r){
+    if(!r||a.z<=0||b.z<=0||a.z>=1&&b.z>=1)return false;
+    let near=0,far=1;const dx=b.x-a.x,dy=b.y-a.y;
+    for(const [p,q]of [[-dx,a.x-r.left],[dx,r.right-a.x],[-dy,a.y-r.top],[dy,r.bottom-a.y]]){
+      if(Math.abs(p)<1e-6){if(q<0)return false;continue;}
+      const t=q/p;if(p<0)near=Math.max(near,t);else far=Math.min(far,t);
+      if(near>far)return false;
+    }
+    return true;
+  }
   const strips = scene.materials
     .filter((m) => ['Orchid LED', 'Ice LED', 'Rose LED', 'Ultraviolet guide', 'Glacier guide', 'Fuchsia guide', 'LED / chromatic vortex'].includes(m.name))
     .map((material) => ({ material, base: material.emissiveColor.clone() }));
@@ -449,7 +471,7 @@ export function startLiveScene({
     const performancePhase=stageEvents.phase;
     const performancePriority=performancePhase&&performancePhase.kind!=='led'&&performancePhase.level<.75;
     if(!accentTest&&!effectPreview){accentCue.curtain*=supportLevel;accentCue.fan*=supportLevel;accentCue.gobo*=supportLevel;}
-    renderAccents(accentCue,beats,accentTest?.75:musicEnergy,calmBeats.matches,dt);
+    renderAccents(accentCue,beats,accentTest?.75:musicEnergy,calmBeats.matches,dt,!accentTest&&!effectPreview&&(stageFocus||boardSegment===1||boardSegment===2));
     if (ambient) ambient.intensity = (smokeProtection?.39:look.ambient) + roomPulse * 1.10;
     // The first beat of each four-beat bar accents both surfaces on the same frame.
     const barPhase = ((beats % 4) + 4) % 4;
@@ -487,8 +509,9 @@ export function startLiveScene({
         light.includedOnlyMeshes=djMeshes;
         light.excludedMeshes=excluded.filter(mesh=>!djMeshes.includes(mesh));
         light.position.copyFrom(origin);light.diffuse.copyFrom(tint);
-        light.intensity=base*[1.25,.65,.90][i]*djLightLevel;
-        beam.setEnabled(true);material.alpha=.035*djLightLevel;
+        // Controlled absolute intensity avoids clipping from the original high-output room washes.
+        light.intensity=[28,20,14][i]*djLightLevel;
+        beam.setEnabled(true);material.alpha=.018*djLightLevel;
       }else{
         light.includedOnlyMeshes=included;light.excludedMeshes=excluded;
         light.position.copyFrom(position);beam.setEnabled(false);
@@ -497,9 +520,24 @@ export function startLiveScene({
     strips.forEach(({ material, base }, i) => {
       B.Color3.Lerp(base,i%2?lookSecondary:lookPrimary,.72).scaleToRef(strobing ? .10 : look.decor*(dancers ? 1 + .14*Math.sin(phase/4+i*2) : 1), material.emissiveColor);
     });
+    const viewport=scene.activeCamera.viewport.toGlobal(engine.getRenderWidth(),engine.getRenderHeight());
+    const screenRect=playing?protectedRectangle([-6.55,2.65,-18.1],[6.55,8.35,-18.03],viewport):null;
+    const hologramRect=stageFocus&&stageEvents.kind!=='laser'?protectedRectangle([-3,2,-6],[9,7,6],viewport):null;
     for(const mesh of scene.meshes){
-      if(/^(peripheral laser (ray|soft edge)|wall downward light cone|house fan|phrase laser ray)$/.test(mesh.name))
-        mesh.visibility=effectPreview||accentTest?1:look.beams*(performancePriority?.65:1);
+      const houseBeam=/^(peripheral laser (ray|soft edge)|wall downward light cone|house fan|phrase laser ray)$/.test(mesh.name);
+      const fineBeam=/^(peripheral laser (ray|soft edge)|house fan|phrase laser ray|Strobe overhead fan beam)$/.test(mesh.name);
+      if(!houseBeam&&!fineBeam)continue;
+      const base=houseBeam?look.beams*(performancePriority?.65:1):1;
+      if(effectPreview||accentTest){mesh.visibility=1;continue;}
+      let targetGain=1;
+      if(fineBeam&&mesh.isEnabled()&&(screenRect||hologramRect)){
+        const world=mesh.computeWorldMatrix(true);
+        const a=B.Vector3.Project(new B.Vector3(0,-.5,0),world,scene.getTransformMatrix(),viewport);
+        const b=B.Vector3.Project(new B.Vector3(0,.5,0),world,scene.getTransformMatrix(),viewport);
+        if(crossesRectangle(a,b,screenRect)||crossesRectangle(a,b,hologramRect))targetGain=.12;
+      }
+      const previous=beamClearance.get(mesh)??1,gain=previous+(targetGain-previous)*blend;
+      beamClearance.set(mesh,gain);mesh.visibility=base*gain;
     }
     scene.materials.filter(m=>['house wash','peripheral thin laser','peripheral laser halo','scanner beam','beam core','shaft glow','floor wash'].includes(m.name))
       .forEach((m,i)=>{if(m.emissiveColor)m.emissiveColor.copyFrom(i%2?lookSecondary:lookPrimary);});
