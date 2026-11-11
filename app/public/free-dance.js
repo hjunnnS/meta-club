@@ -38,7 +38,7 @@ export function danceCamera(B, scene) {
 // One unit is a musical beat. The supporting leg and the reaching arm alternate every beat.
 export function animateDance(model, action, beats, style, energy, arrangement=1) {
   const musical=Number.isFinite(energy),drive=musical?Math.max(0,Math.min(1,energy)):0;
-  const strength=musical?Math.max(.32,Math.min(1,.20+.65*arrangement+.15*drive)):1;
+  const strength=musical?Math.max(.55,Math.min(1.10,.38+.58*arrangement+.18*drive)):1;
   const pointHold = action === 'disco-point';
   const lead = style === 1 ? (pointHold ? 2 : 1) : 0;
   const facing = style === 0 ? -0.23 : style === 1 ? 0.21 : 0;

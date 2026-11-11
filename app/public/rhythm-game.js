@@ -8,12 +8,12 @@ export function rhythmGame({music,startMusic,canPlay,lock}){
  dialog.setAttribute('aria-label','7키 리듬 게임');
  dialog.innerHTML=`<header><div><strong>7 KEY RHYTHM</strong><p>Neon Horizon · 32마디 연습</p></div><button type="button" data-close>닫기 · Esc</button></header>
  <div class="rhythm-meters"><span data-score>점수 0</span><span data-combo>콤보 0</span><span data-accuracy>정확도 —</span></div>
- <canvas tabindex="0" aria-label="노트가 아래로 내려오는 7개 레인. 표시된 건반을 판정선에서 누르세요." width="630" height="490"></canvas>
+ <canvas tabindex="0" aria-label="노트가 아래로 내려오는 7개 레인. 긴 막대는 끝까지 누른 뒤 꼬리가 판정선에 닿으면 떼세요." width="630" height="490"></canvas>
  <p class="rhythm-status" role="status">음악은 그대로 이어집니다. 연습 시작을 누르세요.</p>
  <div class="rhythm-actions"><button type="button" data-start>연습 시작</button><button type="button" data-speed>속도 · 보통</button><button type="button" data-settings>키 설정</button></div>
  <label class="rhythm-offset">입력 보정(ms) <input data-offset type="number" min="-150" max="150" step="10" value="0" style="width:5rem"> <small>+값: 늦게 전달되는 입력 보정</small></label>
  <div class="rhythm-keys" hidden></div>
- <p class="rhythm-help">노트가 하단 선에 닿을 때 누르세요. PERFECT ±60ms · GREAT ±110ms · GOOD ±180ms<br>빨·주·노·초·파·남·보 7레인 · 처음 2마디는 기본 박자부터 시작합니다.<br>판정 아래 빠름·늦음 표시를 참고하세요. 점수는 개인 화면에만 표시됩니다.</p>`;
+ <p class="rhythm-help">노트가 하단 선에 닿을 때 누르세요. PERFECT ±60ms · GREAT ±110ms · GOOD ±180ms<br>빨·주·노·초·파·남·보 7레인 · 처음 2마디는 기본 박자부터 시작합니다.<br>긴 막대는 누르고 유지하다가 꼬리가 하단 선에 닿으면 떼세요.<br>시작·유지·떼기 판정과 빠름·늦음 표시를 참고하세요. 점수는 개인 화면에만 표시됩니다.</p>`;
  document.body.append(dialog);
  const $=s=>dialog.querySelector(s),canvas=$('canvas'),ctx=canvas.getContext('2d'),status=$('.rhythm-status');
  const startButton=$('[data-start]'),speedButton=$('[data-speed]'),settings=$('.rhythm-keys');
@@ -48,32 +48,39 @@ export function rhythmGame({music,startMusic,canPlay,lock}){
  setupKeys();
  function meters(){
   if(!round)return;
-  const score=Math.round(round.credit/Math.max(1,round.notes.length)*1000000);
+  const score=Math.round(round.credit/Math.max(1,round.totalUnits)*1000000);
   $('[data-score]').textContent='점수 '+score.toLocaleString('ko-KR');
   $('[data-combo]').textContent='콤보 '+round.combo+' · 최고 '+round.maxCombo;
   $('[data-accuracy]').textContent='정확도 '+(round.judged?(round.credit/round.judged*100).toFixed(1)+'%':'—');
  }
- function judge(note,label,delta=null){
-  note.done=true;note.result=label;round.judged++;round.credit+=weights[label];
+ function judge(note,label,delta=null,phase='tap'){
+  if(phase==='head'){note.started=true;note.headResult=label;}
+  else {note.done=true;if(phase==='tail')note.tailResult=label;else note.result=label;}
+  round.judged++;round.credit+=weights[label];
   round.combo=label==='MISS'?0:round.combo+1;round.maxCombo=Math.max(round.maxCombo,round.combo);
-  judgement=label;judgementUntil=performance.now()+500;
+  judgement=label+(phase==='head'?' · HOLD':phase==='tail'?' · RELEASE':'');judgementUntil=performance.now()+500;
   timingText=delta===null?'놓친 노트':Math.abs(delta)<20?'정확해요':(delta<0?'빠름 ':'늦음 ')+Math.round(Math.abs(delta))+'ms';
   if(label!=='MISS'){flashes[note.lane]=performance.now()+150;hitBursts[note.lane]={at:performance.now(),label};}
   meters();
  }
+ function missed(note){
+  if(note.endBeat&&!note.started)judge(note,'MISS',null,'head');
+  judge(note,'MISS',null,note.endBeat?'tail':'tap');
+ }
+ const rating=delta=>Math.abs(delta)<=windows.perfect?'PERFECT':Math.abs(delta)<=windows.great?'GREAT':'GOOD';
  function finish(reason,complete=false){
   if(!round?.running){if(reason)setStatus(reason);return;}
   round.running=false;pressed.clear();flashes.fill(0);
   startButton.disabled=false;speedButton.disabled=false;offsetInput.disabled=false;$('[data-settings]').disabled=false;
   startButton.textContent='다음 라운드';
-  const counts=Object.keys(weights).map(k=>k+' '+round.notes.filter(n=>n.result===k).length).join(' · ');
+  const counts=Object.keys(weights).map(k=>k+' '+round.notes.reduce((count,n)=>count+[n.result,n.headResult,n.tailResult].filter(result=>result===k).length,0)).join(' · ');
   setStatus((complete?'라운드 완료. ':reason+' ')+counts);meters();
  }
  async function loadChart(){
   if(chart)return chart;
   loading??=fetch('/clubs/edm/neon-horizon-chart.json').then(r=>{if(!r.ok)throw Error('노트 파일을 불러오지 못했습니다.');return r.json();});
   try{const data=await loading;
-   if(data.trackId!=='neon-horizon-treblo'||data.lanes!==7||!Array.isArray(data.notes)||data.notes.some(n=>!Number.isFinite(n.beat)||!Number.isInteger(n.lane)||n.lane<0||n.lane>6))throw Error('노트 패턴 형식을 확인해 주세요.');
+   if(data.trackId!=='neon-horizon-treblo'||data.lanes!==7||!Array.isArray(data.notes)||data.notes.some(n=>!Number.isFinite(n.beat)||!Number.isInteger(n.lane)||n.lane<0||n.lane>6||(n.endBeat!==undefined&&(!Number.isFinite(n.endBeat)||n.endBeat<=n.beat||n.endBeat>data.beats))))throw Error('노트 패턴 형식을 확인해 주세요.');
    chart=data;return data;
   }catch(error){loading=null;throw error;}
  }
@@ -88,9 +95,19 @@ export function rhythmGame({music,startMusic,canPlay,lock}){
    if(now.track.id!==data.trackId)throw Error('이 패턴은 Neon Horizon 전용입니다.');
    const start=Math.ceil((now.beat+4)/4)*4,end=start+data.roundBars*4,notes=[];
    for(let cycle=Math.floor(start/data.beats);cycle<=Math.floor(end/data.beats);cycle++)
-    for(const n of data.notes){const beat=cycle*data.beats+n.beat;const grid=cycle*data.beats+(n.gridBeat??n.beat);if(grid>=start&&grid<end&&(grid>=start+8||Math.abs(grid-Math.round(grid))<.01))notes.push({...n,beat,done:false});}
+    for(const n of data.notes){
+     const beat=cycle*data.beats+n.beat,grid=cycle*data.beats+(n.gridBeat??n.beat);
+     if(grid<start||grid>=end||(grid<start+8&&Math.abs(grid-Math.round(grid))>=.01))continue;
+     const note={...n,beat,done:false};
+     if(n.endBeat!==undefined){
+      const tail=cycle*data.beats+n.endBeat;
+      // Never cut a hold at the round boundary or introduce it before the basic-beat lead-in.
+      if(tail<=end&&grid>=start+8)note.endBeat=tail;else delete note.endBeat;
+     }
+     notes.push(note);
+    }
    notes.sort((a,b)=>a.beat-b.beat||a.lane-b.lane);
-   round={running:true,trackId:now.track.id,start,end,notes,credit:0,judged:0,combo:0,maxCombo:0,lastBeat:now.beat,inputOffset};
+   round={running:true,trackId:now.track.id,start,end,notes,totalUnits:notes.reduce((total,n)=>total+(n.endBeat?2:1),0),credit:0,judged:0,combo:0,maxCombo:0,lastBeat:now.beat,inputOffset};
    settings.hidden=true;speedButton.disabled=true;offsetInput.disabled=true;$('[data-settings]').disabled=true;
    pressed.clear();flashes.fill(0);hitBursts.fill(null);judgement='';timingText='';meters();canvas.focus();
   }catch(error){setStatus(error.message);startButton.disabled=false;}
@@ -109,7 +126,11 @@ export function rhythmGame({music,startMusic,canPlay,lock}){
     round.lastBeat=Math.max(round.lastBeat,b);
     // One short dispatch allowance prevents a queued key event losing to the draw frame.
     const judgedBeat=inputBeat(now),windowBeat=(windows.good+34)*now.track.bpm/60000;
-    for(const n of round.notes)if(!n.done&&judgedBeat-n.beat>windowBeat)judge(n,'MISS');
+    for(const n of round.notes){
+     if(n.done)continue;
+     if(n.started){if(judgedBeat-n.endBeat>windowBeat)missed(n);}
+     else if(judgedBeat-n.beat>windowBeat)missed(n);
+    }
     if(b<round.start)setStatus('준비 · '+Math.ceil(round.start-b)+'박 후 시작');
     else setStatus('진행 '+Math.min(32,Math.floor((b-round.start)/4)+1)+' / 32마디 · 음악은 그대로 이어집니다.');
     if(judgedBeat>=round.end+windowBeat)finish('',true);
@@ -141,7 +162,19 @@ export function rhythmGame({music,startMusic,canPlay,lock}){
   if(round){
    for(const n of round.notes){
     if(n.done)continue;
-    const y=bottom-(n.beat-b)*60/(now.track?.bpm||132)*pixelsPerSecond;
+    const y=n.started?bottom:bottom-(n.beat-b)*60/(now.track?.bpm||132)*pixelsPerSecond;
+    if(n.endBeat){
+     const tail=bottom-(n.endBeat-b)*60/(now.track?.bpm||132)*pixelsPerSecond;
+     const head=Math.min(bottom+6,y+6),topY=Math.max(top,tail);
+     if(head>=top&&topY<head){
+      ctx.save();ctx.beginPath();ctx.rect(left,top,width,bottom-top+8);ctx.clip();
+      ctx.fillStyle=colors[n.lane]+(n.started?'cc':'66');ctx.fillRect(left+n.lane*laneWidth+13,topY,laneWidth-26,head-topY);
+      ctx.strokeStyle=colors[n.lane];ctx.lineWidth=n.started?3:1;ctx.strokeRect(left+n.lane*laneWidth+13,topY,laneWidth-26,head-topY);
+      ctx.fillStyle=colors[n.lane];ctx.fillRect(left+n.lane*laneWidth+7,tail-3,laneWidth-14,6);
+      if(n.started){ctx.fillStyle='#fff';ctx.fillRect(left+n.lane*laneWidth+9,bottom-3,laneWidth-18,6);}
+      ctx.restore();
+     }
+    }
     if(y<top||y>bottom+12)continue;
     ctx.fillStyle=colors[n.lane];ctx.fillRect(left+n.lane*laneWidth+5,y-6,laneWidth-10,12);
     if(n.accent){ctx.fillStyle='#ffffff28';ctx.fillRect(left+n.lane*laneWidth+5,y-9,laneWidth-10,3);}
@@ -149,10 +182,11 @@ export function rhythmGame({music,startMusic,canPlay,lock}){
    }
   }
   if(judgementUntil>performance.now()){
-   ctx.textAlign='center';ctx.font='bold 29px system-ui';ctx.fillStyle=judgement==='MISS'?'#ff8c9d':'#f5faff';ctx.fillText(judgement,W/2,H*.46);
+   ctx.textAlign='center';ctx.font='bold 29px system-ui';ctx.fillStyle=judgement.startsWith('MISS')?'#ff8c9d':'#f5faff';ctx.fillText(judgement,W/2,H*.46);
    ctx.font='bold 19px system-ui';ctx.fillText((round?.combo||0)+' COMBO',W/2,H*.46+29);
    ctx.font='14px system-ui';ctx.fillStyle='#d0d6e9';ctx.fillText(timingText,W/2,H*.46+52);
   }
+  if(round?.running&&judgementUntil<=performance.now()&&round.notes.some(n=>n.started&&!n.done)){ctx.textAlign='center';ctx.font='bold 22px system-ui';ctx.fillStyle='#f5faff';ctx.fillText('HOLD · 꼬리가 닿을 때 떼세요',W/2,H*.46);}
   if(!round){ctx.textAlign='center';ctx.font='18px system-ui';ctx.fillStyle='#e8e8ff';ctx.fillText('7개의 건반으로 음악을 따라 연주하세요',W/2,H*.38);}
   frame=requestAnimationFrame(draw);
  }
@@ -166,13 +200,21 @@ export function rhythmGame({music,startMusic,canPlay,lock}){
   const now=music.status(Number.isFinite(e.timeStamp)&&e.timeStamp<1e10?e.timeStamp:performance.now());
   if(!now.playing||now.track.id!==round.trackId||now.beat<round.start-.4)return;
   const beat=inputBeat(now);
-  const note=round.notes.filter(n=>!n.done&&n.lane===lane)
+  const note=round.notes.filter(n=>!n.done&&!n.started&&n.lane===lane)
    .reduce((best,n)=>!best||Math.abs(n.beat-beat)<Math.abs(best.beat-beat)?n:best,null);
   if(!note)return;
   const delta=(beat-note.beat)*60000/now.track.bpm,absolute=Math.abs(delta);
-  if(absolute<=windows.good)judge(note,absolute<=windows.perfect?'PERFECT':absolute<=windows.great?'GREAT':'GOOD',delta);
+  if(absolute<=windows.good)judge(note,rating(delta),delta,note.endBeat?'head':'tap');
  }
- function release(e){const lane=keys.indexOf(e.code);if(lane>=0)pressed.delete(lane);}
+ function release(e){
+  const lane=keys.indexOf(e.code);if(lane<0)return;pressed.delete(lane);
+  if(!dialog.open||!round?.running)return;
+  const note=round.notes.find(n=>n.lane===lane&&n.started&&!n.done);if(!note)return;
+  const now=music.status(Number.isFinite(e.timeStamp)&&e.timeStamp<1e10?e.timeStamp:performance.now());
+  if(!now.playing||now.track.id!==round.trackId){finish('음악 재생 상태가 바뀌어 라운드를 중단했습니다.');return;}
+  const delta=(inputBeat(now)-note.endBeat)*60000/now.track.bpm;
+  judge(note,Math.abs(delta)<=windows.good?rating(delta):'MISS',delta,'tail');
+ }
  function close(){if(round?.running)finish('라운드를 종료했습니다.');dialog.close();}
  dialog.addEventListener('close',()=>{cancelAnimationFrame(frame);pressed.clear();lock(false);document.getElementById('rhythm-open')?.focus();});
  dialog.addEventListener('cancel',e=>{e.preventDefault();close();});

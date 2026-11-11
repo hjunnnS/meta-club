@@ -1,11 +1,11 @@
 {
   "trackId": "neon-horizon-treblo",
-  "version": 2,
+  "version": 3,
   "bpm": 132,
   "beats": 448,
   "roundBars": 32,
   "lanes": 7,
-  "authoring": "Revision 2: preserve source-aligned transient times, replace simultaneous stacks with single notes, alternate hand motifs and use adjacent-lane rises. Quiet sections keep integer beats. User play review pending; no additional testing.",
+  "authoring": "Revision 2: preserve source-aligned transient times, replace simultaneous stacks with single notes, alternate hand motifs and use adjacent-lane rises. Quiet sections keep integer beats. User play review pending; no additional testing. Revision 3: 2/4-beat holds chosen from stable 220–2600Hz source-energy spans at existing aligned onsets; same-lane overlaps and crowded opening responses removed. Hold release remains on the musical grid. No gameplay testing performed.",
   "sections": [
     {
       "beat": 0,
@@ -1259,30 +1259,14 @@
       "beat": 111.98242,
       "gridBeat": 112,
       "lane": 1,
-      "accent": true
-    },
-    {
-      "beat": 112.49128,
-      "gridBeat": 112.5,
-      "lane": 4,
-      "accent": false
-    },
-    {
-      "beat": 112.98232,
-      "gridBeat": 113,
-      "lane": 2,
-      "accent": false
+      "accent": true,
+      "endBeat": 115.98242,
+      "endGridBeat": 116
     },
     {
       "beat": 113.98244,
       "gridBeat": 114,
       "lane": 5,
-      "accent": false
-    },
-    {
-      "beat": 114.4825,
-      "gridBeat": 114.5,
-      "lane": 3,
       "accent": false
     },
     {
@@ -1487,7 +1471,9 @@
       "beat": 151.99998,
       "gridBeat": 152,
       "lane": 3,
-      "accent": true
+      "accent": true,
+      "endBeat": 153.99998,
+      "endGridBeat": 154
     },
     {
       "beat": 153.9736,
@@ -1679,25 +1665,9 @@
       "beat": 177.97362,
       "gridBeat": 178,
       "lane": 5,
-      "accent": false
-    },
-    {
-      "beat": 178.47368,
-      "gridBeat": 178.5,
-      "lane": 3,
-      "accent": false
-    },
-    {
-      "beat": 178.97352,
-      "gridBeat": 179,
-      "lane": 4,
-      "accent": false
-    },
-    {
-      "beat": 179.97364,
-      "gridBeat": 180,
-      "lane": 5,
-      "accent": true
+      "accent": false,
+      "endBeat": 179.97362,
+      "endGridBeat": 180
     },
     {
       "beat": 180.97354,
@@ -2039,13 +2009,9 @@
       "beat": 215.97356,
       "gridBeat": 216,
       "lane": 1,
-      "accent": true
-    },
-    {
-      "beat": 216.47362,
-      "gridBeat": 216.5,
-      "lane": 4,
-      "accent": false
+      "accent": true,
+      "endBeat": 217.97356,
+      "endGridBeat": 218
     },
     {
       "beat": 216.97368,
@@ -3023,19 +2989,9 @@
       "beat": 311.96484,
       "gridBeat": 312,
       "lane": 4,
-      "accent": true
-    },
-    {
-      "beat": 312.4649,
-      "gridBeat": 312.5,
-      "lane": 2,
-      "accent": false
-    },
-    {
-      "beat": 312.96474,
-      "gridBeat": 313,
-      "lane": 5,
-      "accent": false
+      "accent": true,
+      "endBeat": 313.96484,
+      "endGridBeat": 314
     },
     {
       "beat": 313.96486,
@@ -3605,13 +3561,9 @@
       "beat": 367.95594,
       "gridBeat": 368,
       "lane": 1,
-      "accent": true
-    },
-    {
-      "beat": 368.4648,
-      "gridBeat": 368.5,
-      "lane": 4,
-      "accent": false
+      "accent": true,
+      "endBeat": 369.95594,
+      "endGridBeat": 370
     },
     {
       "beat": 368.95606,

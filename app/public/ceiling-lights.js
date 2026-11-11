@@ -106,10 +106,10 @@ export function strobeAccentCue({beat,bpm=120,playing=false,preview=null,strobeP
     const variety=((cycle+Math.floor(cycle/3))%3+3)%3;
     look=kind==='transition'?(strobePreview?'fan':['fan','mixed','gobo'][variety]):['curtain','gobo','mixed'][variety];
   }
-  const baseline=preview||strobePreview?0:.16*(overlap?.35:1)*(reduced?.50:1);
+  const baseline=preview||strobePreview?0:.28*(overlap?.65:1)*(reduced?.50:1);
   if(!Number.isFinite(age)||age<0||age>=duration)return {...off,gobo:baseline};
   const envelope=Math.min(1,preview?1:age/.30,(duration-age)/.65);
-  const level=envelope*(overlap?.24:1)*(reduced?.30:1);
+  const level=envelope*(overlap?.60:1)*(reduced?.30:1);
   return {curtain:protectSmoke?0:level*(look==='curtain'?1:look==='mixed'?.55:0),
     fan:protectSmoke?0:level*(look==='fan'?1:0),
     gobo:Math.max(baseline,level*(look==='gobo'?1:look==='mixed'?.65:look==='fan'?.28:0))};

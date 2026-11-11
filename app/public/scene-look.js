@@ -13,8 +13,8 @@ export function sceneLook(beat,playing,arrangement=1,person=false){
  const quiet=!playing||arrangement<.55;
  return {...palette,mode:opening>.05?'transition':gathering>.1?'build':'base',
   ambient:quiet?.30:.23+gathering*.09+opening*.20,
-  decor:quiet?.24:.22+gathering*.10+opening*.13,
-  beams:(quiet?.30:.48+gathering*.22+opening*.30)*(person?.55:1),
-  floor:quiet?.46:.68+gathering*.14+opening*.18,
+  decor:quiet?.28:.32+gathering*.13+opening*.20,
+  beams:(quiet?.40:.68+gathering*.22+opening*.32)*(person?.84:1),
+  floor:quiet?.53:.76+gathering*.14+opening*.22,
   white:opening*.72,person,gathering,opening};
 }

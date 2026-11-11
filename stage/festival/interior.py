@@ -285,6 +285,11 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
         lamp('Amber pendant',(-27.3-x,2.96,32.4-z),(1,.47,.17),80,8)
     for x,z,c in [(-5,-13,(.22,.15,1)),(5,-13,(1,.06,.37)),(-8,0,(.33,.12,1)),(8,0,(.06,.52,1))]:
         lamp('Stage wash',(x,4.4,z),c,190 if z==-13 else 115,16)
+    # Close exterior sightlines beyond the playable entry floor, leaving its approach open.
+    box('Entry end enclosure',indigo,-4.25,4.25,27.05,27.25,0,11.6)
+    for side in (-1,1):
+        x=side*4.16
+        box('Entry side enclosure',indigo,x-.12,x+.12,20.85,27.25,0,11.6)
     # Close the vista beyond the entrance without enclosing the entry corridor.
     for side in (-1,1):
         x=side*12.5

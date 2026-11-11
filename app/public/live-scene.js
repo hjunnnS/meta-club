@@ -110,6 +110,22 @@ export function startLiveScene({
   const washes = scene.lights
     .filter((l) => l.name.startsWith('Stage wash'))
     .map((light) => ({ light, base: light.intensity }));
+  // Reuse three existing stage lights, isolating their illumination to the adult DJ during broadcast.
+  const djMeshes=dj.near.getChildMeshes();
+  let djLightLevel=0;
+  const djFocusLights=washes.slice(0,3).map(({light,base},i)=>{
+    const tint=B.Color3.FromHexString(['#fff1d8','#b9e6ff','#d4b9ff'][i]);
+    const origin=B.Vector3.FromArray([[-3,5.4,-10.7],[3,4.8,-11.6],[1.2,5.8,-15.6]][i]);
+    const material=new B.StandardMaterial('DJ focus beam '+i,scene);
+    material.disableLighting=true;material.emissiveColor=tint;material.alpha=0;material.backFaceCulling=false;
+    const beam=B.MeshBuilder.CreateCylinder('DJ focus cone '+i,{height:1,diameterTop:.10,diameterBottom:.82,tessellation:12,cap:B.Mesh.NO_CAP},scene);
+    beam.material=material;beam.rotationQuaternion=new B.Quaternion();beam.isPickable=false;beam.setEnabled(false);
+    const target=new B.Vector3(0,2.9,-13.35),axis=target.subtract(origin);
+    beam.position.copyFrom(origin).addInPlace(axis.scale(.5));beam.scaling.y=axis.length();
+    B.Quaternion.FromUnitVectorsToRef(B.Axis.Y,axis.normalize(),beam.rotationQuaternion);
+    return {light,base,tint,origin,beam,material,position:light.position.clone(),color:light.diffuse.clone(),
+      excluded:light.excludedMeshes.slice(),included:light.includedOnlyMeshes.slice()};
+  });
   const strips = scene.materials
     .filter((m) => ['Orchid LED', 'Ice LED', 'Rose LED', 'Ultraviolet guide', 'Glacier guide', 'Fuchsia guide', 'LED / chromatic vortex'].includes(m.name))
     .map((material) => ({ material, base: material.emissiveColor.clone() }));
@@ -407,9 +423,9 @@ export function startLiveScene({
     const stageFocus=Boolean(stageEvents.kind&&stageEvents.kind!=='led');
     const boardFocus=Boolean(playing)&&(phrasePhase>=28||phrasePhase<2);
     const floorFocus=Boolean(playing)&&phrasePhase>=2&&phrasePhase<6;
-    const supportTarget=stageFocus?.18:boardFocus?.28:floorFocus?.48:1;
+    const supportTarget=stageFocus?.68:boardFocus?.72:floorFocus?.82:1;
     supportLevel+=(supportTarget-supportLevel)*blend;
-    const roomPulse = renderAmbience(beats, audioBands, strobing||Boolean(effectBlocksStrobe)||Boolean(smokeProtection)||((stageFocus||boardFocus||floorFocus)&&!effectPreview), Boolean(audibleTrack), playback?.track.bpm || 120, previewAge<strobeDurations[strobePreviewPattern]+1.6 ? previewAge : null, strobePreviewPattern,dynamics.level);
+    const roomPulse = renderAmbience(beats, audioBands, strobing||Boolean(effectBlocksStrobe)||Boolean(smokeProtection)||((stageFocus||boardFocus)&&!effectPreview&&phrasePhase<1.5), Boolean(audibleTrack), playback?.track.bpm || 120, previewAge<strobeDurations[strobePreviewPattern]+1.6 ? previewAge : null, strobePreviewPattern,dynamics.level);
     const boardSegment=playing?Math.floor(Math.max(0,beats)%32/8):-1;
     const look=sceneLook(beats,Boolean(playing),dynamics.level,boardSegment===1||boardSegment===2);
     B.Color3.LerpToRef(lookPrimary,B.Color3.FromHexString(look.primary),blend,lookPrimary);
@@ -417,10 +433,10 @@ export function startLiveScene({
     look.primary=lookPrimary.toHexString();look.secondary=lookSecondary.toHexString();
     ambientLevel+=(look.ambient-ambientLevel)*blend;decorLevel+=(look.decor-decorLevel)*blend;
     beamLevel+=(look.beams-beamLevel)*blend;whiteLevel+=(look.white-whiteLevel)*blend;
-    const floorTarget=look.floor*(stageFocus?.60:boardFocus?.68:1);
+    const floorTarget=look.floor*(stageFocus?.82:boardFocus?.88:1);
     floorLevel+=(floorTarget-floorLevel)*blend;
     Object.assign(look,{ambient:ambientLevel,decor:decorLevel,beams:beamLevel*supportLevel,
-      white:whiteLevel*(stageFocus?.25:1),floor:floorLevel,support:supportLevel});
+      white:whiteLevel*(stageFocus?.65:1),floor:floorLevel,support:supportLevel});
     renderCeiling(beats,strobing,musicEnergy,roomPulse,look);
     renderSpeakers(beats,audioBands,Boolean(playing),dt,calmBeats.matches);
     const accentAge=accentPreview?(performance.now()-accentPreview.start)/1000:0;
@@ -464,12 +480,26 @@ export function startLiveScene({
       light.diffuse.copyFrom(i%2?lookSecondary:lookPrimary);
       light.intensity = base * (strobing ? .20 : .70+look.opening*.45+roomPulse*1.25) * (dancers ? 1 + 0.38 * Math.sin(phase / 4 + (i * Math.PI) / 2) : 1);
     });
+    const djOnAir=Boolean(playing)&&boardSegment===1&&!preview&&!celebrating;
+    djLightLevel+=((djOnAir?1:0)-djLightLevel)*(1-Math.exp(-Math.min(dt,100)/220));
+    djFocusLights.forEach(({light,base,tint,origin,beam,material,position,color,excluded,included},i)=>{
+      if(djLightLevel>.015){
+        light.includedOnlyMeshes=djMeshes;
+        light.excludedMeshes=excluded.filter(mesh=>!djMeshes.includes(mesh));
+        light.position.copyFrom(origin);light.diffuse.copyFrom(tint);
+        light.intensity=base*[1.25,.65,.90][i]*djLightLevel;
+        beam.setEnabled(true);material.alpha=.035*djLightLevel;
+      }else{
+        light.includedOnlyMeshes=included;light.excludedMeshes=excluded;
+        light.position.copyFrom(position);beam.setEnabled(false);
+      }
+    });
     strips.forEach(({ material, base }, i) => {
       B.Color3.Lerp(base,i%2?lookSecondary:lookPrimary,.72).scaleToRef(strobing ? .10 : look.decor*(dancers ? 1 + .14*Math.sin(phase/4+i*2) : 1), material.emissiveColor);
     });
     for(const mesh of scene.meshes){
       if(/^(peripheral laser (ray|soft edge)|wall downward light cone|house fan|phrase laser ray)$/.test(mesh.name))
-        mesh.visibility=effectPreview||accentTest?1:look.beams*(performancePriority?.25:1);
+        mesh.visibility=effectPreview||accentTest?1:look.beams*(performancePriority?.65:1);
     }
     scene.materials.filter(m=>['house wash','peripheral thin laser','peripheral laser halo','scanner beam','beam core','shaft glow','floor wash'].includes(m.name))
       .forEach((m,i)=>{if(m.emissiveColor)m.emissiveColor.copyFrom(i%2?lookSecondary:lookPrimary);});

@@ -193,6 +193,10 @@ if festival:
     from festival.interior import scenery
     VERSION = 'EDM v3 · festival interior'
     images, lights = scenery(materials, material, box, octagon, ring, beam, tri)
+    # Retire the old decorative frame behind the enlarged screen, preserving backdrop/rear wall.
+    obsolete={'Stage fan','Stage pylons','Pylon trim','Stage surround','Stage surround trim'}
+    for key in list(parts):
+        if key[0] in obsolete:del parts[key]
 
 route=[(0,0,25),(0,0,12),(0,.018,0),(0,.018,-7.6),(0,1.35,-10.05),(0,1.35,-13),
        (0,1.35,-10.05),(0,.018,-7.6),(0,.018,0),(-14.6,.045,6),(0,.018,0),
