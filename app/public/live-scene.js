@@ -44,7 +44,8 @@ export function startLiveScene({
     if(age>=duration+.5){peripheralPreview=null;return null;}
     return {kind:peripheralPreview.kind,age};
   }
-  let spectrum = [], spectrumAt = 0;
+  let spectrum = [], spectrumAt = 0, outputClock=null;
+  let arrangementLevel=1, supportLevel=1, floorLevel=.68, ambientLevel=.23, decorLevel=.22, beamLevel=.48, whiteLevel=0;
   const renderFloor = rhythmFloor(B, scene);
   const renderHouseLights = houseLights(B, scene);
   const ambient = scene.getLightByName('ambient');
@@ -189,7 +190,12 @@ export function startLiveScene({
       tracks = data.tracks || [];
       offset = data.offset;
     }
-    if (kind === 'audible-track') audibleTrack = data;
+    if (kind === 'audible-track') {audibleTrack = data;outputClock=null;}
+    if(kind==='music-output-clock'){
+      if(data?.playing&&data.id===audibleTrack&&Number.isFinite(data.time)&&Number.isFinite(data.sentAt))
+        outputClock={id:data.id,time:data.time+Math.max(0,Math.min(.15,(Date.now()-data.sentAt)/1000)),at:performance.now()};
+      else outputClock=null;
+    }
     if (kind === 'speaker-view') speakerView();
     if (kind === 'staff-view' && ['dj','bartender'].includes(data)) speakerView(data);
     if(kind==='accent-preview'&&Object.hasOwn(accentDurations,data)){
@@ -376,10 +382,18 @@ export function startLiveScene({
     // The track beat and all clients share the room epoch. Smooth washes
     // follow a four-beat phrase; the floor strips and dancers keep the same phase.
     const playback = playlistPosition(tracks, epoch, Date.now() + offset);
+    // Audible device time drives local dance/light phase; server clock still owns show scheduling.
+    if(playback&&outputClock?.id===playback.track.id&&now-outputClock.at<350){
+      playback.time=(outputClock.time+(now-outputClock.at)/1000)%playback.track.duration;
+      playback.phraseTime=playback.time;
+    }
     const beats = trackBeat(playback, t);
     const effectPreview=activePeripheralPreview();
     const playing = playback && playback.track.id === audibleTrack;
     const dynamics=musicDynamics(playback);
+    const blend=1-Math.exp(-Math.min(dt,100)/350);
+    arrangementLevel+=(dynamics.level-arrangementLevel)*blend;
+    dynamics.level=arrangementLevel;
     const peripheralPlan=peripheralCue(beats,playback?.track.bpm||120,effectPreview,Boolean(playing),dynamics.level);
     const celebrating = stageEvents.kind === 'led';
     const strobing = stageEvents.strobing;
@@ -389,11 +403,24 @@ export function startLiveScene({
     // After either test, leave a normal-light gap before automatic accents resume.
     const smokeProtection=peripheralPlan.protectSmoke&&previewAge>=strobeDurations[strobePreviewPattern];
     const effectBlocksStrobe=Boolean(accentPreview)||(effectPreview&&effectPreview.kind!=='strobe-hold');
-    const roomPulse = renderAmbience(beats, audioBands, strobing||Boolean(effectBlocksStrobe)||Boolean(smokeProtection), Boolean(audibleTrack), playback?.track.bpm || 120, previewAge<strobeDurations[strobePreviewPattern]+1.6 ? previewAge : null, strobePreviewPattern,dynamics.level);
+    const phrasePhase=((beats%32)+32)%32;
+    const stageFocus=Boolean(stageEvents.kind&&stageEvents.kind!=='led');
+    const boardFocus=Boolean(playing)&&(phrasePhase>=28||phrasePhase<2);
+    const floorFocus=Boolean(playing)&&phrasePhase>=2&&phrasePhase<6;
+    const supportTarget=stageFocus?.18:boardFocus?.28:floorFocus?.48:1;
+    supportLevel+=(supportTarget-supportLevel)*blend;
+    const roomPulse = renderAmbience(beats, audioBands, strobing||Boolean(effectBlocksStrobe)||Boolean(smokeProtection)||((stageFocus||boardFocus||floorFocus)&&!effectPreview), Boolean(audibleTrack), playback?.track.bpm || 120, previewAge<strobeDurations[strobePreviewPattern]+1.6 ? previewAge : null, strobePreviewPattern,dynamics.level);
     const boardSegment=playing?Math.floor(Math.max(0,beats)%32/8):-1;
     const look=sceneLook(beats,Boolean(playing),dynamics.level,boardSegment===1||boardSegment===2);
-    lookPrimary.copyFrom(B.Color3.FromHexString(look.primary));
-    lookSecondary.copyFrom(B.Color3.FromHexString(look.secondary));
+    B.Color3.LerpToRef(lookPrimary,B.Color3.FromHexString(look.primary),blend,lookPrimary);
+    B.Color3.LerpToRef(lookSecondary,B.Color3.FromHexString(look.secondary),blend,lookSecondary);
+    look.primary=lookPrimary.toHexString();look.secondary=lookSecondary.toHexString();
+    ambientLevel+=(look.ambient-ambientLevel)*blend;decorLevel+=(look.decor-decorLevel)*blend;
+    beamLevel+=(look.beams-beamLevel)*blend;whiteLevel+=(look.white-whiteLevel)*blend;
+    const floorTarget=look.floor*(stageFocus?.60:boardFocus?.68:1);
+    floorLevel+=(floorTarget-floorLevel)*blend;
+    Object.assign(look,{ambient:ambientLevel,decor:decorLevel,beams:beamLevel*supportLevel,
+      white:whiteLevel*(stageFocus?.25:1),floor:floorLevel,support:supportLevel});
     renderCeiling(beats,strobing,musicEnergy,roomPulse,look);
     renderSpeakers(beats,audioBands,Boolean(playing),dt,calmBeats.matches);
     const accentAge=accentPreview?(performance.now()-accentPreview.start)/1000:0;
@@ -405,12 +432,12 @@ export function startLiveScene({
       protectSmoke:Boolean(smokeProtection),reduced:calmBeats.matches,arrangement:dynamics.level});
     const performancePhase=stageEvents.phase;
     const performancePriority=performancePhase&&performancePhase.kind!=='led'&&performancePhase.level<.75;
-    if(performancePriority&&!accentTest){accentCue.curtain*=.22;accentCue.fan*=.22;accentCue.gobo*=.45;}
+    if(!accentTest&&!effectPreview){accentCue.curtain*=supportLevel;accentCue.fan*=supportLevel;accentCue.gobo*=supportLevel;}
     renderAccents(accentCue,beats,accentTest?.75:musicEnergy,calmBeats.matches,dt);
     if (ambient) ambient.intensity = (smokeProtection?.39:look.ambient) + roomPulse * 1.10;
     // The first beat of each four-beat bar accents both surfaces on the same frame.
     const barPhase = ((beats % 4) + 4) % 4;
-    const accent = playing && beats >= 0 ? Math.max(0, 1 - barPhase / .78) * (calmBeats.matches ? .3 : 1) : 0;
+    const accent = playing && beats >= 0 ? Math.max(0, 1 - barPhase / .78) * Math.min(1,dynamics.level*1.2) * (calmBeats.matches ? .3 : 1) : 0;
     // Every visual phrase restarts with the selected song at its loop boundary.
     const phraseBeat = playing ? (playback.phraseTime - (playback.track.firstBeat || 0)) * (playback.track.bpm || 120) / 60 : -1;
     const phase32 = phraseBeat % 32;
@@ -476,7 +503,7 @@ export function startLiveScene({
       if (dances.has(dance)) {
         if (articulated) {
           animateDance(m, dance, response ? .85 + release * .6 : beats,
-            response ? responders.indexOf(a.id) : a.ai && a.trainSlot == null ? a.danceStyle : undefined, musicEnergy);
+            response ? responders.indexOf(a.id) : a.ai && a.trainSlot == null ? a.danceStyle : undefined, musicEnergy,dynamics.level);
           if (liftWand) {
             const reach = Math.min(1, (gather - .48) * 4);
             const arm = m.limbs[2];
@@ -525,7 +552,7 @@ export function startLiveScene({
     }
     feedback.tick(models,now,calmBeats.matches);
     const segment = playing ? Math.floor(phase32 / 8) : -1;
-    animateDance(dj, 'groove', beats, undefined, musicEnergy);
+    animateDance(dj, 'groove', beats, undefined, musicEnergy,dynamics.level);
     animateStaff(dj,'dj',beats,t,musicEnergy,calmBeats.matches);
     animateStaff(bartender,'bartender',beats,t,musicEnergy,calmBeats.matches);
     if ((segment === 1 || segment === 2) && !preview && !celebrating && now >= nextBroadcast) {

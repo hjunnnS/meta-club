@@ -307,7 +307,7 @@ function marquee(B, scene, root, event, fastFlash) {
   };
 }
 
-function laserBlackouts(start) {
+function laserBlackouts(start, seconds=effects.laser.seconds) {
   // The show start seeds one shared sequence, including for spectators who join mid-show.
   let seed = start >>> 0;
   function between(min, max) {
@@ -316,7 +316,7 @@ function laserBlackouts(start) {
   }
   const cuts = [];
   let at = between(0.55, 1.25);
-  while (at < effects.laser.seconds) {
+  while (at < seconds) {
     const end = at + between(0.13, 0.34);
     cuts.push([at, end]);
     if (between(0, 1) < 0.45) {
@@ -525,6 +525,7 @@ export function houseLights(B, scene) {
   const delta = new B.Vector3();
   return (beat, visible, release, bpm=120, energy=0, strobing=false,preview=null,playing=true,arrangement=1,look=null) => {
     const cue=peripheralCue(beat,bpm,preview,playing,arrangement);
+    if(!preview&&look){cue.laser*=look.support??1;cue.wash*=look.support??1;}
     renderPeriphery(beat,bpm,energy,strobing,cue);
     if(look)lights.forEach((m,i)=>m.emissiveColor.copyFrom(B.Color3.FromHexString(i?look.primary:look.secondary)));
     rig.setEnabled(visible&&!cue.preview);
@@ -560,7 +561,7 @@ function lasers(B, scene, root, event, fastFlash) {
   const optics = new B.TransformNode('laser optics', scene);
   optics.parent = root;
   root = optics;
-  const cuts = laserBlackouts(event.start);
+  const cuts = laserBlackouts(event.start,event.seconds);
   const lime = '#cfff3c', violet = '#bc3aff', amber = '#ffae1e';
   const spectrum = ['#30ecff', '#fe309b', '#4673ff', '#6bff56', '#ffd540', '#ff4141'];
   const palette = Object.fromEntries([...spectrum, lime, violet, amber].map(hex => [hex, B.Color3.FromHexString(hex)]));
@@ -732,6 +733,7 @@ function phoenix(B, scene, root) {
 
 export function eventPlayer(B, scene, now = Date.now, fastFlash = () => false) {
   let current, root, animate, adorn, bodies=[];
+  const duration=event=>Number.isFinite(event.seconds)&&event.seconds>0?event.seconds:effects[event.kind].seconds;
   const prominence=(age,seconds)=>Math.min(1,Math.max(0,(age-1.4)/2.6),Math.max(0,(seconds-1.2-age)/4.8));
   function stop() {
     root?.dispose(false, true);
@@ -740,7 +742,7 @@ export function eventPlayer(B, scene, now = Date.now, fastFlash = () => false) {
   }
   function set(event) {
     if (!event || !Object.hasOwn(effects, event.kind)) { stop(); return; }
-    if (current?.id === event.id || now() >= event.start + effects[event.kind].seconds*1000) return;
+    if (current?.id === event.id || now() >= event.start + duration(event)*1000) return;
     stop();
     current = event;
     root = new B.TransformNode('stage event', scene);
@@ -749,25 +751,27 @@ export function eventPlayer(B, scene, now = Date.now, fastFlash = () => false) {
       ? hologram(B, scene, root, event.kind)
       : {led: marquee, laser: lasers, phoenix}[event.kind](B, scene, root, event, fastFlash);
     bodies=event.kind==='led'?[]:root.getChildMeshes();
-    adorn = event.kind === 'led' ? null : celebration(B, scene, root, effects[event.kind].seconds,
+    adorn = event.kind === 'led' ? null : celebration(B, scene, root, duration(event),
       !particlePreview && event.kind !== 'laser', particlePreview ? event.kind : 'both', event.bpm || 120);
     tick();
   }
   function tick() {
     if (!current) return;
     const t = Math.max(0, (now()-current.start)/1000);
-    if (t >= effects[current.kind].seconds) stop();
+    if (t >= duration(current)) stop();
     else {
-      animate?.(t);
-      const level=prominence(t,effects[current.kind].seconds);
+      // Hologram flight envelopes fill the full bar-aligned duration; laser rhythm stays real-time.
+      const animationTime=current.kind==='laser'||current.kind==='led'?t:t*effects[current.kind].seconds/duration(current);
+      animate?.(animationTime);
+      const level=prominence(t,duration(current));
       for(const mesh of bodies)mesh.visibility=level;
       adorn?.(t);
     }
   }
   scene.onBeforeRenderObservable.add(tick);
   return {set, stop, get kind() { return current?.kind; },
-    get phase(){return current?{kind:current.kind,age:Math.max(0,(now()-current.start)/1000),seconds:effects[current.kind].seconds,
-      level:prominence(Math.max(0,(now()-current.start)/1000),effects[current.kind].seconds)}:null;},
+    get phase(){return current?{kind:current.kind,age:Math.max(0,(now()-current.start)/1000),seconds:duration(current),
+      level:prominence(Math.max(0,(now()-current.start)/1000),duration(current))}:null;},
     get strobing() {
       const elapsed = current ? now() - current.start : -1;
       return current?.kind === 'laser' && fastFlash() &&

@@ -389,5 +389,9 @@ setInterval(() => {
   }
 }, 5000);
 setInterval(() => music.tick(), 200);
-setInterval(() => { if (ready && !document.hidden) frame('music-spectrum', music.spectrum()); }, 50);
+setInterval(() => { if (ready && !document.hidden) {
+  frame('music-spectrum', music.spectrum());
+  const status=music.status();
+  frame('music-output-clock',{playing:status.playing,id:status.track?.id,time:status.time,sentAt:Date.now()});
+} }, 50);
 enter(new URLSearchParams(location.search).get('channel') || undefined);

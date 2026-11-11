@@ -36,8 +36,9 @@ export function danceCamera(B, scene) {
 }
 
 // One unit is a musical beat. The supporting leg and the reaching arm alternate every beat.
-export function animateDance(model, action, beats, style, energy) {
+export function animateDance(model, action, beats, style, energy, arrangement=1) {
   const musical=Number.isFinite(energy),drive=musical?Math.max(0,Math.min(1,energy)):0;
+  const strength=musical?Math.max(.32,Math.min(1,.20+.65*arrangement+.15*drive)):1;
   const pointHold = action === 'disco-point';
   const lead = style === 1 ? (pointHold ? 2 : 1) : 0;
   const facing = style === 0 ? -0.23 : style === 1 ? 0.21 : 0;
@@ -66,5 +67,17 @@ export function animateDance(model, action, beats, style, energy) {
       joint.rotation.x = 0.5 * raised - 0.14;
       joint.rotation.z = sign * (side ? 0.18 + 0.94 * raised : 0.08 + 0.24 * raised);
     }
+  });
+  // Scale expressive offsets, keeping the supporting foot and neutral stance stable.
+  model.near.position.x*=strength;model.near.position.y*=strength;
+  model.near.rotation.z*=strength;
+  model.near.rotation.y=facing+(model.near.rotation.y-facing)*strength;
+  model.torso.rotation.z*=strength;
+  model.limbs.forEach((joint,i)=>{
+    const sign=i<2?-1:1;
+    const neutralX=i%2===0?-.48:-.14;
+    const neutralZ=sign*(i%2===0?.18:.08);
+    joint.rotation.x=neutralX+(joint.rotation.x-neutralX)*strength;
+    joint.rotation.z=neutralZ+(joint.rotation.z-neutralZ)*strength;
   });
 }
