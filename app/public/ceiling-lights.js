@@ -91,28 +91,38 @@ export function musicSpeakers(B,scene) {
 export const accentDurations={curtain:strobeDurations.normal,fan:strobeDurations.transition,gobo:strobeDurations.normal};
 export function strobeAccentCue({beat,bpm=120,playing=false,preview=null,strobePreview=null,
   overlap=false,protectSmoke=false,reduced=false,arrangement=1}) {
-  const off={curtain:0,fan:0,gobo:0};
+  const off={curtain:0,fan:0,gobo:0,variant:0,travel:0};
+  const manual=Boolean(preview||strobePreview);
+  if(!manual&&(!playing||!Number.isFinite(beat)||beat<0))return off;
+  const safeBeat=Number.isFinite(beat)?Math.max(0,beat):0;
+  const cycle=Math.floor(safeBeat/32),section=Math.floor(safeBeat%32/8);
+  // Six phrase orders, rather than the same curtain/fan/gobo sequence each time.
+  const orders=[[0,1,2,3],[2,0,3,1],[1,3,0,2],[3,2,1,0],[0,3,1,2],[2,1,3,0]];
+  const variant=orders[cycle%orders.length][section];
+  const beds=[{curtain:.34,fan:.13,gobo:.53},{curtain:.18,fan:.40,gobo:.42},
+    {curtain:.27,fan:.20,gobo:.70},{curtain:.40,fan:.27,gobo:.46}];
+  const bed=manual?off:beds[variant];
+  const gain=(overlap?.56:1)*(reduced?.38:1)*(.72+.28*Math.max(0,Math.min(1,arrangement)));
+  const base={curtain:protectSmoke?0:bed.curtain*gain,fan:protectSmoke?0:bed.fan*gain,gobo:bed.gobo*gain};
   let age,duration,look;
   if(preview&&Object.hasOwn(accentDurations,preview.kind)){
     age=preview.age;duration=accentDurations[preview.kind];look=preview.kind;
   }else{
-    if(!Number.isFinite(beat)||beat<0||(!strobePreview&&!playing))return off;
-    if(!strobePreview&&arrangement<.55)return {curtain:protectSmoke?0:.18*(overlap?.24:1)*(reduced?.30:1),fan:0,gobo:.48*(overlap?.35:1)*(reduced?.50:1)};
-    const timing=strobeSchedule(beat,bpm),kind=strobePreview?.kind||timing.kind;
+    const timing=strobeSchedule(safeBeat,bpm),kind=strobePreview?.kind||timing.kind;
     if(!Object.hasOwn(strobeDurations,kind))return off;
-    age=strobePreview?.age??timing.elapsed;
-    duration=strobeDurations[kind];
-    const cycle=Math.floor(beat/32);
-    const variety=((cycle+Math.floor(cycle/3))%3+3)%3;
-    look=kind==='transition'?(strobePreview?'fan':['fan','mixed','gobo'][variety]):['curtain','gobo','mixed'][variety];
+    age=strobePreview?.age??timing.elapsed;duration=strobeDurations[kind];
+    look=kind==='transition'?['fan','mixed','gobo','curtain'][variant]:['curtain','gobo','mixed','fan'][variant];
   }
-  const baseline=preview||strobePreview?0:.28*(overlap?.65:1)*(reduced?.50:1);
-  if(!Number.isFinite(age)||age<0||age>=duration)return {...off,gobo:baseline};
+  const travel=Number.isFinite(age)?Math.max(0,Math.min(1,age/duration)):0;
+  if(!Number.isFinite(age)||age<0||age>=duration||(!manual&&arrangement<.55))return {...base,variant,travel:0};
   const envelope=Math.min(1,preview?1:age/.30,(duration-age)/.65);
   const level=envelope*(overlap?.60:1)*(reduced?.30:1);
-  return {curtain:protectSmoke?0:level*(look==='curtain'?1:look==='mixed'?.55:0),
-    fan:protectSmoke?0:level*(look==='fan'?1:0),
-    gobo:Math.max(baseline,level*(look==='gobo'?1:look==='mixed'?.65:look==='fan'?.28:0))};
+  // Hand the long accent between existing rigs; never increase the flash rate.
+  const handoff=.5-.5*Math.cos(travel*Math.PI*2);
+  const accentVariant=(variant+(reduced?0:Math.floor(travel*3)))%4;
+  return {curtain:protectSmoke?0:Math.max(base.curtain,level*(look==='curtain'?1-.32*handoff:look==='mixed'?.65:0)),
+    fan:protectSmoke?0:Math.max(base.fan,level*(look==='fan'?1-.30*handoff:look==='mixed'?.30:0)),
+    gobo:Math.max(base.gobo,level*(look==='gobo'?1:look==='mixed'?.72:.22+.40*handoff)),variant:accentVariant,travel};
 }
 
 function goboTextures(B,scene) {
@@ -143,7 +153,6 @@ export function strobeAccents(B,scene) {
     material.emissiveColor=B.Color3.FromHexString(color);material.alphaMode=B.Engine.ALPHA_ADD;
     material.backFaceCulling=false;material.disableDepthWrite=true;return material;
   };
-  const curtainPalette=['#f5fbff','#ffe56d','#8edbff'].map(hex=>B.Color3.FromHexString(hex));
   const curtainInk=[ink('Curtain white','#f5fbff'),ink('Curtain yellow','#ffe56d')];
   const fanInk=ink('Overhead fan ice','#ddf5ff'),fanSheetInk=ink('Overhead fan luminous sheet','#92ddff');
   const curtains=[],fans=[],fanSheets=[],patterns=[],textures=goboTextures(B,scene);
@@ -187,6 +196,7 @@ export function strobeAccents(B,scene) {
   }
   const levels={curtain:0,fan:0,gobo:0};
   let centerClearance=0;
+  const palettes=[['#8edbff','#f5fbff'],['#f5fbff','#ffe56d'],['#ffe56d','#8edbff'],['#8edbff','#ffe56d']].map(pair=>pair.map(B.Color3.FromHexString));
   return (target,beat,bass=0,reduced=false,dt=null,protectCenter=false)=>{
     const blend=dt===null?1:1-Math.exp(-Math.max(0,Math.min(dt,1000))/220);
     for(const kind of ['curtain','fan','gobo'])levels[kind]+=(target[kind]-levels[kind])*blend;
@@ -194,18 +204,23 @@ export function strobeAccents(B,scene) {
     const cue=levels;
     for(const kind of ['curtain','fan','gobo'])rigs[kind].setEnabled(cue[kind]>.001);
     const motion=reduced?0:beat;
+    const variant=target.variant||0,travel=target.travel||0;
     const hit=reduced?0:Math.exp(-(((beat%1)+1)%1)*6)*Math.max(0,Math.min(1,bass));
     curtainInk.forEach((material,i)=>{
-      material.emissiveColor.copyFrom(curtainPalette[((Math.floor(Math.max(0,beat)/8)+i)%3)]);
+      B.Color3.LerpToRef(material.emissiveColor,palettes[variant][i],blend,material.emissiveColor);
       material.alpha=cue.curtain*(.48+hit*.38)*(reduced?.65:.76+.24*Math.sin(beat*Math.PI+i*Math.PI)**2);
     });
+    B.Color3.LerpToRef(fanInk.emissiveColor,palettes[variant][0],blend,fanInk.emissiveColor);
     fanInk.alpha=cue.fan*(.70+hit*.22);fanSheetInk.alpha=cue.fan*(.065+hit*.035)*(1-.88*centerClearance);
     if(cue.curtain)for(const {mesh,origin,side,z,i} of curtains){
-      destination.set(side*(19.25+.65*Math.sin(motion*.65+z*.12)),.36,z+i*.65+Math.sin(motion*.6)*1.0);
+      const chase=reduced?1:.35+.65*(.5+.5*Math.cos(motion*Math.PI/2-z*.24-side*variant));
+      mesh.visibility=chase;
+      destination.set(side*(18.75+.95*Math.sin(motion*.40+z*.12+variant)),.36,z+i*.65+Math.sin(motion*.5+side)*1.8);
       aim(mesh,origin,destination);
     }
     if(cue.fan)for(const {mesh,origin,side,i} of fans){
-      const spread=.55+.45*(.5+.5*Math.sin(motion*Math.PI/8));
+      mesh.visibility=reduced?.65:.45+.55*(.5+.5*Math.cos(motion*Math.PI/4-i*.45+side*variant));
+      const spread=.55+.45*(.5+.5*Math.sin(motion*Math.PI/8+variant+travel));
       const originalX=side*(11.2+i*.78*spread),edgeX=side*(12+i*.72);
       destination.set(originalX+(edgeX-originalX)*centerClearance,3.5+Math.abs(i-4)*.20,15-1.4*Math.sin(motion*.18));
       aim(mesh,origin,destination);
@@ -217,7 +232,8 @@ export function strobeAccents(B,scene) {
       mesh.updateVerticesData(B.VertexBuffer.PositionKind,vertices,true);
     }
     for(const {mesh,material,wall,sign} of patterns){
-      material.alpha=cue.gobo*(.65+hit*.22);material.opacityTexture=textures[((Math.floor(Math.max(0,beat)/4)%3)+3)%3];
+      B.Color3.LerpToRef(material.emissiveColor,palettes[variant][sign<0?0:1].scale(1.6),blend,material.emissiveColor);
+      material.alpha=cue.gobo*(.65+hit*.22);material.opacityTexture=textures[((Math.floor(Math.max(0,beat)/8)+variant)%3+3)%3];
       if(wall){
         mesh.rotation.z=motion*.10*sign;
         mesh.position.y=5.05+.55*Math.sin(motion*.13+sign);

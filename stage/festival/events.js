@@ -365,11 +365,14 @@ export function peripheralCue(beat,bpm=120,preview=null,playing=true,arrangement
   if(!playing||beat<0)return {smokeTime:0,smoke:false,laser:0,wash:0,preview:false};
   const phase=((beat%32)+32)%32;
   const timing=strobeSchedule(beat,bpm),{smokeTime}=timing;
-  if(arrangement<.55)return {smokeTime:0,smoke:false,laser:0,wash:.25+.13*(.5+.5*Math.sin(beat*Math.PI/8)),preview:false,protectSmoke:false};
+  if(arrangement<.55)return {smokeTime:0,smoke:false,laser:.14+.08*(.5+.5*Math.sin(beat*Math.PI/8)),wash:.25+.13*(.5+.5*Math.sin(beat*Math.PI/8)),preview:false,protectSmoke:false};
   const strong=arrangement>=.82;
+  const variation=((Math.floor(beat/32)%3)+3)%3;
+  const sweepPhase=(phase+[0,8,16][variation])%32;
+  const movingBed=.16+.10*(.5+.5*Math.sin(beat*Math.PI/8));
   return {smokeTime,smoke:strong&&smokeTime>=0&&smokeTime<5.5,
-    laser:fade(phase,9,11)*(1-fade(phase,20,24))*(strong?1:.40),
-    wash:washLook((phase-18)*60/Math.max(1,bpm),timing.elapsed)*(strong?1:.65),preview:false,
+    laser:Math.max(movingBed,fade(sweepPhase,9,11)*(1-fade(sweepPhase,20,24))*(strong?1:.40)),
+    wash:Math.max(.20,washLook((sweepPhase-18)*60/Math.max(1,bpm),timing.elapsed)*(strong?1:.65)),preview:false,
     protectSmoke:strong&&smokeTime>=-.15&&smokeTime<2.0};
 }
 
