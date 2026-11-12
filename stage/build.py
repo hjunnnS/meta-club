@@ -279,31 +279,29 @@ if festival:
     for key in list(parts):
         if key[0] in obsolete:del parts[key]
 
-# Two small, public dance podiums in the reclaimed west-side space.
-# Keep the outer stair/bar aisle (x=-16.7, z>=5) clear. No centre poles.
+# Two public podiums shifted west, with no ramps or step structures.
 if festival:
     podium_top=material('Auxiliary podium · satin indigo',(.095,.075,.16))
     materials[podium_top]['pbrMetallicRoughness'].update(metallicFactor=.18,roughnessFactor=.58)
     materials[podium_top]['emissiveFactor']=[.025,.012,.045]
-    for cz,accent in [(-8.8,violet),(-1.6,ice)]:
-        cx=-13.4
+    podium_colors=[]
+    for name,rgb in [('violet',(.67,.22,.9)),('cyan',(.18,.70,.85))]:
+        index=material('Auxiliary podium rim '+name,rgb)
+        materials[index]['emissiveFactor']=[v*.12 for v in rgb]
+        podium_colors.append(index)
+    for cz,accent in zip([-8.8,-1.6],podium_colors):
+        cx=-15.3
         slab('Auxiliary dance podium',podium_top,
              [(cx+1.7*math.cos(i*2*P/64),.5,cz-1.7*math.sin(i*2*P/64)) for i in range(64)],0,True)
-        # An east-facing 1.25m-wide, gently sloping approach. The overlap with
-        # the circular top keeps the seam below the existing walking threshold.
-        slab('Auxiliary dance ramp',podium_top,
-             [(-11.95,.5,cz-.625),(-11.95,.5,cz+.625),
-              (-9.95,.012,cz+.625),(-9.95,.012,cz-.625)],0,True)
-        # Thin inlaid edge light, interrupted at the ramp opening.
         for j in range(64):
             a=(j+.04)*2*P/64;b=(j+.96)*2*P/64
-            if math.cos((a+b)/2)>.92:continue
             slab('Auxiliary podium rim',accent,
                  [(cx+r*math.cos(t),.502,cz-r*math.sin(t))
                   for r,t in [(1.655,a),(1.7,a),(1.7,b),(1.655,b)]],.47)
-        for dz in [-.625,.625]:
-            beam('Auxiliary podium approach trim',accent,
-                 (-11.95,.505,cz+dz),(-9.95,.017,cz+dz),.018)
+        # A slender continuous pole, anchored into the existing ceiling slab.
+        beam('Auxiliary podium pole',rim,(cx,.5,cz),(cx,11.6,cz),.055)
+        beam('Auxiliary podium pole mounts',metal,(cx,.5,cz),(cx,.54,cz),.13)
+        beam('Auxiliary podium pole mounts',metal,(cx,11.54,cz),(cx,11.61,cz),.13)
 
 route=[(0,0,25),(0,0,12),(0,.018,0),(0,.018,-7.6),(0,1.35,-10.05),(0,1.35,-13),
        (0,1.35,-10.05),(0,.018,-7.6),(0,.018,0),(-14.6,.045,6),(0,.018,0),

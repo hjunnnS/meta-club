@@ -431,3 +431,16 @@ export function addedFloorWallLights(B,scene){
     }
   };
 }
+
+// Independent, deliberately subdued accents; never modify the main floor or show.
+export function podiumRimLights(B,scene,glow){
+  const colors=['violet','cyan'].map(name=>scene.materials.find(m=>m.name==='Auxiliary podium rim '+name));
+  const tones=['#ad38e6','#2eb3d9'].map(B.Color3.FromHexString);
+  for(const mesh of scene.meshes)if(mesh.name==='Auxiliary podium rim'||mesh.parent?.name==='Auxiliary podium rim')glow?.addExcludedMesh(mesh);
+  return (beat,playing,energy=0,reduced=false)=>{
+    const phase=Number.isFinite(beat)?((beat%1)+1)%1:0;
+    const hit=playing&&!reduced?Math.exp(-phase*7):0;
+    const level=playing?(reduced?.18:.08+hit*(.22+.10*Math.min(1,energy))):.07;
+    colors.forEach((material,i)=>{if(material?.emissiveColor)tones[i].scaleToRef(level,material.emissiveColor);});
+  };
+}

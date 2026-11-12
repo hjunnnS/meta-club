@@ -67,9 +67,9 @@ async function open(){
  const walk=document.querySelector('#walk');
  const keys=new Set(), movementKeys=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight']);
  const floors=new Set(), barriers=new Set();
- const barrierNames=/^(Rear wall|Side wall|Entry parapet|U lounge rail|(East|West) (deck handrail|ramp rail))$/;
- const floorNames=/^(Arena floor|Entry floor|Dance floor|Auxiliary dance (podium|ramp)|DJ platform|DJ access|U lounge (floor|stair)|(East|West) (dance zone|deck ramp|upper deck))$/;
- const solidNames=/^(Rear wall|Side wall|Entry parapet|DJ booth|DJ platform|DJ access|Auxiliary dance (podium|ramp)|U lounge (floor|stair|rail|post|support)|(East|West) (deck ramp|upper deck|ramp rail|ramp posts|deck handrail|posts|supports)|Lobby wings|Side room (fins|parapet)|Perimeter acoustic bays|Deck banquettes|Deck backrests|VIP (sofa (base|cushion|back|arm|return)|low table top|table leg)|West speaker (cabinet|plinth)|Bar base|Bar stone slab|Stool foot|Stool stem|Upholstered stools|Backbar cabinet|Velvet sofa plinth|Velvet sofa cushions|Channel tufted sofa back|Cocktail table (stem|top)|Wall booth (base|seat|back|table|leg)|Entrance return walls|Entry (end|side) enclosure|Portal uprights|Stage pylons|Stage surround|Stage backdrop|Festival LED backing)$/;
+ const barrierNames=/^(Rear wall|Side wall|Entry parapet|Auxiliary podium pole|U lounge rail|(East|West) (deck handrail|ramp rail))$/;
+ const floorNames=/^(Arena floor|Entry floor|Dance floor|Auxiliary dance podium|DJ platform|DJ access|U lounge (floor|stair)|(East|West) (dance zone|deck ramp|upper deck))$/;
+ const solidNames=/^(Rear wall|Side wall|Entry parapet|DJ booth|DJ platform|DJ access|Auxiliary podium pole|U lounge (floor|stair|rail|post|support)|(East|West) (deck ramp|upper deck|ramp rail|ramp posts|deck handrail|posts|supports)|Lobby wings|Side room (fins|parapet)|Perimeter acoustic bays|Deck banquettes|Deck backrests|VIP (sofa (base|cushion|back|arm|return)|low table top|table leg)|West speaker (cabinet|plinth)|Bar base|Bar stone slab|Stool foot|Stool stem|Upholstered stools|Backbar cabinet|Velvet sofa plinth|Velvet sofa cushions|Channel tufted sofa back|Cocktail table (stem|top)|Wall booth (base|seat|back|table|leg)|Entrance return walls|Entry (end|side) enclosure|Portal uprights|Stage pylons|Stage surround|Stage backdrop|Festival LED backing)$/;
  for(const m of scene.meshes){
    if(!m.getTotalVertices())continue;
    const names=[m.name,m.parent?.name];
@@ -86,8 +86,12 @@ async function open(){
  function cancelWalk(){walkRoute=[];walkArrival=null;stalled=0;}
  let joystick={x:0,y:0}, seated=false;
  const down=new B.Vector3(0,-1,0);
+ // Only the two half-metre podium edges get step assistance; stairs and other
+ // obstacles retain their existing height limits. No ramp geometry is needed.
+ function podiumEdge(x,z,foot){return foot<.8&&Math.abs(x+15.3)<2.1&&[-8.8,-1.6].some(cz=>Math.abs(z-cz)<2.1);}
  function groundAt(x,z,foot){
-   const hit=scene.pickWithRay(new B.Ray(new B.Vector3(x,foot+.22,z),down,.46),m=>floors.has(m));
+   const reach=podiumEdge(x,z,foot)?.56:.22;
+   const hit=scene.pickWithRay(new B.Ray(new B.Vector3(x,foot+reach,z),down,reach*2+.02),m=>floors.has(m));
    return hit?.hit?hit.pickedPoint.y:null;
  }
  function walkMode(active){
@@ -156,10 +160,10 @@ async function open(){
      const key=to.x.toFixed(3)+','+to.z.toFixed(3)+','+from.y.toFixed(2);
      let y=cache.get(key);
      if(y===undefined){
-       const hit=scene.pickWithRay(new B.Ray(new B.Vector3(to.x,from.y+.4,to.z),down,.8),m=>floors.has(m));
+       const hit=scene.pickWithRay(new B.Ray(new B.Vector3(to.x,from.y+(podiumEdge(to.x,to.z,from.y)?.56:.4),to.z),down,podiumEdge(to.x,to.z,from.y)?1.14:.8),m=>floors.has(m));
        y=hit?.hit?hit.pickedPoint.y:null;cache.set(key,y);
      }
-     if(y===null||Math.abs(y-from.y)>.31)return null;
+     if(y===null||Math.abs(y-from.y)>(podiumEdge(to.x,to.z,from.y)?.54:.31))return null;
      const at={x:to.x,y,z:to.z};if(!permit(from,at))return null;
      const delta=new B.Vector3(at.x-from.x,at.y-from.y,at.z-from.z),length=delta.length();
      if(length>.001){
