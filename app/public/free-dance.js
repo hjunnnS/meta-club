@@ -134,11 +134,16 @@ export function animateWandDance(model,action,beats,energy=0,reduced=false){
     arm.rotation.z=.75+(1.40+.55*gain)*reach;arm.rotation.x=-.20-.25*(1-reach);
     roll=-.12+.20*reach;pitch=.06*fast;
   }else if(action==='hands-up'){
-    arm.rotation.z=2.65+.22*wave*gain;arm.rotation.x=-.10+.20*fast*gain;
-    roll=.20*fast*gain;pitch=.10*wave*gain;
+    // Small phrase: almost vertical overhead. Big phrase: broad shoulder-to-
+    // overhead fans, so the silhouette changes even while the body keeps jumping.
+    arm.rotation.z=2.76+.045*wave*(1-large)+large*(-.50+.60*wave);
+    arm.rotation.x=(-.08+.04*fast)*(1-large)+(-.40+.60*fast)*large;
+    roll=(.04+.36*large)*fast;pitch=(.02+.23*large)*wave;
   }else{
-    arm.rotation.z=.48+.12*fast*gain;arm.rotation.x=-.60+.48*fast*gain;
-    roll=-.10+.15*fast*gain;pitch=.15*wave*gain;
+    // Small phrase stays by the hip; the big phrase reaches forwards/outwards.
+    arm.rotation.z=(.30+.05*fast)*(1-large)+(.95+.42*fast)*large;
+    arm.rotation.x=(-.30+.12*fast)*(1-large)+(-.65+.80*fast)*large;
+    roll=-.10+(.05+.30*large)*fast;pitch=(.03+.22*large)*wave;
   }
   return {roll,pitch,large,sweep:large*(.55+.45*Math.abs(wave)),reduced};
 }
