@@ -380,7 +380,7 @@ export function peripheralCue(beat,bpm=120,preview=null,playing=true,arrangement
 function peripheralLighting(B,scene) {
   const calm=matchMedia('(prefers-reduced-motion: reduce)');
   const rig=new B.TransformNode('entry and wall lighting',scene);
-  const stations=[[-6,7.0,19.2],[6,7.0,19.2],[-15.8,7.4,-2],[15.8,7.4,-2],[-14.8,7.4,8],[14.8,7.4,8],[-16.7,7.4,16],[16.7,7.4,16]];
+  const stations=[[-6,7.0,19.2],[6,7.0,19.2],[-8.7,7.4,4],[15.8,7.4,-2],[-14.8,7.4,8],[14.8,7.4,8],[-16.7,7.4,16],[16.7,7.4,16]];
   const housing=paint(B,scene,'peripheral fixture graphite','#252235');
   const lens=paint(B,scene,'peripheral fixture lens','#fff0d5');lens.disableLighting=true;
   const texture=new B.DynamicTexture('peripheral soft falloff',64,scene,false);
