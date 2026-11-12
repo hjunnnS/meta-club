@@ -5,7 +5,7 @@ import {sceneLook} from './scene-look.js';
 import { rhythmFloor } from './rhythm-floor.js';
 import { playlistPosition, trackBeat, musicDynamics } from './music.js';
 import { effects, eventPlayer, ledScreen, houseScreen, houseLights, peripheralTests, peripheralCue, beamPulse } from '/stage/festival/events.js';
-import { permittedPath, edmCameraDistance, edmSeats, edmStage, edmBalcony, edmUpperRoute } from './edm-layout.js';
+import { permittedPath, edmCameraDistance, edmSeats, edmStage, edmBalcony, edmUpperRoute, edmStairRoute } from './edm-layout.js';
 import { dances, danceCamera, animateDance } from './free-dance.js';
 import { avatarFactory, playerView, staffNPC, animateStaff } from './avatar.js';
 export function startLiveScene({
@@ -209,8 +209,8 @@ export function startLiveScene({
   function speakerView(kind='speakers'){
     if(speakerCamera)return;
     cancelWalk();
-    const positions={speakers:[[-11.5,2.6,12],[-17.9,2,6]],
-      bartender:[[-11.3,1.95,14],[-13.6,1.4,17.4]],dj:[[3.9,4.0,edmStage.booth.z+3.7],[0,2.75,edmStage.booth.z]]};
+    const positions={speakers:[[-12.5,3.6,12],[-19.2,2,6.5]],
+      bartender:[[-11.3,1.95,14.7],[-13.6,1.4,18.1]],dj:[[3.9,4.0,edmStage.booth.z+3.7],[0,2.75,edmStage.booth.z]]};
     const [eye,target]=positions[kind]||positions.speakers;
     speakerCamera=new B.FreeCamera('Club observation',B.Vector3.FromArray(eye),scene);
     speakerCamera.setTarget(B.Vector3.FromArray(target));
@@ -409,22 +409,18 @@ export function startLiveScene({
     feedback.seat(selected>=0?edmSeats[selected]:null);
     const permit=(from,to)=>permittedPath(from,to,states);
     const failed=()=>send('gate-notice','걸어갈 수 있는 경로가 없습니다. 가까운 열린 바닥을 선택해 주세요.');
-    if(selected>=0&&edmSeats[selected].balcony){
-      const route=[],foot=cam.position.y-eyeHeight;
-      let upper={x:cam.position.x,z:cam.position.z};
-      if(foot<3.95){
-        const right=upper.x>0,r=right?edmBalcony.rightRamp:{x:edmBalcony.rampX,bottomZ:10,topZ:2};
-        const direction=Math.sign(r.topZ-r.bottomZ);
-        const onRamp=Math.abs(upper.x-r.x)<.57&&upper.z>=Math.min(r.topZ,r.bottomZ)-.2&&upper.z<=Math.max(r.topZ,r.bottomZ)+.2&&foot>.2;
-        if(!onRamp)route.push({x:r.x,y:right?0:.045,z:r.bottomZ-direction*.6});
-        upper={x:r.x,z:r.topZ+direction*.6};route.push({...upper,y:4});
+    const foot=cam.position.y-eyeHeight;
+    const upperTarget=selected>=0?Boolean(edmSeats[selected].balcony):goal.y>3.5;
+    if(upperTarget||foot>=3.95&&goal.y<1){
+      const route=[];let upper={x:cam.position.x,y:foot,z:cam.position.z};
+      if(upperTarget){
+        if(foot<3.95){const ascent=edmStairRoute(upper,upper.x>0?1:-1);route.push(...ascent);upper=ascent.at(-1);}
+        route.push(...edmUpperRoute(upper,selected>=0?edmSeats[selected].area:goal),goal);
+      }else{
+        const side=upper.x>0?1:-1,descent=edmStairRoute({x:0,y:0,z:0},side).reverse();
+        route.push(...edmUpperRoute(upper,descent[0]),...descent,goal);
       }
-      route.push(...edmUpperRoute(upper,edmSeats[selected].area),goal);
-      const advance=()=>{
-        const next=route.shift();
-        if(!next){arrived?.();return;}
-        if(!navigate(next,advance,permit))failed();
-      };
+      const advance=()=>{const next=route.shift();if(!next){arrived?.();return;}if(!navigate(next,advance,permit))failed();};
       advance();
     }else if(!navigate(goal,arrived,permit))failed();
 

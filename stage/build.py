@@ -102,13 +102,21 @@ for x in [-3.85,3.85]:
 for z in (22.0,23,24,25,26):
     box("Entry threshold",ice,-3.45,3.45,z,z+.09,.002,.012)
 
-# Audience circle remains at grade. The performer platform is at the north end.
-slab("Dance floor",indigo,[polar(8.5,i*2*P/96,.018) for i in range(96)],.002,True)
-for r,mat,w in [(8.29,violet,.17),(8.53,ice,.055),(9.1,rim,.045)]:
-    ring("Dance floor perimeter",mat,r,r+w,0,2*P,.018,.034,96)
-for i in range(48):
-    angle=i*2*P/48
-    ring("Floor markers",violet if i%4==0 else rim,8.63,8.89,angle-.007,angle+.007,.002,.014,1)
+# Approved rectangular floor: 17.5 * 17 * 1.3 = 386.75 square metres.
+if festival:
+    fw,fd=17.5*math.sqrt(1.3),17*math.sqrt(1.3)
+    floor_front=-7+fd
+    box('Dance floor',indigo,-fw/2,fw/2,-7,floor_front,.002,.018,True)
+    for x in [-fw/2,fw/2]:box('Dance floor perimeter',violet,x-.035,x+.035,-7,floor_front,.018,.034)
+    for z in [-7,floor_front]:box('Dance floor perimeter',violet,-fw/2,fw/2,z-.035,z+.035,.018,.034)
+else:
+    # Audience circle remains at grade. The performer platform is at the north end.
+    slab("Dance floor",indigo,[polar(8.5,i*2*P/96,.018) for i in range(96)],.002,True)
+    for r,mat,w in [(8.29,violet,.17),(8.53,ice,.055),(9.1,rim,.045)]:
+        ring("Dance floor perimeter",mat,r,r+w,0,2*P,.018,.034,96)
+    for i in range(48):
+        angle=i*2*P/48
+        ring("Floor markers",violet if i%4==0 else rim,8.63,8.89,angle-.007,angle+.007,.002,.014,1)
 # Short lines in the floor lead towards the main stage.
 for x in (-3.0,3.0):
     box("Processional lane",ice,x-.06,x+.06,8.7,20.7,.003,.021)
@@ -144,11 +152,6 @@ for side, label in [(-1,"West"),(1,"East")]:
             box(label+" threshold",violet,x-3.65,x+3.65,z,z+.13,.055,.07)
         box(label+" zone edge",violet,x+side*4.65-.08,x+side*4.65+.08,2.6,9.4,.05,.09)
     if festival:
-        rect('West deck ramp',deck,-18.55,-17.25,2,10,4,.045,-.01,True)
-        for edge in [-18.5,-17.3]:
-            beam('West ramp rail',violet,(edge,1,10),(edge,5,2),.045)
-            for i in range(5):
-                z=10-i*2;box('West ramp posts',metal,edge-.04,edge+.04,z-.04,z+.04,i,i+.95)
         continue
     # EDM: move the west ramp into the reclaimed speaker footprint and extend the lounge forwards.
     ramp_x=-17.9 if festival else x
@@ -176,38 +179,54 @@ for side, label in [(-1,"West"),(1,"East")]:
     beam(label+" deck handrail",ice,(x-4.5,5,-19.6),(x+4.5,5,-19.6),.06)
 
 if festival:
-    # Restore the VIP room footprint, then join it by narrower U-shaped outer galleries.
     def gallery(x1,x2,z1,z2):box('U lounge floor',deck,x1,x2,z1,z2,3.64,4,True)
-    gallery(-20,-16.2,-14.1,2)
-    gallery(-21.2,-19.65,1.2,11.6)
-    gallery(-21.2,-16.2,.5,2)
-    gallery(-21.2,-16.2,10,11.6)
-    gallery(-20,-16.2,10,18.4)
-    gallery(16.2,20,-14.1,18.4)
-    gallery(-21.4,-16,-14.1,-10.3)
-    gallery(16,21.4,-14.1,-10.3)
-    gallery(-2.7,2.7,14.8,20.2)
-    octagon('U lounge floor',deck,0,18.4,40,3.6,1.8,3.64,4,True)
-    gallery(9.85,11.15,16,17.6)
-    rect('U lounge stair',deck,9.85,11.15,8,16,0,4,-.01,True)
     def guard(a,b):
-        beam('U lounge rail',ice,(a[0],5,a[1]),(b[0],5,b[1]),.045)
-        length=math.hypot(b[0]-a[0],b[1]-a[1]);count=max(1,math.ceil(length/2.5))
+        beam('U lounge rail',ice,a,b,.035)
+        length=math.dist(a,b);count=max(1,math.ceil(length/2.5))
         for j in range(count+1):
-            t=j/count;x=a[0]+(b[0]-a[0])*t;z=a[1]+(b[1]-a[1])*t
-            box('U lounge post',metal,x-.045,x+.045,z-.045,z+.045,4,5)
-    for a,b in [((-20,-10.3),(-20,1.2)),((-21.2,1.2),(-21.2,11.6)),
-        ((-20,11.6),(-20,18.4)),((-16.2,-10.3),(-16.2,2)),((-16.2,10),(-16.2,16.6)),
-        ((-19.65,2.1),(-19.65,9.9)),((16.2,-10.3),(16.2,16.6)),((20,-10.3),(20,18.4)),
-        ((-16.2,16.6),(-2.7,16.6)),((2.7,16.6),(9.8,16.6)),((11.2,16.6),(16.2,16.6)),
-        ((-18.2,20.15),(18.2,20.15)),((-20,18.4),(-18.2,20.15)),((20,18.4),(18.2,20.15)),
-        ((-16,-14.1),(-16,-10.3)),((16,-14.1),(16,-10.3)),((-21.35,-14.1),(-21.35,-10.3)),((21.35,-14.1),(21.35,-10.3)),
-        ((-21.35,-14.1),(-16,-14.1)),((16,-14.1),(21.35,-14.1)),
-        ((-2.7,14.8),(2.7,14.8)),((-2.7,14.8),(-2.7,16.6)),((2.7,14.8),(2.7,16.6))]:guard(a,b)
-    for edge in [9.9,11.1]:
-        beam('U lounge rail',violet,(edge,1,8),(edge,5,16),.045)
-        for i in range(5):
-            z=8+2*i;box('U lounge post',metal,edge-.04,edge+.04,z-.04,z+.04,i,i+.95)
+            t=j/count;x,y,z=[a[i]+(b[i]-a[i])*t for i in range(3)]
+            box('U lounge post',metal,x-.035,x+.035,z-.035,z+.035,y-1,y)
+    for side in [-1,1]:
+        def span(a,b):return sorted([side*a,side*b])
+        def gal(a,b,z1,z2):
+            x1,x2=span(a,b);gallery(x1,x2,z1,z2)
+        # Continuous inside gallery and a real opening above both stair flights.
+        gal(15.8,17.6,-12.2,18.4)
+        gal(17.6,20.8,-12.2,4.2)
+        gal(17.6,20.8,8.8,18.4)
+        gal(15.8,21.4,-12.2,-6.4)
+        # Two return flights, with a 2m-high landing at the outer turn.
+        x1,x2=span(17.6,18.95)
+        rect('U lounge stair',deck,x1,x2,5.4,8.8,2,0,-.01,True)
+        x1,x2=span(19.45,20.8)
+        rect('U lounge stair',deck,x1,x2,5.4,8.8,2,4,1.65,True)
+        x1,x2=span(17.6,20.8)
+        box('U lounge stair',deck,x1,x2,4.2,5.4,1.65,2,True)
+        # Ground approach and upper exit face the central circulation aisle.
+        x1,x2=span(15.8,18.95)
+        box('U lounge stair',deck,x1,x2,8.8,10.1,-.04,0,True)
+        for inner,y1,y2 in [(17.65,3,1),(18.90,3,1),(19.50,3,5),(20.75,3,5)]:
+            guard((side*inner,y1,5.4),(side*inner,y2,8.8))
+        guard((side*17.65,3,4.25),(side*20.75,3,4.25))
+        # Upper guard is open at the exit bridge; no rail across the route.
+        guard((side*17.6,5,4.2),(side*17.6,5,8.65))
+        guard((side*15.8,5,-6.4),(side*15.8,5,16.6))
+        guard((side*20.8,5,-6.4),(side*20.8,5,4.2))
+        guard((side*20.8,5,8.8),(side*20.8,5,18.4))
+        guard((side*15.8,5,-12.2),(side*15.8,5,-6.4))
+        guard((side*15.8,5,-12.2),(side*21.4,5,-12.2))
+        guard((side*21.4,5,-12.2),(side*21.4,5,-6.4))
+        guard((side*21.4,5,-6.4),(side*20.8,5,-6.4))
+        # Fine tread markings sit on the continuous walkable slopes.
+        for j in range(1,12):
+            z=5.4+j*3.4/12
+            for lo,hi,y in [(17.7,18.85,2*(8.8-z)/3.4),(19.55,20.7,2+2*(z-5.4)/3.4)]:
+                beam('Stair tread marks',rim,(side*lo,y+.005,z),(side*hi,y+.005,z),.009)
+    gallery(-20,20,16.6,20.2)
+    gallery(-4.2,4.2,14.8,20.2)
+    for a,b in [((-15.8,5,16.6),(-4.2,5,16.6)),((4.2,5,16.6),(15.8,5,16.6)),
+                ((-4.2,5,14.8),(4.2,5,14.8)),((-4.2,5,14.8),(-4.2,5,16.6)),((4.2,5,14.8),(4.2,5,16.6)),
+                ((-20,5,20.2),(20,5,20.2))]:guard(a,b)
     for x,z in [(-19.5,12),(-19.5,16),(19.8,0),(-6.3,19.9),(6.3,19.9)]:
         box('U lounge support',metal,x-.12,x+.12,z-.12,z+.12,0,3.64)
 
@@ -242,7 +261,7 @@ beam("Stage surround",metal,(-4.8,8.55,-17.85),(4.8,8.55,-17.85),.26)
 images, lights = {}, []
 if festival:
     from festival.interior import scenery
-    VERSION = 'EDM v3 · festival interior'
+    VERSION = 'EDM rectangular layout · approved clearance plan'
     images, lights = scenery(materials, material, box, octagon, ring, beam, tri)
     # Match edmStage.booth: move the original deck/mixer and front display with the booth.
     for (group,mat),(positions,normals) in list(parts.items()):
@@ -260,10 +279,10 @@ stops=dict(entry=0,floor=2,stage=5,west=9,east=11,balcony=15)
 if festival:
     # Stop in front of the relocated booth, keeping the approach and return clear.
     route[5] = (0,1.35,-11.2)
-    route[9:] = [(-14.6,.045,6),(0,.018,0),(14.6,0,6),
-                  (-17.9,.045,10.6),(-17.9,.045,10),(-17.9,4,2),
-                  (-17.9,4,-10.65),(-17.1,4,-10.65),(-17.1,4,-12.2)]
-    stops.update(west=9,east=11,balcony=17)
+    route[9:] = [(-14.6,0,6),(0,.018,0),(14.6,0,6),
+                  (-16.7,0,9.5),(-18.275,0,9.5),(-18.275,0,8.8),(-18.275,2,5.0),
+                  (-20.125,2,5.0),(-20.125,4,9.5),(-16.7,4,9.5),(-16.7,4,-5.5),(-17.0,4,-7.9)]
+    stops.update(west=9,east=11,balcony=len(route)-1)
 def ground(x,z):
     top=-999
     for (ax,ay,az),(bx,by,bz),(cx,cy,cz) in walkable:

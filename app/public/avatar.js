@@ -371,7 +371,7 @@ export function playerView(B, scene, cam, canvas, eyeHeight, controls, { followD
 export function staffNPC(B,scene,make,role) {
   const dj=role==='dj';
   const actor={id:dj?'house-dj':'house-bartender',ai:false,avatar:dj?'indigo':'teal',
-    nickname:dj?'DJ':'바 직원',x:dj?edmStage.dj.x:-13.6,y:dj?edmStage.dj.y:0,z:dj?edmStage.dj.z:17.4,yaw:dj?0:Math.PI};
+    nickname:dj?'DJ':'바 직원',x:dj?edmStage.dj.x:-13.6,y:dj?edmStage.dj.y:0,z:dj?edmStage.dj.z:18.1,yaw:dj?0:Math.PI};
   const model=make(actor),own=[];
   model.root.metadata={ageGroup:'adult',gender:'woman',role,decorative:true};
   const fabric=model.torso.material.clone(role+' tank top');own.push(fabric);

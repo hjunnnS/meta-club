@@ -67,17 +67,7 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
             beam(name,mat,(x+rx*math.cos(a),y,z+rz*math.sin(a)),(x+rx*math.cos(b),y,z+rz*math.sin(b)),r)
     def lamp(name,xyz,color,intensity,reach):
         lights.append((name,xyz,dict(type='point',color=color,intensity=intensity,range=reach)))
-    # Radiating, individually inlaid glass sectors preserve the floor height.
-    for row in range(7):
-        for j in range(48):
-            a,b=2*pi*j/48,2*pi*(j+1)/48
-            k=(row+j//4)%3
-            mats=[indigo,ink,stone]
-            ring('Inlaid smoked glass',mats[k],.55+row*1.08,1.60+row*1.08,a+.002,b-.002,.0181,.021,2)
-            if (j+row)%7==0:
-                ring('Pixel traces',lamps[(row+j)%3],.62+row*1.08,.66+row*1.08,a+.008,b-.008,.021,.024,2)
-    for r in [1.16,4.88,7.98]:
-        ring('Flush optical fibre',purple,r,r+.025,0,2*pi,.022,.027,128)
+    # The approved rectangular floor replaces the old radial glass inlays.
     # Truss halo and chain suspension, set well above the two sight lines.
     for radius,y in [(8.45,7.95),(8.45,8.45),(8.12,8.18)]:
         ellipse('Arena lighting truss',silver,0,y,0,radius,radius,.055)
@@ -155,19 +145,20 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
                 for v in [-.22,.66]:
                     x,_,z=pt(u,v,0);post('VIP table leg',brass,x,4.04,z,.034,.39)
             x,_,z=pt(1.9,.22,0);post('VIP table lamp diffuser',cove,x,4.51,z,.065,.15)
-        furnished(-20.5,-12.2,1,0)
-        furnished(0,19.2,0,-1)
-        furnished(20.5,-12.2,-1,0)
+        for z in [-10.7,-7.9]:
+            furnished(-20.5,z,1,0)
+            furnished(20.5,z,-1,0)
+        for x in [-2.1,2.1]:furnished(x,19.2,0,-1)
     # Rotate the complete bar 180 degrees around (-13.65, 16.2).
     # The tall bottle display moves behind the stools, clearing the stage sightline.
     def bar_box(name,mat,x1,x2,z1,z2,lo,hi):
-        box(name,mat,-27.3-x2,-27.3-x1,32.4-z2,32.4-z1,lo,hi)
+        box(name,mat,-27.3-x2,-27.3-x1,33.1-z2,33.1-z1,lo,hi)
     def bar_octagon(name,mat,x,z,*shape):
-        octagon(name,mat,-27.3-x,32.4-z,*shape)
+        octagon(name,mat,-27.3-x,33.1-z,*shape)
     def bar_beam(name,mat,a,b,r):
-        beam(name,mat,(-27.3-a[0],a[1],32.4-a[2]),(-27.3-b[0],b[1],32.4-b[2]),r)
+        beam(name,mat,(-27.3-a[0],a[1],33.1-a[2]),(-27.3-b[0],b[1],33.1-b[2]),r)
     def bar_post(name,mat,x,y,z,r,h):
-        post(name,mat,-27.3-x,y,32.4-z,r,h)
+        post(name,mat,-27.3-x,y,33.1-z,r,h)
     # West entry bar, tucked outboard of the v3 approach wings.
     bar_octagon('Bar base',wood,-13.65,16.2,9.7,1.35,.28,.02,1.16)
     bar_octagon('Bar stone slab',stone,-13.65,16.2,10.05,1.65,.31,1.15,1.29)
@@ -193,7 +184,7 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
     booth=finish('Booth midnight plum',(.17,.065,.25),0,.88,(.015,.005,.025))
     piping=finish('Booth muted cyan',(.08,.52,.64),.15,.5,(.025,.22,.28))
     top=finish('Booth smoked stone',(.10,.08,.17),.28,.32)
-    for index,z in enumerate([16.6,12.0,7.4,2.8,-2.0,-6.8,-11.6,-16.2], start=1):
+    for index,z in enumerate([16.6,12.2,1.0,-3.4,-10.2,-14.6], start=1):
         # Back bench, two returns and an unobstructed central opening toward -X.
         octagon('Wall booth base',ink,19.0,z,3.8,4.4,.20,.01,.17)
         octagon('Wall booth seat',booth,20.05,z,1.12,4.05,.12,.17,.57)
@@ -274,7 +265,7 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
         bar_post('Pendant cable',ink,x,3.3,z,.022,4.3)
         bar_post('Pendant brass shade',brass,x,3.09,z,.40,.24)
         bar_post('Pendant diffuser',gold,x,3.06,z,.335,.035)
-        lamp('Amber pendant',(-27.3-x,2.96,32.4-z),(1,.47,.17),80,8)
+        lamp('Amber pendant',(-27.3-x,2.96,33.1-z),(1,.47,.17),80,8)
     for x,z,c in [(-5,-13,(.22,.15,1)),(5,-13,(1,.06,.37)),(-8,0,(.33,.12,1)),(8,0,(.06,.52,1))]:
         lamp('Stage wash',(x,4.4,z),c,190 if z==-13 else 115,16)
     # Close exterior sightlines beyond the playable entry floor, leaving its approach open.

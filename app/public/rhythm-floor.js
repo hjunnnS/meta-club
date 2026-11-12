@@ -1,14 +1,15 @@
+import {edmFloor} from './edm-layout.js';
 // One non-colliding surface: annular chase, alternating grid and diagonal grid flow.
 export function rhythmFloor(B, scene) {
   const pastel=['#d6b8ef','#b9e7ee','#f5bfd6','#e6d2fa'].map(B.Color3.FromHexString);
   for(const [i,part]of scene.meshes.filter(m=>m.material&&[m.name,m.parent?.name].some(n=>['Dance floor','Dance floor perimeter','Floor markers','Inlaid smoked glass','Pixel traces','Flush optical fibre'].includes(n))).entries()){
-    const material=part.material.clone('Pastel circular floor '+i);part.material=material;
+    const material=part.material.clone('Pastel rectangular floor '+i);part.material=material;
     const color=pastel[i%pastel.length];
     if('albedoColor'in material){material.albedoColor=color.scale(.55);material.albedoTexture=null;material.metallic=0;material.roughness=.72;}
     if(material.emissiveColor)material.emissiveColor=color.scale(/perimeter|markers|fibre|traces/i.test(part.name+' '+part.parent?.name)?.55:.10);
   }
-  const mesh = B.MeshBuilder.CreateGround('dance floor keys', { width: 16.6, height: 16.6 }, scene);
-  mesh.position.y = 0.042;
+  const mesh = B.MeshBuilder.CreateGround('dance floor keys', { width: edmFloor.width, height: edmFloor.depth }, scene);
+  mesh.position.y = 0.042;mesh.position.z=edmFloor.centerZ;
   mesh.isPickable = false;
   const material = new B.ShaderMaterial('rhythm tiles', scene, {
     vertexSource: 'precision highp float; attribute vec3 position; uniform mat4 worldViewProjection; varying vec2 p; void main(){p=position.xz;gl_Position=worldViewProjection*vec4(position,1.);}',
@@ -54,7 +55,7 @@ export function rhythmFloor(B, scene) {
       }
       float isGrid(float kind){return kind>.5&&kind<1.5||kind>2.5?1.:0.;}
       void main(){
-        float radius=length(p);if(radius>8.2)discard;
+        float radius=length(p);
         vec2 tile=mix(floorLook(previousPattern),floorLook(pattern),patternMix);
         float lit=tile.x;
         float grid=mix(isGrid(previousPattern),isGrid(pattern),patternMix);
