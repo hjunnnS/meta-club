@@ -134,13 +134,15 @@ for side, label in [(-1,"West"),(1,"East")]:
     if festival and side > 0:
         continue
     x=side*14.6
-    octagon(label+" dance zone",deck,x,6,10.2,11,1.6,0,.045,True)
-    for dz in [-3.65,-1.85,0,1.85,3.65]:
-        box(label+" floor pattern",indigo,x-3.75,x+3.75,6+dz-.8,6+dz+.8,.046,.055)
-    # Distinct edges along the outside, leaving the centre-side entrance clear.
-    for z in [1.7,10.3]:
-        box(label+" threshold",violet,x-3.65,x+3.65,z,z+.13,.055,.07)
-    box(label+" zone edge",violet,x+side*4.65-.08,x+side*4.65+.08,2.6,9.4,.05,.09)
+    # Keep the festival stair approach on the plain arena floor, without the old side pad.
+    if not festival:
+        octagon(label+" dance zone",deck,x,6,10.2,11,1.6,0,.045,True)
+        for dz in [-3.65,-1.85,0,1.85,3.65]:
+            box(label+" floor pattern",indigo,x-3.75,x+3.75,6+dz-.8,6+dz+.8,.046,.055)
+        # Distinct edges along the outside, leaving the centre-side entrance clear.
+        for z in [1.7,10.3]:
+            box(label+" threshold",violet,x-3.65,x+3.65,z,z+.13,.055,.07)
+        box(label+" zone edge",violet,x+side*4.65-.08,x+side*4.65+.08,2.6,9.4,.05,.09)
     if festival:
         rect('West deck ramp',deck,-18.55,-17.25,2,10,4,.045,-.01,True)
         for edge in [-18.5,-17.3]:
