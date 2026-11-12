@@ -102,13 +102,14 @@ for x in [-3.85,3.85]:
 for z in (22.0,23,24,25,26):
     box("Entry threshold",ice,-3.45,3.45,z,z+.09,.002,.012)
 
-# Approved rectangular floor: 17.5 * 17 * 1.3 = 386.75 square metres.
+# Approved rectangular floor, reduced by 10% of area: 348.075 square metres.
 if festival:
-    fw,fd=17.5*math.sqrt(1.3),17*math.sqrt(1.3)
-    floor_front=-7+fd
-    box('Dance floor',indigo,-fw/2,fw/2,-7,floor_front,.002,.018,True)
-    for x in [-fw/2,fw/2]:box('Dance floor perimeter',violet,x-.035,x+.035,-7,floor_front,.018,.034)
-    for z in [-7,floor_front]:box('Dance floor perimeter',violet,-fw/2,fw/2,z-.035,z+.035,.018,.034)
+    fw,fd=17.5*math.sqrt(1.3*.9),17*math.sqrt(1.3*.9)
+    floor_back=-7+17*math.sqrt(1.3)*(1-math.sqrt(.9))/2
+    floor_front=floor_back+fd
+    box('Dance floor',indigo,-fw/2,fw/2,floor_back,floor_front,.002,.018,True)
+    for x in [-fw/2,fw/2]:box('Dance floor perimeter',violet,x-.035,x+.035,floor_back,floor_front,.018,.034)
+    for z in [floor_back,floor_front]:box('Dance floor perimeter',violet,-fw/2,fw/2,z-.035,z+.035,.018,.034)
 else:
     # Audience circle remains at grade. The performer platform is at the north end.
     slab("Dance floor",indigo,[polar(8.5,i*2*P/96,.018) for i in range(96)],.002,True)
