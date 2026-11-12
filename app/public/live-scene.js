@@ -488,7 +488,6 @@ export function startLiveScene({
     }
     const effectPreview=movingPreview?{kind:'strobe-hold',age:0}:activePeripheralPreview();
     const playing = playback && playback.track.id === audibleTrack;
-    renderMovingPreview(movingBeat,calmBeats.matches,spectrum[0]||0);
     if(playing&&musicStartBeat===null)musicStartBeat=Math.ceil(Math.max(0,beats));
     const bpm=playback?.track.bpm||120;
     // Use the existing channel's first show time; do not reschedule it for the opening.
@@ -507,6 +506,11 @@ export function startLiveScene({
     const strobing = stageEvents.strobing;
     const audioBands = performance.now()-spectrumAt<350 && audibleTrack ? spectrum : [];
     const musicEnergy = Math.min(1,((audioBands[0]||0)+(audioBands[1]||0)+(audioBands[2]||0))/3);
+    const openingMotion=openingActive&&movingBeat===null;
+    renderMovingPreview(movingBeat??(openingMotion?Math.max(0,beats):null),calmBeats.matches,musicEnergy,{
+      opening:openingMotion,gather:openingGather,
+      audience:[...models.values()].flatMap(model=>model.root.getChildMeshes()),
+    });
     const previewAge = (performance.now()-strobePreviewStarted)/1000;
     // After either test, leave a normal-light gap before automatic accents resume.
     const smokeProtection=peripheralPlan.protectSmoke&&previewAge>=strobeDurations[strobePreviewPattern];
@@ -523,7 +527,7 @@ export function startLiveScene({
     if(openingActive){
       const palettes=[['#8b74ff','#9deaff'],['#ff79d5','#79baff'],['#8edbff','#fff1c9']];
       [look.primary,look.secondary]=palettes[openingSection];
-      look.floor=Math.max(look.floor,.82);look.decor=Math.max(look.decor,.38);
+      look.floor=Math.max(look.floor,.70);look.decor=Math.max(look.decor,.38);
       look.openingSection=openingSection;look.openingGather=openingGather;
     }
     B.Color3.LerpToRef(lookPrimary,B.Color3.FromHexString(look.primary),blend,lookPrimary);
@@ -546,10 +550,10 @@ export function startLiveScene({
       overlap:stageEvents.kind&&stageEvents.kind!=='led'||peripheralPlan.laser>.5,
       protectSmoke:Boolean(smokeProtection),reduced:calmBeats.matches,arrangement:dynamics.level});
     if(openingActive){
-      // Four bars each: wall chase, overhead fan, then moving floor/wall patterns.
-      const beds=[{curtain:.92,fan:.04,gobo:.10},{curtain:.08,fan:.90,gobo:.12},{curtain:.08,fan:.06,gobo:1}];
+      // Audience choreography leads; moving wall patterns support without filling the screen.
+      const beds=[{curtain:.38,fan:.04,gobo:.20},{curtain:.16,fan:.10,gobo:.40},{curtain:.30,fan:.06,gobo:.24}];
       const bed=beds[openingSection],gain=(smokeProtection?.40:1)*(calmBeats.matches?.38:1);
-      const gathering={curtain:.40,fan:.18,gobo:.16};
+      const gathering={curtain:.38,fan:.08,gobo:.24};
       for(const kind of ['curtain','fan','gobo'])accentCue[kind]=(bed[kind]*(1-openingGather)+gathering[kind]*openingGather)*gain;
       if(smokeProtection){accentCue.curtain=0;accentCue.fan=0;}
       accentCue.variant=openingSection;accentCue.gather=openingGather;accentCue.travel=0;
