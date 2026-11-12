@@ -233,6 +233,7 @@ export function playerView(B, scene, cam, canvas, eyeHeight, controls, { followD
   canvas.addEventListener('pointerdown',cancelArrival);
   window.addEventListener('keydown',keyArrival);
   let orbitYaw=0,orbitPitch=0,orbitReady=false,orbitDrag=null,framedSeat=null;
+  let poleView=null,poleTransitionUntil=0,poleLookTarget=null;
   function orbitDown(event){
     if(!independentLook||!thirdPerson||preview||![0,2].includes(event.button))return;
     orbitDrag={id:event.pointerId,x:event.clientX,y:event.clientY};
@@ -244,6 +245,7 @@ export function playerView(B, scene, cam, canvas, eyeHeight, controls, { followD
     if(!orbitReady){orbitYaw=cam.rotation.y;orbitPitch=cam.rotation.x;orbitReady=true;}
     const handedness=scene.useRightHandedSystem?-1:1;
     const sensitivity=Math.max(300,cam.angularSensibility*.18);
+    if(poleTransitionUntil){poleTransitionUntil=0;poleLookTarget=null;}
     orbitYaw+=dx*handedness/sensitivity;
     orbitPitch=Math.max(-.65,Math.min(.80,orbitPitch+dy*handedness/sensitivity));
   }
@@ -314,7 +316,9 @@ export function playerView(B, scene, cam, canvas, eyeHeight, controls, { followD
       const shift=new B.Vector3(forward.x,0,forward.z).scale(1.05).add(across.scale(.40));
       const span=shift.length(),axis=shift.scale(1/span);
       const safe=cameraLimit?Math.max(0,Math.min(span,cameraLimit(target,axis,span+.5)-.5)):span;
-      target.addInPlace(axis.scale(safe));
+      if(poleView){
+        target.set((model.root.position.x+poleView.pole.x)/2,model.root.position.y+1.22,(model.root.position.z+poleView.pole.z)/2);
+      }else target.addInPlace(axis.scale(safe));
       direction=forward.negate();direction.y+=followLift;direction.normalize();length=zoomDistance;
     }else if (activity) {
       direction = activity.offset.normalizeToNew();
@@ -336,10 +340,40 @@ export function playerView(B, scene, cam, canvas, eyeHeight, controls, { followD
     const hit = scene.pickWithRay(new B.Ray(target, direction, length),
       mesh => mesh.checkCollisions || mesh.name.startsWith('wall/') || mesh.name.startsWith('floor/'));
     const distance = hit?.hit ? Math.max(0.08, hit.distance - 0.12) : length;
-    camera.position.copyFrom(target).addInPlace(direction.scale(distance));
-    camera.setTarget(target);
+    if(independentLook&&performance.now()<poleTransitionUntil){
+      const mix=1-Math.exp(-Math.min(scene.getEngine().getDeltaTime(),100)/170);
+      const desired=target.add(direction.scale(distance));
+      camera.position.copyFrom(B.Vector3.Lerp(camera.position,desired,mix));
+      poleLookTarget=B.Vector3.Lerp(poleLookTarget||camera.getTarget(),target,mix);
+      camera.setTarget(poleLookTarget);
+    }else{
+      camera.position.copyFrom(target).addInPlace(direction.scale(distance));
+      camera.setTarget(target);poleLookTarget=null;
+    }
   });
   return {
+    pole(pole){
+      if(!independentLook)return;
+      if(pole&&poleView&&pole.x===poleView.pole.x&&pole.z===poleView.pole.z)return;
+      if(!pole&&!poleView)return;
+      cancelArrival();orbitDrag=null;
+      poleLookTarget=follow.getTarget().clone();poleTransitionUntil=performance.now()+950;
+      if(pole){
+        const saved={yaw:orbitReady?orbitYaw:cam.rotation.y,pitch:orbitReady?orbitPitch:cam.rotation.x,ready:orbitReady,zoom:zoomDistance,third:thirdPerson};
+        const radial=new B.Vector3(model.root.position.x-pole.x,0,model.root.position.z-pole.z).normalize();
+        let side=new B.Vector3(-radial.z,0,radial.x);
+        if(side.x<0)side.negateInPlace();
+        side.addInPlace(radial.scale(.35)).normalize();
+        poleView={pole:{...pole},saved};
+        orbitYaw=Math.atan2(side.x,side.z);orbitPitch=.12;orbitReady=true;
+        zoomDistance=3.7;thirdPerson=true;
+      }else{
+        const saved=poleView.saved;poleView=null;
+        orbitYaw=saved.yaw;orbitPitch=saved.pitch;orbitReady=saved.ready;
+        zoomDistance=saved.zoom;thirdPerson=saved.third;
+      }
+      label();select();
+    },
     actor(next, activityCamera = null, stationary = false) {
       model = next;
       const nextSeat=next?.actor.seat??null;
