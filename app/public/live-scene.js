@@ -729,7 +729,7 @@ export function startLiveScene({
       const response = release >= 0 && otherWands && responders.includes(a.id);
       const liftWand = gather > .48 && a.id === wandGuest && a.wand && otherWands && a.trainSlot == null;
       const dance = response ? 'disco-point' : liftWand || a.action === 'dance' ? 'groove' : a.action;
-      const showSteps = dance === 'side-step' || dance === 'disco-point';
+      const showSteps = ['side-step','disco-point','hands-up','shuffle-step'].includes(dance);
       const articulated = close || (a.ai && showSteps) || (a.id === wandGuest && otherWands);
       m.near.setEnabled(articulated);
       m.far.setEnabled(!articulated);
@@ -754,10 +754,13 @@ export function startLiveScene({
           m.far.position.x = a.action === 'side-step' ? 0.28 * sway : 0;
           m.far.position.y = 0.79 + (a.action === 'groove' ? 0.14 : 0.06) * Math.abs(beatWave);
           m.far.rotation.z = (a.action === 'disco-point' ? 0.24 : 0.1) * sway;
+          if(a.action==='hands-up')m.far.position.y=.79+.30*Math.max(0,Math.sin(phase));
+          if(a.action==='shuffle-step')m.far.position.x=.15*Math.sin(phase);
         }
         continue;
       }
       m.near.rotation.setAll(0);
+      m.near.position.z = 0;
       m.near.position.x = 0;
       m.far.position.x = 0;
       const beat = a.action === 'dance' ? beatWave : Math.sin(t * (a.action === 'walk' ? 8 : 6));

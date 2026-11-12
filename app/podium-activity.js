@@ -34,7 +34,7 @@ export function podiumDanceAt(actor,beat,nearPole){
   const key=actor.podiumSeed+':'+nearPole;
   let routine=routines.get(key);
   if(!routine){
-    const choices=nearPole?['groove','side-step','disco-point','pole-dance']:['groove','side-step','disco-point'];
+    const choices=['groove','side-step','disco-point','hands-up','shuffle-step',...(nearPole?['pole-dance']:[])];
     let previous=null,first=null;
     routine=Array.from({length:32},(_,i)=>{
       const available=choices.filter(a=>a!==previous&&(i!==31||a!==first)),action=available[hash(actor.podiumSeed,i,7)%available.length];previous=action;if(i===0)first=action;
