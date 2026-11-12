@@ -95,13 +95,7 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
     screen=finish('LED backing graphite',(.018,.018,.03),.12,.85)
     box('Festival LED backing',screen,-9.15,9.15,-18.1,-18.03,2.64,9.08)
     for s in [-1,1]:
-        for i in range(4):
-            x=s*(9.85+.53*i)
-            y=7.9-.47*i
-            box('Wing blade housings',ink,x-.22,x+.22,-17.60,-17.24,2,y)
-            for j in range(13):
-                yy=2.2+j*(y-2.4)/13
-                box('LED wing arrays',lamps[(i+j//5)%3],x-.14,x+.14,-17.23,-17.19,yy,yy+.15)
+        # Retired wing blades and pixel stacks are replaced by flush live equalizer panels.
         for i in range(10):
             x=s*(.33+.28*i)
             box('Booth equalizer',cyan if i%3 else pink,x-.045,x+.045,-12.046,-12.02,1.56,1.7+.45*abs(math.sin(i)))

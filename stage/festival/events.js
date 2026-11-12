@@ -154,6 +154,29 @@ export function houseScreen(B, scene, broadcast,wingBroadcast=null) {
     wingProgram.setTexture('artwork',wingTexture);wingProgram.setTexture('guests',wingBroadcast);wingProgram.setFloat('live',0);wingProgram.backFaceCulling=false;
   }
   const casingInk=paint(B,scene,'EDM wing graphite','#10101b',.12);
+  const equalizerTexture=new B.DynamicTexture('EDM wing equalizer pixels',{width:384,height:512},scene,false);
+  const equalizerCtx=equalizerTexture.getContext(),equalizerLevels=Array(12).fill(0);
+  const equalizerInk=new B.StandardMaterial('EDM wing equalizer ink',scene);
+  equalizerInk.disableLighting=true;equalizerInk.emissiveTexture=equalizerTexture;
+  equalizerInk.emissiveColor=new B.Color3(.72,.72,.72);equalizerInk.backFaceCulling=false;
+  let equalizerAt=-Infinity;
+  function drawEqualizer(track,bands,calm){
+    const now=performance.now();if(now-equalizerAt<45)return;
+    const dt=Math.min(.2,Math.max(0,(now-equalizerAt)/1000));equalizerAt=now;
+    equalizerCtx.fillStyle='#090b16';equalizerCtx.fillRect(0,0,384,512);
+    for(let column=0;column<12;column++){
+      const sample=track&&!calm?Math.max(0,Math.min(1,Number(bands[column])||0)):0;
+      const target=track?Math.min(1,Math.sqrt(sample)*1.45):0;
+      const blend=1-Math.exp(-dt/(target>equalizerLevels[column]?.04:.20));
+      equalizerLevels[column]+=(target-equalizerLevels[column])*blend;
+      const count=track&&!calm?Math.round(equalizerLevels[column]*32):2;
+      for(let row=0;row<32;row++){
+        equalizerCtx.fillStyle=row<count?(row>25?'#ffa3dd':row>15?'#c39cff':'#75dfff'):'#15182a';
+        equalizerCtx.fillRect(column*32+3,512-(row+1)*16+2,26,12);
+      }
+    }
+    equalizerTexture.update();
+  }
   const wingRoots=[],wingWidth=edmStage.screen.width*edmStage.wingScreens.widthRatio;
   const wingHeight=edmStage.screen.height*edmStage.wingScreens.heightRatio;
   for(const side of [-1,1]){
@@ -165,6 +188,12 @@ export function houseScreen(B, scene, broadcast,wingBroadcast=null) {
     casing.parent=root;casing.position.z=-.09;casing.material=casingInk;casing.isPickable=false;casing.checkCollisions=true;
     const wing=B.MeshBuilder.CreatePlane('EDM wing screen '+(side<0?'left':'right'),{width:wingWidth,height:wingHeight,sideOrientation:B.Mesh.DOUBLESIDE},scene);
     wing.parent=root;wing.material=wingProgram||wingInk;wing.isPickable=false;wing.checkCollisions=true;
+    // A single folded surface continues from each screen down to the finished floor.
+    const panelHeight=y-wingHeight/2-.02,panelY=-wingHeight/2-panelHeight/2;
+    const panelBack=B.MeshBuilder.CreateBox('EDM wing equalizer backing',{width:wingWidth,height:panelHeight,depth:.12},scene);
+    panelBack.parent=root;panelBack.position.set(0,panelY,-.09);panelBack.material=casingInk;panelBack.isPickable=false;
+    const panel=B.MeshBuilder.CreatePlane('EDM wing equalizer '+(side<0?'left':'right'),{width:wingWidth,height:panelHeight,sideOrientation:B.Mesh.DOUBLESIDE},scene);
+    panel.parent=root;panel.position.set(0,panelY,.005);panel.material=equalizerInk;panel.isPickable=false;
     // Bottom edges clear the upper-deck head height; cables attach the panels above.
     for(const x of [-wingWidth*.32,wingWidth*.32]){
       const height=10.9-(y+wingHeight/2);
@@ -174,7 +203,7 @@ export function houseScreen(B, scene, broadcast,wingBroadcast=null) {
     wingRoots.push(root);
   }
   for(const mesh of scene.meshes){
-    if([mesh.name,mesh.parent?.name].some(name=>['Wing blade housings','Wing LED arrays'].includes(name)))mesh.setEnabled(false);
+    if([mesh.name,mesh.parent?.name].some(name=>['Wing blade housings','Wing LED arrays','LED wing arrays'].includes(name)))mesh.setEnabled(false);
   }
   const flashInk=paint(B,scene,'screen synchronized flash','#fff3df');
   flashInk.disableLighting=true;flashInk.backFaceCulling=false;
@@ -199,12 +228,13 @@ export function houseScreen(B, scene, broadcast,wingBroadcast=null) {
     screen.material = material;
   }
   let lastSegment = -1, lastPerformance, lastDim,lastCountdown=-1;
-  return (track, beats, visible, accent, gather, calm, phraseBeat, release, cueColor, performanceTitle = null, dimBackground = false, roomPulse = 0, look = null,countdown=0,wingLabel='중앙 플로어') => {
+  return (track, beats, visible, accent, gather, calm, phraseBeat, release, cueColor, performanceTitle = null, dimBackground = false, roomPulse = 0, look = null,countdown=0,wingLabel='중앙 플로어',audioBands=[]) => {
     flashInk.alpha=calm?0:roomPulse*.58;
     flashPanel.setEnabled(visible&&!calm&&roomPulse>.001);
     screen.setEnabled(visible);
     wingRoots.forEach(root=>root.setEnabled(visible));
     if (!visible) return;
+    drawEqualizer(track,audioBands,calm);
     const segment = track && !performanceTitle ? Math.floor(Math.max(0, phraseBeat) % 32 / 8) : -1;
     if (broadcast) screen.material.setFloat('live', segment === 1 || segment === 2 ? 1 : 0);
     const frame = Math.floor(beats * 12);
