@@ -4,6 +4,8 @@ export const edmStage={
   booth:{x:0,z:-15.6},dj:{x:0,y:1.35,z:-16.05},
   focusOrigins:[[-1.8,3.85,-13.10],[2.4,3.5,-13.50],[1.2,5.1,-17.15]],
 };
+// Match the west stair and extended upper-deck geometry in stage/build.py.
+export const edmBalcony={rampX:-17.9,bottomZ:10,topZ:2,crossZ:.4,aisleX:-9.75,sofaZ:[-10.2,-7.4,-3.1]};
 // Foot positions in the approved festival GLB (stage/build.py): metres, Y up.
 export function edmCameraDistance(target,direction,length) {
   const margin=.48;
@@ -28,8 +30,8 @@ export function edmArea({ x, y, z }) {
   const dx = Math.abs(Math.abs(x) - 14.6),
     side = x < 0 ? 'west' : 'east';
   if (x < 0 && (
-    (y >= 3.6 && octagon(dx, Math.abs(z + 13.8), 5.4, 5.9, 0.8)) ||
-    (dx <= 1.55 && z >= -8 && z <= 0 && Math.abs(y + z * 0.5) < 0.35)
+    (y >= 3.6 && octagon(dx, Math.abs(z + 8.85), 5.4, 10.85, 0.4)) ||
+    (Math.abs(x-edmBalcony.rampX)<=1.55 && z>=edmBalcony.topZ && z<=edmBalcony.bottomZ && Math.abs(y-(4+(z-2)*(.045-4)/8))<.35)
   )) {
     return { tier: 2, group: side + '-deck' };
   }
@@ -78,11 +80,11 @@ for (const [i,z] of [16.6,12,7.4,2.8,-2,-6.8,-11.6,-16.2].entries()) {
     edmSeats.push({x,y:.10,z:z+dz,yaw,table:i+1,exit:{x:16.6,y:0,z:z+dz,yaw:-Math.PI/2}});
 }
 // Append balcony cushions without changing the existing bar/table seat IDs.
-for(const [group,z]of [-17.8,-15.0,-10.7].entries())for(const [place,dz]of [-.72,0,.72].entries()){
+for(const [group,z]of edmBalcony.sofaZ.entries())for(const [place,dz]of [-.72,0,.72].entries()){
   const x=-12.59,sz=z+dz;
   edmSeats.push({x,y:4.02,z:sz,yaw:Math.atan2(-(edmStage.screen.x-x),-(edmStage.screen.z-sz)),
     balcony:true,label:'2층 소파 '+(group+1)+' · 좌석 '+(place+1),
-    exit:{x:-11.3+place*.5,y:4,z:z+1.2,yaw:-Math.PI/2}});
+    exit:{x:-11.45+place*.4,y:4,z:z+(place===0?-1.55:1.55),yaw:-Math.PI/2}});
 }
 export function nearbyEdmSeats(actor) {
   if (!actor) return [];

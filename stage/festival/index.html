@@ -55,14 +55,14 @@ async function open(){
  finally{URL.revokeObjectURL(model);}
  for(const m of scene.materials)if('maxSimultaneousLights' in m)m.maxSimultaneousLights=10;
  const glow=new B.GlowLayer('light diffusion',scene,{blurKernelSize:48});glow.intensity=.53;
- const views={'입구':[[0,1.65,25],[0,3.4,-16]],'발코니':[[-10.1,5.65,-13],[0,.4,0]],'바': [[-13.6,1.7,14.45],[0,3.4,-16]],'테이블':[[6.5,4.1,19],[19,.9,4]],'스피커':[[-8.5,2.6,11.8],[-18.5,1.8,5.8]],'바 직원':[[-11.3,1.95,14],[-13.6,1.4,17.4]],'DJ':[[3.9,4.0,-11.9],[0,2.75,-15.6]],'부채꼴 빛':[[0,2.4,18.2],[0,5,-3.5]],'회전 무늬':[[0,7.4,17],[0,.2,3]],'벽 커튼':[[0,2.3,18.2],[0,4,-3]],'무대':[[0,1.67,3],[0,3.6,-17]]};
+ const views={'입구':[[0,1.65,25],[0,3.4,-16]],'발코니':[[-9.75,5.65,-3.1],[0,3.4,-16]],'바': [[-13.6,1.7,14.45],[0,3.4,-16]],'테이블':[[6.5,4.1,19],[19,.9,4]],'계단':[[-11.5,2.6,12],[-17.9,2,6]],'바 직원':[[-11.3,1.95,14],[-13.6,1.4,17.4]],'DJ':[[3.9,4.0,-11.9],[0,2.75,-15.6]],'부채꼴 빛':[[0,2.4,18.2],[0,5,-3.5]],'회전 무늬':[[0,7.4,17],[0,.2,3]],'벽 커튼':[[0,2.3,18.2],[0,4,-3]],'무대':[[0,1.67,3],[0,3.6,-17]]};
  const nav=document.querySelector('nav'), tour=document.querySelector('.tour');
  const play=document.querySelector('#play'), slider=tour.querySelector('input'), locationLabel=document.querySelector('#location');
  const points=reviewRoute.map(p=>B.Vector3.FromArray(p));
  const lengths=[0];
  for(let i=1;i<points.length;i++)lengths.push(lengths[i-1]+B.Vector3.Distance(points[i-1],points[i]));
  const end=lengths.at(-1);
- const landmarks=[[0,'입구'],[stops.floor,'중앙 플로어'],[stops.stage,'DJ 무대'],[8,'중앙 플로어'],[stops.east,'동쪽 댄스존'],[10,'중앙 플로어'],[stops.west,'서쪽 댄스존'],[12,'경사로 입구'],[13,'2층 데크'],[stops.balcony,'발코니']];
+ const landmarks=[[0,'입구'],[stops.floor,'중앙 플로어'],[stops.stage,'DJ 무대'],[8,'중앙 플로어'],[stops.east,'동쪽 댄스존'],[10,'중앙 플로어'],[stops.west,'서쪽 댄스존'],[12,'경사로 입구'],[14,'2층 데크'],[stops.balcony,'발코니']];
  let distance=0, playing=false, onRoute=false;
  const walk=document.querySelector('#walk');
  const keys=new Set(), movementKeys=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight']);
@@ -229,7 +229,7 @@ async function open(){
    playing=false;onRoute=true;distance=end*Number(slider.value)/1000;
    markView(distance>=end?'발코니':null);placeOnRoute(true);
  };
- select(({booths:'테이블',bar:'바',speakers:'스피커',bartender:'바 직원',dj:'DJ'})[new URLSearchParams(location.search).get('view')]||'입구');await scene.whenReadyAsync();
+ select(({booths:'테이블',bar:'바',speakers:'계단',bartender:'바 직원',dj:'DJ'})[new URLSearchParams(location.search).get('view')]||'입구');await scene.whenReadyAsync();
  engine.runRenderLoop(()=>{
    if(walking)walkFrame();
    if(playing){

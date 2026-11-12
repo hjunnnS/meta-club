@@ -138,7 +138,7 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
         rug=finish('VIP woven rug',(.065,.052,.085),0,.98)
         cove=finish('VIP warm cove',(.52,.26,.10),0,.72,(.55,.29,.12))
         soft=finish('VIP violet cove',(.18,.08,.28),0,.78,(.26,.10,.38))
-        for j,z in enumerate([-17.8,-15.0,-10.7]):
+        for j,z in enumerate([-10.2,-7.4,-3.1]):
             x=-12.65
             octagon('VIP rug',rug,-11.9,z,4.0,2.72,.22,4.006,4.016)
             octagon('VIP sofa base',ink,x,z,1.70,2.40,.15,4.10,4.28)
@@ -155,7 +155,7 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
             beam('VIP sofa brass reveal',brass,(x+.84,4.24,z-1.04),(x+.84,4.24,z+1.04),.018)
             beam('VIP sofa underglow',cove,(x+.85,4.13,z-1.02),(x+.85,4.13,z+1.02),.022)
             beam('VIP outer floor glow',soft,(x-.83,4.04,z-1.08),(x-.83,4.04,z+1.08),.018)
-            # Low tables leave about .9m before the inner rail; z=-13 remains a clear cross-deck route.
+            # Low tables leave about .9m before the inner rail; z=.4 remains a clear cross-deck route.
             tx=-10.75
             octagon('VIP low table top',table,tx,z+.22,1.10,1.28,.16,4.43,4.51)
             for dx in [-.36,.36]:
@@ -273,29 +273,7 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
         beam('DJ focus fixture body',ink,back,origin,.13)
         beam('DJ focus fixture lens',white,origin,lens,.075)
         beam('DJ focus fixture suspension',ink,(back[0],7.5,back[2]),back,.025)
-    # Full-size speaker stacks on the west pad; the stair approach stays open.
-    for z in [3.6,8.3]:
-        box('West speaker plinth',ink,-19.65,-17.25,z-1.38,z+1.38,.055,.26)
-        box('West speaker cabinet',black,-19.45,-17.55,z-1.18,z+1.18,.26,3.65)
-        for yy in [.29,3.60]:
-            beam('West speaker trim',cyan,(-17.53,yy,z-1.13),(-17.53,yy,z+1.13),.0225)
-        for zz in [z-1.15,z+1.15]:
-            beam('West speaker trim',cyan,(-17.51,.30,zz),(-17.51,3.6,zz),.0225)
-        for yy in [1.0,2.20]:
-            for j in range(32):
-                a,b=j*2*pi/32,(j+1)*2*pi/32
-                edge_a=(-17.47,yy+.53*math.cos(a),z+.53*math.sin(a))
-                edge_b=(-17.47,yy+.53*math.cos(b),z+.53*math.sin(b))
-                beam('West speaker woofer rim',silver,edge_a,edge_b,.025)
-                tri('West speaker woofer',indigo,(-17.52,yy,z),edge_a,edge_b)
-                cap_a=(-17.49,yy+.17*math.cos(a),z+.17*math.sin(a))
-                cap_b=(-17.49,yy+.17*math.cos(b),z+.17*math.sin(b))
-                tri('West speaker dust cap',black,(-17.40,yy,z),cap_a,cap_b)
-        box('West speaker horn',silver,-17.54,-17.50,z-.88,z+.88,2.91,3.38)
-        box('West speaker horn mouth',black,-17.49,-17.47,z-.75,z+.75,2.99,3.30)
-        for j in range(7):
-            zz=z-.66+j*.22
-            beam('West speaker horn grille',ink,(-17.45,3.01,zz),(-17.45,3.28,zz),.018)
+    # The former west speaker footprint is now the relocated stair approach.
     # Rotate the existing bar pendants with the counter and bottle display.
     for x,z in [(-17,15),(-11,15)]:
         bar_post('Pendant cable',ink,x,3.3,z,.022,4.3)
@@ -330,7 +308,7 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
             continue
         for j in range(19):
             xx=side*(9.45+j*.56)
-            box('Deck fascia flutes',brass,xx-.047,xx+.047,-8.30,-8.22,3.64,3.98)
+            box('Deck fascia flutes',brass,xx-.047,xx+.047,2.02,2.10,3.64,3.98)
         # Side deck feature wall in the upper lounges.
         for j in range(6):
             xx=side*(10.4+j*1.7)

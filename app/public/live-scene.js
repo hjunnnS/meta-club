@@ -5,7 +5,7 @@ import {sceneLook} from './scene-look.js';
 import { rhythmFloor } from './rhythm-floor.js';
 import { playlistPosition, trackBeat, musicDynamics } from './music.js';
 import { effects, eventPlayer, ledScreen, houseScreen, houseLights, peripheralTests, peripheralCue } from '/stage/festival/events.js';
-import { permittedPath, edmCameraDistance, edmSeats, edmStage } from './edm-layout.js';
+import { permittedPath, edmCameraDistance, edmSeats, edmStage, edmBalcony } from './edm-layout.js';
 import { dances, danceCamera, animateDance } from './free-dance.js';
 import { avatarFactory, playerView, staffNPC, animateStaff } from './avatar.js';
 export function startLiveScene({
@@ -200,14 +200,14 @@ export function startLiveScene({
   function speakerView(kind='speakers'){
     if(speakerCamera)return;
     cancelWalk();
-    const positions={speakers:[[-8.5,2.6,11.8],[-18.5,1.8,5.8]],
+    const positions={speakers:[[-11.5,2.6,12],[-17.9,2,6]],
       bartender:[[-11.3,1.95,14],[-13.6,1.4,17.4]],dj:[[3.9,4.0,edmStage.booth.z+3.7],[0,2.75,edmStage.booth.z]]};
     const [eye,target]=positions[kind]||positions.speakers;
     speakerCamera=new B.FreeCamera('Club observation',B.Vector3.FromArray(eye),scene);
     speakerCamera.setTarget(B.Vector3.FromArray(target));
     view.preview(speakerCamera);
     const close=document.createElement('button');
-    close.textContent=kind==='speakers'?'스피커 보기 종료':'직원 보기 종료';
+    close.textContent=kind==='speakers'?'계단 보기 종료':'직원 보기 종료';
     close.style.cssText='position:fixed;top:15px;left:15px;z-index:3;background:#21172bdd;color:white;padding:10px;border:1px solid #ffffff66;border-radius:8px';
     document.body.append(close);
     close.onclick=()=>{view.preview(null);speakerCamera.dispose();speakerCamera=null;close.remove();canvas.focus();};
@@ -395,12 +395,12 @@ export function startLiveScene({
     if(selected>=0&&edmSeats[selected].balcony){
       const route=[],foot=cam.position.y-eyeHeight;
       if(foot<3.5){
-        const onRamp=Math.abs(cam.position.x+14.6)<1.45&&cam.position.z> -8.2&&cam.position.z<.2&&foot>.2;
-        if(!onRamp)route.push({x:-14.6,y:0,z:.55});
-        route.push({x:-14.6,y:4,z:-8.7});
+        const onRamp=Math.abs(cam.position.x-edmBalcony.rampX)<1.45&&cam.position.z>edmBalcony.topZ-.2&&cam.position.z<edmBalcony.bottomZ+.2&&foot>.2;
+        if(!onRamp)route.push({x:edmBalcony.rampX,y:.045,z:edmBalcony.bottomZ+.6});
+        route.push({x:edmBalcony.rampX,y:4,z:edmBalcony.topZ-.6});
       }
       if(foot<3.5||cam.position.x< -13.4){
-        route.push({x:-14.6,y:4,z:-13},{x:-9.95,y:4,z:-13},{x:-9.95,y:4,z:goal.z});
+        route.push({x:edmBalcony.rampX,y:4,z:edmBalcony.crossZ},{x:edmBalcony.aisleX,y:4,z:edmBalcony.crossZ},{x:edmBalcony.aisleX,y:4,z:goal.z});
       }
       route.push(goal);
       const advance=()=>{

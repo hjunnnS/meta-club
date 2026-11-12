@@ -141,23 +141,29 @@ for side, label in [(-1,"West"),(1,"East")]:
     for z in [1.7,10.3]:
         box(label+" threshold",violet,x-3.65,x+3.65,z,z+.13,.055,.07)
     box(label+" zone edge",violet,x+side*4.65-.08,x+side*4.65+.08,2.6,9.4,.05,.09)
-    # Approach is behind each side zone. A broad opening connects to its upper deck.
-    rect(label+" deck ramp",deck,x-1.55,x+1.55,-8,0,4,0,-.01,True)
-    for edge in [x-1.5,x+1.5]:
-        beam(label+" ramp rail",violet,(edge,1,0),(edge,5,-8),.055)
+    # EDM: move the west ramp into the reclaimed speaker footprint and extend the lounge forwards.
+    ramp_x=-17.9 if festival else x
+    top_z,bottom_z=(2,10) if festival else (-8,0)
+    rect(label+" deck ramp",deck,ramp_x-1.55,ramp_x+1.55,top_z,bottom_z,4,.045 if festival else 0,-.01,True)
+    for edge in [ramp_x-1.5,ramp_x+1.5]:
+        beam(label+" ramp rail",violet,(edge,1,bottom_z),(edge,5,top_z),.055)
         for i in range(5):
-            z=-2*i;y=i+.04
+            z=bottom_z-2*i;y=i+.04
             box(label+" ramp posts",metal,edge-.055,edge+.055,z-.055,z+.055,y,y+.95)
-    octagon(label+" upper deck",deck,x,-13.8,10.8,11.8,.8,3.64,4,True)
+    centre_z,depth,corner=(-8.85,21.7,.4) if festival else (-13.8,11.8,.8)
+    octagon(label+" upper deck",deck,x,centre_z,10.8,depth,corner,3.64,4,True)
     inner=x-side*5.32;outer=x+side*5.32
+    front=1.25 if festival else -8.75
     for edge in (inner,outer):
-        beam(label+" deck handrail",ice,(edge,5,-18.9),(edge,5,-8.75),.06)
-        for z in [-18.9,-16.5,-14.2,-11.8,-8.75]:
+        beam(label+" deck handrail",ice,(edge,5,-18.9),(edge,5,front),.06)
+        for z in [-18.9,-16.5,-14.2,-11.8,-8.75]+([-5.5,-2.1,1.25] if festival else []):
             box(label+" posts",metal,edge-.06,edge+.06,z-.06,z+.06,4,5)
     for xc in [x-4,x+4]:
-        for z in [-17.4,-9.4]:box(label+" supports",metal,xc-.21,xc+.21,z-.21,z+.21,0,3.64)
-    for lo,hi in [(x-4.5,x-1.65),(x+1.65,x+4.5)]:
-        beam(label+" deck handrail",ice,(lo,5,-8),(hi,5,-8),.06)
+        for z in [-17.4,-9.4]+([.8] if festival else []):
+            box(label+" supports",metal,xc-.21,xc+.21,z-.21,z+.21,0,3.64)
+    front_left,front_right=(x-5.0,x+5.0) if festival else (x-4.5,x+4.5)
+    for lo,hi in [(front_left,ramp_x-1.65),(ramp_x+1.65,front_right)]:
+        if hi-lo>.1:beam(label+" deck handrail",ice,(lo,5,top_z),(hi,5,top_z),.06)
     beam(label+" deck handrail",ice,(x-4.5,5,-19.6),(x+4.5,5,-19.6),.06)
 
 # Frame the side rooms on their outer edges; their inner thresholds stay open.
@@ -179,7 +185,7 @@ for side in (-1,1):
     beam("Lobby wing trim",ice,(side*3.9,1.25,20.7),(side*8.4,1.55,15.5),.08)
     if festival and side > 0:
         continue
-    for z in [-18,-15,-12,-9]:
+    for z in ([-18,-15,-12,-9,-6,-3,0] if festival else [-18,-15,-12,-9]):
         box("Upper deck fascia",violet,side*14.6-4.5,side*14.6+4.5,z,z+.07,4.002,4.018)
 # Proscenium brackets distinguish the elevated stage from the two audience decks.
 for side in (-1,1):
@@ -209,9 +215,10 @@ stops=dict(entry=0,floor=2,stage=5,west=9,east=11,balcony=15)
 if festival:
     # Stop in front of the relocated booth, keeping the approach and return clear.
     route[5] = (0,1.35,-11.2)
-    # Visit the east dance floor first, then climb the remaining west balcony.
-    route[9:] = [(-x,y,z) for x,y,z in route[9:]]
-    stops.update(west=11,east=9)
+    route[9:] = [(-14.6,.045,6),(0,.018,0),(14.6,0,6),
+                  (-17.9,.045,10.6),(-17.9,.045,10),(-17.9,4,2),
+                  (-17.9,4,.4),(-9.75,4,.4),(-9.75,4,-3.1)]
+    stops.update(west=9,east=11,balcony=17)
 def ground(x,z):
     top=-999
     for (ax,ay,az),(bx,by,bz),(cx,cy,cz) in walkable:
@@ -272,4 +279,4 @@ if festival:
 else:
     (ROOT/'edm-empty.glb').write_bytes(glb)
     (ROOT/'review.html').write_text((ROOT/'review.template').read_text().replace('__GLB__',base64.b64encode(glb).decode()))
-print(VERSION,len(glb),'bytes;',len(route),'waypoints; route support verified')
+print(VERSION,len(glb),'bytes;',len(route),'waypoints; asset generated')
