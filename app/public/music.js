@@ -188,7 +188,7 @@ export function musicPlayer(notice, playing, failed, {personalTimeline=false,onS
     }
   }
   return {
-    async start() {
+    async start({automatic=false}={}) {
       try {
         ctx ??= new AudioContext();
         if (!analyser) {
@@ -198,12 +198,23 @@ export function musicPlayer(notice, playing, failed, {personalTimeline=false,onS
           frequencies = new Uint8Array(analyser.frequencyBinCount);
           analyser.connect(ctx.destination);
         }
-        await ctx.resume();
+        const resuming=ctx.resume();
+        if(automatic){
+          // An unattended resume may remain pending under the browser autoplay policy.
+          await Promise.race([resuming,new Promise(resolve=>setTimeout(resolve,200))]);
+          if(ctx.state!=='running')return false;
+        }else await resuming;
         enabled = true;
         await sync();
+        return ctx.state==='running'&&Boolean(source);
       } catch {
+        if(automatic)return false;
         unavailable('음악을 시작하지 못했습니다. 다시 눌러 주세요.');
       }
+    },
+    followTimeline(nextEpoch) {
+      if(!personalTimeline||!Number.isFinite(nextEpoch))return;
+      personalStarted=true;epoch=nextEpoch;clockOffset=0;
     },
     clock(m) {
       clockOffset = m.now - (Date.now() + m.sent) / 2;

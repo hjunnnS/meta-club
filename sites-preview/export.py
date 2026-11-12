@@ -14,6 +14,7 @@ for name in modules:copy('app/public/'+name,'clubs/edm/'+name)
 copy('app/public/live-scene.js','clubs/edm/scene.js')
 copy('app/edm-layout.js','clubs/edm/edm-layout.js');copy('app/visitors.js','clubs/edm/visitors.js')
 put('clubs/edm/local-room.js',(ROOT/'sites-preview/local-room.js').read_text())
+put('clubs/edm/auto-opening.js',(ROOT/'sites-preview/auto-opening.js').read_text())
 put('clubs/edm/club-performances.js',(ROOT/'app/club-performances.js').read_text().replace("'./public/music.js'","'./music.js'"))
 put('clubs/edm/trial-message-filter.js',(ROOT/'app/message-filter.js').read_text().replace("process.env.CHAT_BLOCKED_TERMS", "globalThis.CLUB_TRIAL_BLOCKED_TERMS"))
 for name in ['events.js','celebration.js','holograms.js','edm-festival.glb']:copy('stage/festival/'+name,'stage/festival/'+name)
@@ -48,7 +49,7 @@ html=html.replace('</style>','''
 </style>''')
 put('clubs/edm/index.html',html)
 client=(ROOT/'app/public/channel-client.js').read_text()
-client=client.replace("import { initShop } from './shop.js';","import {PersonalRoom} from './local-room.js';\nconst initShop=()=>({channel(){}});")
+client=client.replace("import { initShop } from './shop.js';","import {PersonalRoom} from './local-room.js';\nimport {automaticOpening} from './auto-opening.js';\nconst initShop=()=>({channel(){}});")
 a=client.index('async function list()');b=client.index("window.addEventListener('message'",a)
 client=client[:a]+'''async function list(){
  const select=el('channels');select.replaceChildren(new Option('개인 체험','personal'));select.value='personal';
@@ -79,17 +80,19 @@ async function enter(){
 ''' +client[b:]
 client=client.replace("el('zones').textContent =\n      '사이드존 '","el('zones').textContent =\n      '체험용 전체 개방 · 사이드존 '")
 client=client.replace("if (memberId?.startsWith('local-test:')) shop.channel(room.roomId, memberId);",'')
-client=client.replace("  reason => { showMusic(null); firstVisitFailure(reason); },\n);", "  reason => { showMusic(null); firstVisitFailure(reason); },\n  {personalTimeline:true,countdownSeconds:3,onStart:epoch=>room?.startMusic(epoch),onCountdown:data=>{if(ready)frame('opening-countdown',data);el('music').disabled=Boolean(data)||!ready;if(data)el('music').textContent='3·2·1 준비 중';}},\n);")
-client=client.replace("const countdown = next ?", "const countdown = data.waitingForMusic ? '음악 시작 후 첫 레이저 · 약 0:30' : next ?")
+client=client.replace("  reason => { showMusic(null); firstVisitFailure(reason); },\n);", "  reason => { showMusic(null); firstVisitFailure(reason); },\n  {personalTimeline:true,countdownSeconds:0,onStart:epoch=>room?.startMusic(epoch),onCountdown:data=>{if(ready)frame('opening-countdown',data);el('music').disabled=Boolean(data)||!ready;if(data)el('music').textContent='3·2·1 준비 중';}},\n);")
+client=client.replace("const countdown = next ?", "const countdown = data.waitingForMusic ? '입장 카운트다운 준비 중' : next ?")
 client=client.replace("el('music').classList.toggle('awaiting', ready && !id);", "el('music').classList.toggle('awaiting', ready && !id);el('music').disabled=!ready;")
 client=client.replace("ready=false;needsPlace=true;snapshot=null;", "ready=false;el('music').disabled=true;needsPlace=true;snapshot=null;")
 client=client.replace("enter(new URLSearchParams(location.search).get('channel') || undefined);", "el('music').disabled=true;enter(new URLSearchParams(location.search).get('channel') || undefined);")
+client=client.replace("let visitOrigin;", "const beginAutomaticOpening=automaticOpening({music,getRoom:()=>room,frame,showMusic,note,button:el('music')});\nlet visitOrigin;")
+client=client.replace("    frame('other-wands', el('other-wands').checked);", "    frame('other-wands', el('other-wands').checked);\n    beginAutomaticOpening();")
 put('clubs/edm/client.js',client)
 landing='''<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>메타 클럽 · 화면 체험</title>
 <style>*{box-sizing:border-box}body{margin:0;background:#100e18;color:#f2edff;font:16px system-ui;min-height:100dvh;display:grid;place-items:center}main{width:min(720px,92vw);padding:32px 20px}h1{font-size:30px}p{line-height:1.7;color:#c8c0d7}a{color:#aff7ea}.enter{display:inline-block;background:#b9f4e7;color:#11221f;padding:13px 24px;border-radius:24px;text-decoration:none;font-weight:700}section{margin:26px 0;border-top:1px solid #393044;padding:16px 0}.clubs{display:flex;gap:18px;flex-wrap:wrap}.clubs span{color:#aaa0b8}small{line-height:1.7;color:#aaa0b8}</style>
 <main><h1>메타 클럽 · EDM 개인 체험</h1><p>맵을 걸어보고 춤·무드봉·공연·테이블·7키 리듬게임을 확인하세요.<br>각 방문자가 독립적으로 체험하며, 다른 접속자와 위치나 좌석을 공유하지 않습니다.</p>
 <a class="enter" href="/clubs/edm/">EDM 들어가기</a>
-<section><strong>조작 안내</strong><p>바닥 클릭 / WASD 이동 · 드래그로 둘러보기 · 휠로 거리 조절<br>소파를 클릭하면 걸어가 앉습니다. 하단 버튼으로 일어날 수 있습니다.<br>음악 시작 후 7키 리듬게임을 즐길 수 있습니다. 상단의 ‘효과 시험’을 펼치면 공연 시험 버튼을 사용할 수 있습니다.</p></section>
+<section><strong>조작 안내</strong><p>바닥 클릭 / WASD 이동 · 드래그로 둘러보기 · 휠로 거리 조절<br>소파를 클릭하면 걸어가 앉습니다. 하단 버튼으로 일어날 수 있습니다.<br>입장 후 카운트다운과 함께 화면 연출이 시작됩니다. 소리가 나지 않으면 음악 시작을 눌러 주세요. 음악 재생 후 7키 리듬게임을 즐길 수 있습니다. 상단의 ‘효과 시험’을 펼치면 공연 시험 버튼을 사용할 수 있습니다.</p></section>
 <div class="clubs"><strong>EDM · 체험 가능</strong><span>힙합 · 준비 중</span><span>소셜 라운지 · 준비 중</span><span>레트로 디스코 · 준비 중</span></div>
 <p><small>데스크톱 화면 검토용 · 체험판의 구역은 둘러볼 수 있도록 열려 있습니다.<br>실제 채널 정원·공유 좌석·서버 성능을 검증하는 버전은 아닙니다.</small></p></main></html>'''
 put('index.html',landing);put('lobby/index.html',landing)

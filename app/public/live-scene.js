@@ -53,7 +53,7 @@ export function startLiveScene({
   const renderHouseLights = houseLights(B, scene);
   const ambient = scene.getLightByName('ambient');
   if (ambient) ambient.intensity = 0.52;
-  let tracks = [], audibleTrack = null, musicStartBeat = null, firstLaserAt = null;
+  let tracks = [], visualTrack = null, audibleTrack = null, musicStartBeat = null, firstLaserAt = null;
   const calmBeats = matchMedia('(prefers-reduced-motion: reduce)');
   let fastFlash = false, otherWands = true;
   // One small broadcast target films the existing animated models, excluding the screen itself.
@@ -257,6 +257,7 @@ export function startLiveScene({
         outputClock={id:data.id,time:data.time+Math.max(0,Math.min(.15,(Date.now()-data.sentAt)/1000)),at:performance.now()};
       else outputClock=null;
     }
+    if(kind==='visual-track')visualTrack=data;
     if(kind==='opening-countdown')openingCountdown=data;
     if (kind === 'speaker-view') speakerView();
     if (kind === 'staff-view' && ['dj','bartender'].includes(data)) speakerView(data);
@@ -487,7 +488,7 @@ export function startLiveScene({
       if(movingBeat>=64||age>40){movingPreview=null;movingBeat=null;send('gate-notice','무빙 조명 시험 종료 · 원래 연출로 복귀');}
     }
     const effectPreview=movingPreview?{kind:'strobe-hold',age:0}:activePeripheralPreview();
-    const playing = playback && playback.track.id === audibleTrack;
+    const playing = playback && (playback.track.id === audibleTrack||playback.track.id === visualTrack);
     if(playing&&musicStartBeat===null)musicStartBeat=Math.ceil(Math.max(0,beats));
     const bpm=playback?.track.bpm||120;
     // Use the existing channel's first show time; do not reschedule it for the opening.

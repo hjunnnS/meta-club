@@ -155,7 +155,7 @@ export function houseScreen(B, scene, broadcast,wingBroadcast=null) {
   }
   const casingInk=paint(B,scene,'EDM wing graphite','#10101b',.12);
   const equalizerTexture=new B.DynamicTexture('EDM wing equalizer pixels',{width:384,height:512},scene,false);
-  const equalizerCtx=equalizerTexture.getContext(),equalizerLevels=Array(12).fill(0);
+  const equalizerCtx=equalizerTexture.getContext(),equalizerLevels=Array(2).fill(0);
   const equalizerInk=new B.StandardMaterial('EDM wing equalizer ink',scene);
   equalizerInk.disableLighting=true;equalizerInk.emissiveTexture=equalizerTexture;
   equalizerInk.emissiveColor=new B.Color3(.72,.72,.72);equalizerInk.backFaceCulling=false;
@@ -164,15 +164,16 @@ export function houseScreen(B, scene, broadcast,wingBroadcast=null) {
     const now=performance.now();if(now-equalizerAt<45)return;
     const dt=Math.min(.2,Math.max(0,(now-equalizerAt)/1000));equalizerAt=now;
     equalizerCtx.fillStyle='#090b16';equalizerCtx.fillRect(0,0,384,512);
-    for(let column=0;column<12;column++){
-      const sample=track&&!calm?Math.max(0,Math.min(1,Number(bands[column])||0)):0;
+    for(let column=0;column<2;column++){
+      const measured=Array.from({length:6},(_,i)=>Math.max(0,Math.min(1,Number(bands[column*6+i])||0)));
+      const sample=track&&!calm?measured.reduce((sum,value)=>sum+value,0)/6:0;
       const target=track?Math.min(1,Math.sqrt(sample)*1.45):0;
       const blend=1-Math.exp(-dt/(target>equalizerLevels[column]?.04:.20));
       equalizerLevels[column]+=(target-equalizerLevels[column])*blend;
       const count=track&&!calm?Math.round(equalizerLevels[column]*32):2;
       for(let row=0;row<32;row++){
         equalizerCtx.fillStyle=row<count?(row>25?'#ffa3dd':row>15?'#c39cff':'#75dfff'):'#15182a';
-        equalizerCtx.fillRect(column*32+3,512-(row+1)*16+2,26,12);
+        equalizerCtx.fillRect(column*192+6,512-(row+1)*16+2,180,12);
       }
     }
     equalizerTexture.update();
