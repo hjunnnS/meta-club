@@ -1,3 +1,4 @@
+import {createWandTrail} from './wand-trail.js';
 import {edmStage,edmSeats} from './edm-layout.js';
 const colors = { indigo: '#8973F2', teal: '#49C8B1', rose: '#F28BAB', gold: '#FFCC55' };
 export function avatarFactory(B, scene, glow) {
@@ -19,14 +20,6 @@ export function avatarFactory(B, scene, glow) {
   trailMaterial.emissiveColor = wandMaterial.emissiveColor;
   trailMaterial.disableLighting = true;
   trailMaterial.alpha = 0.23;
-  // Saturated core plus a dark edge reads against a bright wash without
-  // dimming the room. Used only by the dance-specific big-swing afterimage.
-  const trailCoreMaterial=new B.StandardMaterial('wand contrast cyan core',scene);
-  trailCoreMaterial.disableLighting=true;trailCoreMaterial.emissiveColor=B.Color3.FromHexString('#2bd8ff');
-  trailCoreMaterial.alpha=.94;trailCoreMaterial.backFaceCulling=false;
-  const trailEdgeMaterial=new B.StandardMaterial('wand dark afterimage edge',scene);
-  trailEdgeMaterial.disableLighting=true;trailEdgeMaterial.emissiveColor=B.Color3.FromHexString('#102340');
-  trailEdgeMaterial.alpha=.92;trailEdgeMaterial.backFaceCulling=false;trailEdgeMaterial.disableDepthWrite=true;
   const distantBlocks = new Map();
   const blockMaterial = new B.StandardMaterial('crowd blocks', scene);
   function block(parent, name, width, height, depth, y, material) {
@@ -152,7 +145,7 @@ export function avatarFactory(B, scene, glow) {
     label.material = mat;
     root.position.set(actor.x, actor.y, actor.z);
     root.rotation.y = actor.yaw;
-    let wand, tip, trail, trailEdge, trailContrast=false, orbit, previousTip, previousTime = 0;
+    let wand, tip, trail, smoothTrail, orbit, previousTip, previousTime = 0;
     function showWand(visible, detailed, motion=null) {
       if (!visible && !wand) return;
       if (!wand) {
@@ -174,51 +167,34 @@ export function avatarFactory(B, scene, glow) {
       }
       wand.setEnabled(visible);
       const drawTrail = visible && detailed && root.isEnabled();
-      if (drawTrail && !trail) {
-        tip.computeWorldMatrix(true);
-        trail = new B.TrailMesh('wand sweep', tip, scene, { diameter: featuredWand ? .14 : .055, length: featuredWand ? 9 : 5, sections: 3 });
-        trail.material = trailMaterial;
-        trail.isPickable = false;
-      } else if (!drawTrail && trail) {
-        if(trailContrast)glow?.removeExcludedMesh(trail);
-        trail.dispose();trailEdge&&glow?.removeExcludedMesh(trailEdge);trailEdge?.dispose();
-        trail = trailEdge = null;trailContrast=false;
-      }
       if (drawTrail) {
         near.computeWorldMatrix(true);limbs[2].computeWorldMatrix(true);wand.computeWorldMatrix(true);
         tip.computeWorldMatrix(true);
-        const point = tip.getAbsolutePosition(), now = performance.now();
-        const speed = previousTip ? B.Vector3.Distance(point,previousTip)/Math.max(.016,(now-previousTime)/1000) : 0;
-        const sweep = Math.min(1,speed/3.5);
-        const contrast=Boolean(motion);
-        if(contrast!==trailContrast){
-          if(contrast)glow?.addExcludedMesh(trail);else glow?.removeExcludedMesh(trail);
-          trailContrast=contrast;
+        const point=tip.getAbsolutePosition(),now=performance.now();
+        const speed=previousTip?B.Vector3.Distance(point,previousTip)/Math.max(.016,(now-previousTime)/1000):0;
+        const sweep=Math.min(1,speed/3.5);
+        if(motion){
+          if(trail)trail.visibility=0;
+          if(!smoothTrail)smoothTrail=createWandTrail(B,scene,glow,featuredWand);
+          smoothTrail.update(point,now,(.65+.35*sweep)*motion.sweep,motion.reduced,speed);
+        }else{
+          smoothTrail?.reset();
+          if(!trail){
+            trail=new B.TrailMesh('wand sweep',tip,scene,{diameter:featuredWand?.14:.055,length:featuredWand?9:5,sections:3});
+            trail.material=trailMaterial;trail.isPickable=false;
+          }
+          trail.diameter=.035+sweep*(featuredWand?.20:.13);trail.visibility=1;
         }
-        trail.material=contrast?trailCoreMaterial:trailMaterial;
-        trail.alphaIndex=contrast?2:0;
-        trail.diameter=contrast?.045+sweep*(featuredWand?.25:.19)*motion.sweep:.035+sweep*(featuredWand?.20:.13);
-        trail.visibility=contrast?(motion.reduced?0:Math.min(1,(.65+.35*sweep)*motion.sweep)):1;
-        if(contrast&&!trailEdge){
-          trailEdge=new B.TrailMesh('wand contrasting trail edge',tip,scene,{diameter:.12,length:featuredWand?9:5,sections:3});
-          trailEdge.material=trailEdgeMaterial;trailEdge.isPickable=false;trailEdge.alphaIndex=1;
-          glow?.addExcludedMesh(trailEdge);
-        }
-        if(trailEdge){
-          trailEdge.diameter=trail.diameter*1.65;
-          trailEdge.visibility=contrast?trail.visibility*.92:0;
-        }
-        if(!orbit) {
+        if(!orbit){
           orbit=B.MeshBuilder.CreateTorus('wand body orbit',{diameter:1.12,thickness:.018,tessellation:32},scene);
           orbit.parent=root;orbit.position.y=1.03;orbit.material=trailMaterial;orbit.isPickable=false;
         }
         orbit.setEnabled(sweep>.15&&(!motion||!motion.reduced&&motion.large>.55));
-        orbit.rotation.z=.16*Math.sin(now/420);
-        orbit.visibility=sweep*.55*(motion?motion.sweep:1);
+        orbit.rotation.z=.16*Math.sin(now/420);orbit.visibility=sweep*.55*(motion?motion.sweep:1);
         previousTip=point.clone();previousTime=now;
-      } else {
-        previousTip=null;
-        orbit?.setEnabled(false);
+      }else{
+        trail?.dispose();trail=null;smoothTrail?.dispose();smoothTrail=null;
+        previousTip=null;orbit?.setEnabled(false);
       }
     }
     return {
@@ -232,9 +208,7 @@ export function avatarFactory(B, scene, glow) {
       label,
       dispose() {
         glow?.removeExcludedMesh(label);
-        if(trailContrast&&trail)glow?.removeExcludedMesh(trail);
-        if(trailEdge)glow?.removeExcludedMesh(trailEdge);
-        trailEdge?.dispose();trail?.dispose();
+        smoothTrail?.dispose();trail?.dispose();
         root.dispose();
         mat.dispose();
         tex.dispose();

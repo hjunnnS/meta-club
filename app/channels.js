@@ -177,6 +177,7 @@ export async function startChannels(app, { origin, secret, port }) {
   app.get('/clubs/edm/client.js', serveFile('./public/channel-client.js'));
   app.get('/clubs/edm/podium-activity.js', serveFile('./podium-activity.js'));
   app.get('/clubs/edm/seat-presentation.js', serveFile('./public/seat-presentation.js'));
+  app.get('/clubs/edm/wand-trail.js', serveFile('./public/wand-trail.js'));
   app.get('/clubs/edm/pole-dance.js', serveFile('./public/pole-dance.js'));
   app.get('/clubs/edm/free-dance.js', serveFile('./public/free-dance.js'));
   app.get('/clubs/edm/ceiling-lights.js', serveFile('./public/ceiling-lights.js'));
