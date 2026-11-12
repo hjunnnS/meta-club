@@ -1,4 +1,4 @@
-import { ceilingLights, musicSpeakers, strobeAccents, strobeAccentCue, accentDurations } from './ceiling-lights.js';
+import { ceilingLights, musicSpeakers, strobeAccents, strobeAccentCue, accentDurations, movingLightPreview } from './ceiling-lights.js';
 import { clubAmbience, strobeDurations } from './ambience.js';
 import {activityFeedback} from './activity-feedback.js';
 import {sceneLook} from './scene-look.js';
@@ -34,6 +34,8 @@ export function startLiveScene({
   const renderSpeakers = musicSpeakers(B,scene);
   const renderAccents = strobeAccents(B,scene);
   let accentPreview=null;
+  const renderMovingPreview=movingLightPreview(B,scene);
+  let movingPreview=null;
   const renderAmbience = clubAmbience(B,scene);
   let strobePreviewStarted = -Infinity;
   let strobePreviewPattern = 'transition';
@@ -175,7 +177,7 @@ export function startLiveScene({
   let responders = [];
   function onSnapshot({ actors, self, zones, stageEvent, nextPerformance }) {
     if(nextPerformance?.id==='scheduled-0'&&nextPerformance.kind==='laser')firstLaserAt=nextPerformance.start;
-    if(activePeripheralPreview())stageEvents.stop();else stageEvents.set(stageEvent);
+    if(movingPreview||activePeripheralPreview())stageEvents.stop();else stageEvents.set(stageEvent);
     if (zones) states = zones;
     dancers = actors.filter((a) => a.action === 'dance' || dances.has(a.action)).length;
     const caller = actors.find(a => a.id === wandGuest && a.wand && a.trainSlot == null);
@@ -258,7 +260,13 @@ export function startLiveScene({
     if(kind==='opening-countdown')openingCountdown=data;
     if (kind === 'speaker-view') speakerView();
     if (kind === 'staff-view' && ['dj','bartender'].includes(data)) speakerView(data);
-    if(kind==='accent-preview'&&Object.hasOwn(accentDurations,data)){
+    if(kind==='moving-preview'&&['start','stop'].includes(data)){
+      movingPreview=data==='start'?{start:performance.now(),anchor:null}:null;
+      accentPreview=null;peripheralPreview=null;stageEvents.stop();strobePreviewStarted=-Infinity;
+      send('gate-notice',data==='start'?'무빙 조명 시험: 펼치기 → 교차 → 순차 이동 → 모으기 · 16마디 후 자동 종료':'무빙 조명 시험 종료');
+    }
+    if(['accent-preview','peripheral-preview','strobe-preview','led-preview'].includes(kind))movingPreview=null;
+    if(kind==='accent-preview' &&Object.hasOwn(accentDurations,data)){
       accentPreview={kind:data,start:performance.now()};
       peripheralPreview={kind:'strobe-hold',start:accentPreview.start,duration:accentDurations[data]};
       stageEvents.stop();strobePreviewStarted=-Infinity;
@@ -467,8 +475,20 @@ export function startLiveScene({
       playback.phraseTime=playback.time;
     }
     const beats = trackBeat(playback, t);
-    const effectPreview=activePeripheralPreview();
+    let movingBeat=null;
+    if(movingPreview){
+      const musicPlaying=playback&&playback.track.id===audibleTrack;
+      if(movingPreview.anchor===null)movingPreview.anchor={beat:beats,playing:Boolean(musicPlaying),elapsed:musicPlaying?((beats%1)+1)%1:0};
+      const anchor=movingPreview.anchor,age=(performance.now()-movingPreview.start)/1000;
+      // Unwrap the music loop; if playback stops/starts, continue the test clock smoothly.
+      if(musicPlaying&&anchor.playing){let step=beats-anchor.beat;if(step<0)step+=playback.track.duration*playback.track.bpm/60;anchor.elapsed+=Math.max(0,Math.min(2,step));}
+      else anchor.elapsed+=Math.max(0,(age-(anchor.age||0)))*(musicPlaying?playback.track.bpm:132)/60;
+      anchor.age=age;anchor.beat=beats;anchor.playing=Boolean(musicPlaying);movingBeat=anchor.elapsed;
+      if(movingBeat>=64||age>40){movingPreview=null;movingBeat=null;send('gate-notice','무빙 조명 시험 종료 · 원래 연출로 복귀');}
+    }
+    const effectPreview=movingPreview?{kind:'strobe-hold',age:0}:activePeripheralPreview();
     const playing = playback && playback.track.id === audibleTrack;
+    renderMovingPreview(movingBeat,calmBeats.matches,spectrum[0]||0);
     if(playing&&musicStartBeat===null)musicStartBeat=Math.ceil(Math.max(0,beats));
     const bpm=playback?.track.bpm||120;
     // Use the existing channel's first show time; do not reschedule it for the opening.
@@ -539,6 +559,7 @@ export function startLiveScene({
     const performancePhase=stageEvents.phase;
     const performancePriority=performancePhase&&performancePhase.kind!=='led'&&performancePhase.level<.75;
     if(!accentTest&&!effectPreview){accentCue.curtain*=supportLevel;accentCue.fan*=supportLevel;accentCue.gobo*=supportLevel;}
+    if(movingPreview){accentCue.curtain=0;accentCue.fan=0;accentCue.gobo=0;}
     renderAccents(accentCue,beats,accentTest?.75:musicEnergy,calmBeats.matches,dt,!accentTest&&!effectPreview&&(stageFocus||boardSegment===1||boardSegment===2));
     if (ambient) ambient.intensity = (smokeProtection?.39:look.ambient) + roomPulse * 1.10;
     // The first beat of each four-beat bar accents both surfaces on the same frame.
@@ -606,6 +627,7 @@ export function startLiveScene({
       const showBeam=/^(overhead shaft|overhead core|scanning fan)$/.test(mesh.name);
       const accentBeam=/^Strobe (overhead fan|wall curtain) beam$/.test(mesh.name);
       const base=showBeam||accentBeam?mesh.visibility:houseBeam?look.beams*(performancePriority?.65:1):1;
+      if(movingPreview){mesh.visibility=.08;continue;}
       if(effectPreview||accentTest){mesh.visibility=1;continue;}
       let targetGain=1;
       if(fineBeam&&mesh.isEnabled()&&(screenRects.length||hologramRect)){

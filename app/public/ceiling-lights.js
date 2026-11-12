@@ -251,3 +251,49 @@ export function strobeAccents(B,scene) {
     }
   };
 }
+
+// Button-only choreography: never called by the automatic performance schedule.
+export function movingLightPreview(B,scene){
+  const rig=new B.TransformNode('Moving light rehearsal',scene),beams=[];
+  const palette=[['#82ddff','#bd8fff'],['#fa8bd9','#82b9ff'],['#b79bff','#8ce8e2'],['#ffe58e','#c9eaff']];
+  const texture=new B.DynamicTexture('Rehearsal soft pool',{width:64,height:64},scene,false);
+  const ctx=texture.getContext(),gradient=ctx.createRadialGradient(32,32,1,32,32,31);
+  gradient.addColorStop(0,'rgba(255,255,255,.85)');gradient.addColorStop(.45,'rgba(255,255,255,.3)');gradient.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=gradient;ctx.fillRect(0,0,64,64);texture.hasAlpha=true;texture.update();
+  const ink=(name)=>{const m=new B.StandardMaterial(name,scene);m.disableLighting=true;m.backFaceCulling=false;m.alphaMode=B.Engine.ALPHA_ADD;m.alpha=.13;return m;};
+  for(const side of [-1,1])for(let i=0;i<6;i++){
+    const origin=new B.Vector3(side*(7.3+i*.5),7.4,-8+i*.48),material=ink('Rehearsal beam ink');
+    const mesh=B.MeshBuilder.CreateCylinder('Rehearsal moving beam',{height:1,diameterTop:.018,diameterBottom:.24,tessellation:8},scene);
+    mesh.parent=rig;mesh.material=material;mesh.isPickable=false;mesh.rotationQuaternion=new B.Quaternion();
+    const poolInk=ink('Rehearsal pool ink');poolInk.opacityTexture=texture;poolInk.alpha=.36;
+    const pool=B.MeshBuilder.CreateGround('Rehearsal floor pool',{width:1.65,height:2.25},scene);
+    pool.parent=rig;pool.material=poolInk;pool.isPickable=false;
+    beams.push({side,i,origin,mesh,material,pool,poolInk});
+  }
+  // Two lights illuminate audience bodies; the remaining beams are visual only.
+  const lights=[-1,1].map(side=>{const l=new B.SpotLight('Rehearsal audience light',new B.Vector3(side*8,7.4,-7),new B.Vector3(0,-1,0),.48,2,scene);l.range=25;l.intensity=0;return l;});
+  const excluded=scene.meshes.filter(m=>/EDM (house screen|wing screen)|staff dj/i.test(m.name));
+  lights.forEach(l=>l.excludedMeshes=excluded);
+  const delta=new B.Vector3(),target=new B.Vector3();rig.setEnabled(false);
+  return (beat=null,reduced=false,energy=0)=>{
+    rig.setEnabled(beat!==null);if(beat===null){lights.forEach(l=>l.intensity=0);return;}
+    const part=Math.min(3,Math.floor(beat/16)),phase=beat%16,travel=reduced?0:phase;
+    const fade=Math.min(1,beat/1.5,(64-beat)/2),hit=reduced?0:Math.exp(-(beat%1)*8)*(.35+.65*energy);
+    beams.forEach(({side,i,origin,mesh,material,pool,poolInk})=>{
+      const spread=(i-2.5)/2.5;
+      // All targets stay in front of the screens, below them, and away from the DJ.
+      if(part===0)target.set(side*(5+spread*3+Math.sin(travel*Math.PI/8)*2),.09,3+i*.9);
+      else if(part===1)target.set(-side*(3.8+spread*2.4)*Math.cos(travel*Math.PI/8),.09,2+i*1.25);
+      else if(part===2)target.set(side*(3.2+Math.sin(travel*Math.PI/4-i*.45)*4),.09,1+i*1.75);
+      else {const gather=.5-.5*Math.cos(travel*Math.PI/8);target.set(side*(1.8+(1-gather)*(4+spread*2)),.09,2+(1-gather)*i*1.25);}
+      delta.copyFrom(target).subtractInPlace(origin);mesh.position.copyFrom(origin).addInPlace(delta.scale(.5));mesh.scaling.y=delta.length();
+      B.Quaternion.FromUnitVectorsToRef(B.Axis.Y,delta.normalize(),mesh.rotationQuaternion);
+      const color=B.Color3.FromHexString(palette[part][side<0?0:1]);
+      if(hit>.7&&i===Math.floor(beat/4)%6)B.Color3.LerpToRef(color,B.Color3.White(),.6,color);
+      const chase=part===2?.35+.65*(.5+.5*Math.cos(travel*Math.PI-i*.8)):1;
+      material.emissiveColor.copyFrom(color);material.alpha=fade*chase*(.08+hit*.10);
+      pool.position.copyFrom(target);pool.rotation.y=travel*.12;poolInk.emissiveColor.copyFrom(color);poolInk.alpha=fade*chase*(.22+hit*.2);
+      if(i===2){const light=lights[side<0?0:1];light.position.copyFrom(origin);light.direction.copyFrom(delta).normalize();light.diffuse.copyFrom(color);light.intensity=fade*(5+hit*7);}
+    });
+  };
+}

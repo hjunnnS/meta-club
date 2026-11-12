@@ -303,6 +303,8 @@ window.addEventListener('message', (event) => {
   }
 });
 el('particle-tests').onclick = el('event-controls').onclick = event => {
+  const moving=event.target.closest('[data-moving-preview]');
+  if(ready&&moving){frame('moving-preview',moving.dataset.movingPreview);return;}
   const accent=event.target.closest('[data-accent-preview]');
   if(ready&&accent){frame('accent-preview',accent.dataset.accentPreview);return;}
   const effect=event.target.closest('[data-peripheral-preview]');
