@@ -36,7 +36,8 @@ export function startLiveScene({
   let accentPreview=null;
   const renderMovingPreview=movingLightPreview(B,scene);
   let movingPreview=null;
-  const renderAmbience = clubAmbience(B,scene);
+  const floorStrobe={active:false,on:0};
+  const renderAmbience = clubAmbience(B,scene,(active,on)=>{floorStrobe.active=active;floorStrobe.on=on;});
   let strobePreviewStarted = -Infinity;
   let strobePreviewPattern = 'transition';
   let peripheralPreview=null;
@@ -582,7 +583,10 @@ export function startLiveScene({
     }
     const lipGlow = ramp(cueBeat - 1.22, .28) * ramp(2.95 - cueBeat, .75);
     for (const lip of stageLips) illuminate(lip, cue.rgb, lipGlow);
-    renderFloor(beats, celebrating, accent, cueBeat, cue.rgb, stageEvents.kind === 'laser' ? 1 : ['phoenix','whale','dragon','jellyfish','butterflies'].includes(stageEvents.kind) ? 2 : 0, roomPulse,look,Boolean(playing),musicEnergy);
+    // Reuse the existing room pulse, including its OFF frames. The laser's
+    // rapid section uses the same rounded 100ms phase as its own shutter.
+    const tileStrobe=strobing?{active:true,on:Math.floor((Math.round((stageEvents.phase?.age||0)*1000)-7000)/100)%2===0?1:0}:floorStrobe;
+    renderFloor(beats, celebrating, accent, cueBeat, cue.rgb, stageEvents.kind === 'laser' ? 1 : ['phoenix','whale','dragon','jellyfish','butterflies'].includes(stageEvents.kind) ? 2 : 0, roomPulse,look,Boolean(playing),musicEnergy,tileStrobe);
     updateBoard(playing ? playback.track.title : null, beats, !preview && !celebrating, Math.max(accent,startBeat>=0&&startBeat<.78?(1-startBeat/.78)*.85:0), gather, calmBeats.matches, phraseBeat, wallRelease, cue.hex, stageEvents.kind && stageEvents.kind !== 'led' ? effects[stageEvents.kind].label : null, strobing, roomPulse,look,openingCountdown?Math.max(0,Math.min(3,Math.ceil((openingCountdown.endsAt-Date.now())/1000))):0,'DJ · 음악 그래픽',audioBands);
     const phase = beats * Math.PI * 2,
       beatWave = Math.sin(phase);

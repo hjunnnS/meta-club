@@ -16,12 +16,15 @@ export function strobePattern(elapsed, kind = 'transition') {
   return (ms-5000)%600<200?1:0;
 }
 
-export function clubAmbience(B, scene) {
+export function clubAmbience(B, scene, onStrobe=()=>{}) {
   const calm = matchMedia('(prefers-reduced-motion: reduce)');
   return (beat,values,strobing=false,playing=false,bpm=120,previewAge=null,previewKind='transition',arrangement=1)=>{
+    onStrobe(false,0);
     if (strobing || calm.matches) return 0;
     if (previewAge !== null) {
-      return strobePattern(previewAge,previewKind);
+      const pulse=strobePattern(previewAge,previewKind);
+      onStrobe(previewAge>=0&&previewAge<strobeDurations[previewKind],pulse);
+      return pulse;
     }
     if (!playing || arrangement<.55) return 0;
     const bass=((values[0]||0)+(values[1]||0)+(values[2]||0))/3;
@@ -29,6 +32,8 @@ export function clubAmbience(B, scene) {
     // Normal accent halfway through the phrase; the large accent owns its transition.
     const {kind,elapsed,flash}=strobeSchedule(beat,bpm);
     if(!flash)return 0;
-    return strobePattern(elapsed,kind)*(.7+.3*bass)*Math.min(1,arrangement);
+    const pulse=strobePattern(elapsed,kind)*(.7+.3*bass)*Math.min(1,arrangement);
+    onStrobe(true,pulse);
+    return pulse;
   };
 }

@@ -1,4 +1,4 @@
-import {edmStage} from '/clubs/edm/edm-layout.js';
+import {edmStage,edmFloor} from '/clubs/edm/edm-layout.js';
 import { celebration } from './celebration.js';
 import { hologram } from './holograms.js';
 // Channel performances and local previews share the same durations.
@@ -538,12 +538,17 @@ function peripheralLighting(B,scene) {
     return {side,light};
   });
   const ambient=scene.getLightByName('ambient');if(ambient)ambient.renderPriority=100;
-  const smokeStations=Array.from({length:8},(_,i)=>{
-    const angle=i*Math.PI/4+Math.PI/8;
-    const position=[8.85*Math.cos(angle),.09,8.85*Math.sin(angle)];
+  const half=edmFloor.width/2,back=edmFloor.minZ,front=edmFloor.maxZ;
+  // Two jets per side follow the actual rectangular floor, leaving the central
+  // entrance and DJ access clear. Count, plume shape and timing stay unchanged.
+  const smokeStations=[[-half*.58,.09,back-.16],[half*.58,.09,back-.16],
+    [half+.16,.09,back+edmFloor.depth*.30],[half+.16,.09,back+edmFloor.depth*.70],
+    [half*.58,.09,front+.16],[-half*.58,.09,front+.16],
+    [-half-.16,.09,back+edmFloor.depth*.70],[-half-.16,.09,back+edmFloor.depth*.30]];
+  for(const position of smokeStations){
     const nozzle=attach(B.MeshBuilder.CreateCylinder('arena smoke nozzle',{height:.12,diameter:.17,tessellation:8},scene),rig,housing);
-    nozzle.position.set(position[0],.06,position[2]);return position;
-  });
+    nozzle.position.set(position[0],.06,position[2]);
+  }
   const smokeInk=paint(B,scene,'arena upward smoke','#ffffff',.95);
   smokeInk.disableLighting=true;smokeInk.opacityTexture=texture;smokeInk.alpha=.30;smokeInk.backFaceCulling=false;
   const smoke=new B.SolidParticleSystem('arena upward smoke jets',scene);

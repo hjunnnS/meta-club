@@ -11,7 +11,7 @@ export function rhythmFloor(B,scene){
     fragmentSource:`precision highp float;
       varying vec2 p;varying vec3 worldPoint;
       uniform vec3 eye,primary,secondary;
-      uniform float beat,mode,previousMode,modeMix,energy,intensity,accent,flash,cueBeat,reduced,tilePlaying,skyBeat;
+      uniform float beat,mode,previousMode,modeMix,energy,intensity,accent,flash,cueBeat,reduced,tilePlaying,skyBeat,strobeActive,strobeOn;
       float hash(vec2 q){return fract(sin(dot(q,vec2(127.1,311.7)))*43758.5453);}
       vec3 spectrum(float h){return .53+.47*cos(6.283185*(h+vec3(0.,.67,.33)));}
       float border(vec2 q,float extent,float width){return 1.-smoothstep(width,width*2.4,abs(max(abs(q.x),abs(q.y))-extent));}
@@ -145,16 +145,23 @@ export function rhythmFloor(B,scene){
           relay=(1.-smoothstep(.3,2.1,abs(length(p-vec2(0.,-17.))-front)))*.10;
         }
         color+=secondary*(relay+accent*.025+flash*.035);
+        float tiles=(mode<.5||(mode>1.5&&mode<2.5))?1.:0.;
+        float oldTiles=(previousMode<.5||(previousMode>1.5&&previousMode<2.5))?1.:0.;
+        float tileWeight=mix(oldTiles,tiles,modeMix);
+        if(strobeActive>.5){
+          vec3 strobed=color*mix(.065,1.55,strobeOn)+mix(primary,vec3(1.),.55)*.14*strobeOn;
+          color=mix(color,strobed,tileWeight);
+        }
         color*=.72+.28*clamp(intensity,0.,1.);
         gl_FragColor=vec4(color,1.);
       }`
-  },{attributes:['position'],uniforms:['world','worldViewProjection','eye','primary','secondary','beat','mode','previousMode','modeMix','energy','intensity','accent','flash','cueBeat','reduced','tilePlaying','skyBeat']});
+  },{attributes:['position'],uniforms:['world','worldViewProjection','eye','primary','secondary','beat','mode','previousMode','modeMix','energy','intensity','accent','flash','cueBeat','reduced','tilePlaying','skyBeat','strobeActive','strobeOn']});
   material.backFaceCulling=false;mesh.material=material;
   // Avoid a uniform glow pass turning the dark glass into a white sheet.
   for(const layer of scene.effectLayers||[])if(typeof layer.addExcludedMesh==='function')layer.addExcludedMesh(mesh);
   const calm=matchMedia('(prefers-reduced-motion: reduce)');
   let lastMode=0,previous=0,changedAt=performance.now(),lastInput=0,beatOffset=0;
-  return (beat,celebrating,accent,cueBeat,cueColor,pattern=0,flash=0,look=null,playing=false,bass=0)=>{
+  return (beat,celebrating,accent,cueBeat,cueColor,pattern=0,flash=0,look=null,playing=false,bass=0,strobe=null)=>{
     const active=playing&&!calm.matches,input=active?Math.max(0,beat):0;
     // Keep this floor's cycle continuous across the whole-bar music loop.
     if(active&&input<lastInput-32)beatOffset+=Math.ceil(lastInput/4)*4;
@@ -171,6 +178,8 @@ export function rhythmFloor(B,scene){
     material.setVector3('eye',scene.activeCamera.globalPosition||scene.activeCamera.position);
     material.setColor3('primary',B.Color3.FromHexString(look?.primary||'#9e6dff'));
     material.setColor3('secondary',B.Color3.FromHexString(look?.secondary||'#8cdbff'));
+    material.setFloat('strobeActive',!calm.matches&&strobe?.active?1:0);
+    material.setFloat('strobeOn',strobe?.on>.001?1:0);
     material.setFloat('beat',b);material.setFloat('energy',active?Math.max(0,Math.min(1,bass||0)):0);
     material.setFloat('intensity',look?.floor??.8);material.setFloat('accent',active?accent:0);
     material.setFloat('flash',active?Math.max(0,Math.min(1,flash)):0);
