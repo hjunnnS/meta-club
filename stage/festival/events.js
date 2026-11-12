@@ -191,12 +191,13 @@ export function houseScreen(B, scene, broadcast,wingBroadcast=null) {
     casing.parent=root;casing.position.z=-.09;casing.material=casingInk;casing.isPickable=false;casing.checkCollisions=true;
     const wing=B.MeshBuilder.CreatePlane('EDM wing screen '+(side<0?'left':'right'),{width:wingWidth,height:wingHeight,sideOrientation:B.Mesh.DOUBLESIDE},scene);
     wing.parent=root;wing.material=wingProgram||wingInk;wing.isPickable=false;wing.checkCollisions=true;
-    // A single folded surface continues from each screen down to the finished floor.
+    // Keep the inner edge flush with the center screen; narrow only the equalizer width.
     const panelHeight=y-wingHeight/2-.02,panelY=-wingHeight/2-panelHeight/2;
-    const panelBack=B.MeshBuilder.CreateBox('EDM wing equalizer backing',{width:wingWidth,height:panelHeight,depth:.12},scene);
-    panelBack.parent=root;panelBack.position.set(0,panelY,-.09);panelBack.material=casingInk;panelBack.isPickable=false;
-    const panel=B.MeshBuilder.CreatePlane('EDM wing equalizer '+(side<0?'left':'right'),{width:wingWidth,height:panelHeight,sideOrientation:B.Mesh.DOUBLESIDE},scene);
-    panel.parent=root;panel.position.set(0,panelY,.005);panel.material=equalizerInk;panel.isPickable=false;
+    const panelWidth=wingWidth/4,panelX=-side*(wingWidth-panelWidth)/2;
+    const panelBack=B.MeshBuilder.CreateBox('EDM wing equalizer backing',{width:panelWidth,height:panelHeight,depth:.12},scene);
+    panelBack.parent=root;panelBack.position.set(panelX,panelY,-.09);panelBack.material=casingInk;panelBack.isPickable=false;
+    const panel=B.MeshBuilder.CreatePlane('EDM wing equalizer '+(side<0?'left':'right'),{width:panelWidth,height:panelHeight,sideOrientation:B.Mesh.DOUBLESIDE},scene);
+    panel.parent=root;panel.position.set(panelX,panelY,.005);panel.material=equalizerInk;panel.isPickable=false;
     for(const layer of scene.effectLayers||[])if(typeof layer.addExcludedMesh==='function')layer.addExcludedMesh(panel);
     // Bottom edges clear the upper-deck head height; cables attach the panels above.
     for(const x of [-wingWidth*.32,wingWidth*.32]){
