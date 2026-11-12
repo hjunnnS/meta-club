@@ -33,16 +33,17 @@ def tri(group, mat, a,b,c, surface=False):
     positions.extend([a,b,c]);normals.extend([[i/length for i in n]]*3)
     if surface: walkable.append((a,b,c))
 
-def slab(group, mat, outline, bottom, surface=False):
+def slab(group, mat, outline, bottom, surface=False, side_mat=None):
     # Outline runs counterclockwise in XZ as seen from above (+Y).
+    side_mat=mat if side_mat is None else side_mat
     base=[(x,bottom,z) for x,y,z in outline]
     for i in range(1,len(outline)-1):
         tri(group,mat,outline[0],outline[i],outline[i+1],surface)
         tri(group,mat,base[0],base[i+1],base[i])
     for i,a in enumerate(outline):
         j=(i+1)%len(outline)
-        tri(group,mat,a,base[i],base[j])
-        tri(group,mat,a,base[j],outline[j])
+        tri(group,side_mat,a,base[i],base[j])
+        tri(group,side_mat,a,base[j],outline[j])
 
 def rect(group,mat,x1,x2,z1,z2,y1,y2,bottom,surface=False):
     slab(group,mat,[(x1,y1,z1),(x1,y2,z2),(x2,y2,z2),(x2,y1,z1)],bottom,surface)
@@ -281,25 +282,28 @@ if festival:
 
 # Two public podiums shifted west, with no ramps or step structures.
 if festival:
-    podium_top=material('Auxiliary podium · satin indigo',(.095,.075,.16))
-    materials[podium_top]['pbrMetallicRoughness'].update(metallicFactor=.18,roughnessFactor=.58)
-    materials[podium_top]['emissiveFactor']=[.025,.012,.045]
+    podium_top=material('Auxiliary podium · charcoal top',(.055,.065,.078))
+    materials[podium_top]['pbrMetallicRoughness'].update(metallicFactor=.20,roughnessFactor=.46)
+    podium_side=material('Auxiliary podium · matte dark side',(.022,.027,.033))
+    materials[podium_side]['pbrMetallicRoughness'].update(metallicFactor=.02,roughnessFactor=.94)
+    podium_pole=material('Auxiliary podium · dark silver pole',(.19,.21,.24))
+    materials[podium_pole]['pbrMetallicRoughness'].update(metallicFactor=.85,roughnessFactor=.38)
     podium_colors=[]
-    for name,rgb in [('violet',(.67,.22,.9)),('cyan',(.18,.70,.85))]:
+    for name,rgb in [('sky 1',(.18,.70,.85)),('sky 2',(.18,.70,.85))]:
         index=material('Auxiliary podium rim '+name,rgb)
         materials[index]['emissiveFactor']=[v*.12 for v in rgb]
         podium_colors.append(index)
     for cz,accent in zip([-8.8,-1.6],podium_colors):
         cx=-15.3
         slab('Auxiliary dance podium',podium_top,
-             [(cx+1.7*math.cos(i*2*P/64),.5,cz-1.7*math.sin(i*2*P/64)) for i in range(64)],0,True)
+             [(cx+1.7*math.cos(i*2*P/64),.5,cz-1.7*math.sin(i*2*P/64)) for i in range(64)],0,True,side_mat=podium_side)
         for j in range(64):
             a=(j+.04)*2*P/64;b=(j+.96)*2*P/64
             slab('Auxiliary podium rim',accent,
                  [(cx+r*math.cos(t),.502,cz-r*math.sin(t))
                   for r,t in [(1.655,a),(1.7,a),(1.7,b),(1.655,b)]],.47)
         # A slender continuous pole, anchored into the existing ceiling slab.
-        beam('Auxiliary podium pole',rim,(cx,.5,cz),(cx,11.6,cz),.055)
+        beam('Auxiliary podium pole',podium_pole,(cx,.5,cz),(cx,11.6,cz),.055)
         beam('Auxiliary podium pole mounts',metal,(cx,.5,cz),(cx,.54,cz),.13)
         beam('Auxiliary podium pole mounts',metal,(cx,11.54,cz),(cx,11.61,cz),.13)
 

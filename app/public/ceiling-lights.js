@@ -434,8 +434,8 @@ export function addedFloorWallLights(B,scene){
 
 // Independent, deliberately subdued accents; never modify the main floor or show.
 export function podiumRimLights(B,scene,glow){
-  const colors=['violet','cyan'].map(name=>scene.materials.find(m=>m.name==='Auxiliary podium rim '+name));
-  const tones=['#ad38e6','#2eb3d9'].map(B.Color3.FromHexString);
+  const colors=['sky 1','sky 2'].map(name=>scene.materials.find(m=>m.name==='Auxiliary podium rim '+name));
+  const tones=['#2eb3d9','#2eb3d9'].map(B.Color3.FromHexString);
   for(const mesh of scene.meshes)if(mesh.name==='Auxiliary podium rim'||mesh.parent?.name==='Auxiliary podium rim')glow?.addExcludedMesh(mesh);
   return (beat,playing,energy=0,reduced=false)=>{
     const phase=Number.isFinite(beat)?((beat%1)+1)%1:0;
