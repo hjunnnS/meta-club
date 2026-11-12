@@ -157,7 +157,7 @@ export function houseScreen(B, scene, broadcast,wingBroadcast=null) {
   const equalizerTexture=new B.DynamicTexture('EDM wing equalizer pixels',{width:384,height:512},scene,false);
   const equalizerCtx=equalizerTexture.getContext(),equalizerLevels=Array(2).fill(0);
   const equalizerInk=new B.StandardMaterial('EDM wing equalizer ink',scene);
-  equalizerInk.disableLighting=true;equalizerInk.emissiveTexture=equalizerTexture;
+  equalizerInk.disableLighting=true;equalizerInk.diffuseColor=B.Color3.Black();equalizerInk.emissiveTexture=equalizerTexture;
   equalizerInk.emissiveColor=new B.Color3(.72,.72,.72);equalizerInk.backFaceCulling=false;
   let equalizerAt=-Infinity;
   function drawEqualizer(track,bands,calm){
