@@ -413,10 +413,10 @@ function peripheralLighting(B,scene) {
     });
     return {origin,body,glass,cone,pool,ink,poolInk,rays,rayInk,haloInk};
   });
-  // Only two real spotlights are active: one on each side, near the current view.
+  // Reuse one physical spotlight per side for the moving audience washes.
   const realWashes=[-1,1].map(side=>{
-    const light=new B.SpotLight('peripheral real wash '+side,B.Vector3.Zero(),new B.Vector3(0,-1,0),.75,2,scene);
-    light.diffuse=B.Color3.FromHexString(side<0?'#fff0d5':'#e0dfff');light.range=14;light.intensity=0;light.renderPriority=50;
+    const light=new B.SpotLight('peripheral real wash '+side,B.Vector3.Zero(),new B.Vector3(0,-1,0),.36,3,scene);
+    light.diffuse=B.Color3.FromHexString(side<0?'#fff0d5':'#e0dfff');light.range=30;light.intensity=0;light.renderPriority=80;
     return {side,light};
   });
   const ambient=scene.getLightByName('ambient');if(ambient)ambient.renderPriority=100;
@@ -455,7 +455,7 @@ function peripheralLighting(B,scene) {
     cloud.setEnabled(!calm.matches&&cue.smoke);if(cloud.isEnabled())smoke.setParticles();
     const selected=new Map(realWashes.map(({side,light})=>{
       const candidates=lamps.filter(lamp=>Math.sign(lamp.origin.x)===side);
-      const z=scene.activeCamera?.position.z||0;
+      const z=cue.crowd?-2:scene.activeCamera?.position.z||0;
       const lamp=candidates.reduce((a,b)=>Math.abs(a.origin.z-z)<Math.abs(b.origin.z-z)?a:b);
       light.intensity=0;return [lamp,light];
     }));
@@ -463,17 +463,54 @@ function peripheralLighting(B,scene) {
       const {origin,cone,pool,ink,poolInk,body,rays,rayInk,haloInk}=lamp;
       const phase=calm.matches?0:beat*.10+i*.8;
       const inward=origin.x>0?-1:1;
+      const real=selected.get(lamp),moving=Boolean(real&&cue.crowd),side=Math.sign(origin.x);
+      const mode=cue.direction||0;
+      const travel=calm.matches?0:.5-.5*Math.cos(beat*Math.PI/8);
+      const white=moving&&!calm.matches&&!strobing&&!cue.protectSmoke?cue.white*(Math.floor(beat/4)%2===(side<0?0:1)||Math.floor(beat)%16===0?1:0):0;
       target.set(origin.x+inward*(1.15+.45*Math.sin(phase)),.075,origin.z+.8*Math.sin(phase*.7));
+      if(moving){
+        // Four bars each: lateral sweep, floor-to-body lift, then both sides gathering.
+        if(mode===0)target.set(side*(6.8-5.6*travel),.075,-3+9*travel);
+        if(mode===1)target.set(side*(3.0+1.8*Math.sin(beat*Math.PI/8)),.075,-4+11*travel);
+        if(mode===2)target.set(side*(7.2-6.2*travel),.075,1.5+4.5*(1-travel));
+        target.z+=(-8.0-target.z)*(cue.gather||0);
+        lamp.audienceAim??=target.clone();
+        const blend=1-Math.exp(-Math.min(100,scene.getEngine().getDeltaTime())/220);
+        B.Vector3.LerpToRef(lamp.audienceAim,target,blend,lamp.audienceAim);target.copyFrom(lamp.audienceAim);
+      }
+      const sideColor=B.Color3.FromHexString(side<0?cue.primary||'#9e6dff':cue.secondary||'#ff79d5');
+      const color=B.Color3.Lerp(sideColor,B.Color3.FromHexString('#f4f8ff'),white);
+      ink.emissiveColor.copyFrom(color);poolInk.emissiveColor.copyFrom(color);
       target.subtractToRef(origin,direction);
-      cone.position.copyFrom(origin).addInPlace(direction.scale(.5));cone.scaling.y=direction.length();
+      const floorDistance=direction.length();
+      cone.position.copyFrom(origin).addInPlace(direction.scale(.5));cone.scaling.y=floorDistance;
+      cone.scaling.x=cone.scaling.z=moving?1.18:1;
       B.Quaternion.FromUnitVectorsToRef(B.Axis.Y,direction.normalize(),cone.rotationQuaternion);
       body.rotationQuaternion=cone.rotationQuaternion;
       pool.position.copyFrom(target);
       const strength=strobing?.10:1+.35*energy;
-      const real=selected.get(lamp);
-      if(real){real.position.copyFrom(origin);real.direction.copyFrom(direction);real.intensity=40*cue.wash*strength;}
-      cone.setEnabled(cue.wash>.001);pool.setEnabled(cue.wash>.001);
-      ink.alpha=.085*strength*cue.wash;poolInk.alpha=.18*strength*cue.wash;
+      if(real){
+        real.position.copyFrom(origin);
+        const lift=moving&&mode===1&&!calm.matches?2.2*travel:0;
+        const focus=target.add(new B.Vector3(0,lift,0));
+        real.direction.copyFrom(focus.subtract(origin).normalize());
+        real.diffuse.copyFrom(color);real.excludedMeshes=cue.protectedMeshes||[];
+        real.angle=moving?.36:.75;
+        real.intensity=moving?(48*cue.wash*(.70+.30*energy)+white*36)*strength:40*cue.wash*strength;
+        // Match the visible beam to the real light's target, including the body-height lift.
+        if(lift>0){
+          const projection=(origin.y-.075)/(origin.y-focus.y);
+          const floorPoint=origin.add(focus.subtract(origin).scale(projection));
+          pool.position.copyFrom(floorPoint);
+          floorPoint.subtractToRef(origin,direction);cone.position.copyFrom(origin).addInPlace(direction.scale(.5));cone.scaling.y=direction.length();
+          B.Quaternion.FromUnitVectorsToRef(B.Axis.Y,direction.normalize(),cone.rotationQuaternion);
+          body.rotationQuaternion=cone.rotationQuaternion;
+        }
+      }
+      pool.scaling.x=pool.scaling.z=moving?1.18:1;
+      const washLevel=cue.wash*(cue.crowd&&!moving?.25:1);
+      cone.setEnabled(washLevel>.001);pool.setEnabled(washLevel>.001);
+      ink.alpha=(moving?.10:.055)*strength*washLevel+white*.045;poolInk.alpha=(moving?.32:.12)*strength*washLevel+white*.28;
       rayInk.alpha=cue.laser*strength*(.65+.35*energy);
       haloInk.alpha=rayInk.alpha*.13;
       for(const {ray,halo,spread} of rays) {
@@ -483,7 +520,7 @@ function peripheralLighting(B,scene) {
         target.subtractToRef(origin,direction);ray.position.copyFrom(origin).addInPlace(direction.scale(.5));ray.scaling.y=direction.length();
         B.Quaternion.FromUnitVectorsToRef(B.Axis.Y,direction.normalize(),ray.rotationQuaternion);
         halo.position.copyFrom(ray.position);halo.scaling.copyFrom(ray.scaling);halo.rotationQuaternion.copyFrom(ray.rotationQuaternion);
-        if(cue.laser>cue.wash&&spread===-1)body.rotationQuaternion=ray.rotationQuaternion;
+        if(!moving&&cue.laser>cue.wash&&spread===-1)body.rotationQuaternion=ray.rotationQuaternion;
       }
     });
   };
@@ -535,12 +572,22 @@ export function houseLights(B, scene) {
       cue.wash=[.16,.20,.12][look.openingSection];
       cue.gather=look.openingGather||0;
     }
+    if(playing&&!preview){
+      const phase=((beat%1)+1)%1,bar=((Math.floor(beat)%4)+4)%4;
+      const bass=Math.max(0,Math.min(1,(energy-.025)/.35));
+      cue.crowd=true;cue.direction=calm.matches?0:((Math.floor(Math.max(0,beat)/16)%3)+3)%3;
+      cue.white=bar===0&&phase<.36?Math.exp(-phase*14)*Math.sqrt(bass):0;
+      cue.primary=look?.primary||'#9e6dff';
+      cue.secondary=look?.secondary||'#ff79d5';
+      cue.protectedMeshes=look?.protectedMeshes;
+      cue.wash=Math.max(cue.wash,cue.protectSmoke?.28:.85*(look?.support??1));
+    }
     renderPeriphery(beat,bpm,energy,strobing,cue);
     if(look)lights.forEach((m,i)=>m.emissiveColor.copyFrom(B.Color3.FromHexString(i?look.primary:look.secondary)));
     rig.setEnabled(visible&&!cue.preview);
     if(look)for(const {mesh} of beams)mesh.visibility=look.beams;
     if (!visible||cue.preview) return;
-    for(const material of lights)material.alpha=.065*cue.wash;
+    for(const material of lights)material.alpha=(cue.crowd?.025:.065)*cue.wash;
     const sweeping = release >= 0 && !calm.matches;
     for (const {side, ray, material, origin} of pair) {
       ray.setEnabled(sweeping);

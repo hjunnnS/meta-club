@@ -500,7 +500,8 @@ export function startLiveScene({
     const floorTarget=look.floor*(stageFocus?.82:boardFocus?.88:1);
     floorLevel+=(floorTarget-floorLevel)*blend;
     Object.assign(look,{ambient:ambientLevel,decor:decorLevel,beams:beamLevel*supportLevel,
-      white:whiteLevel*(stageFocus?.65:1),floor:floorLevel,support:supportLevel});
+      white:whiteLevel*(stageFocus?.65:1),floor:floorLevel,support:supportLevel,
+      protectedMeshes:[...djMeshes,scene.getMeshByName('EDM house screen')].filter(Boolean)});
     renderCeiling(beats,strobing,musicEnergy,roomPulse,look);
     renderSpeakers(beats,audioBands,Boolean(playing),dt,calmBeats.matches);
     const accentAge=accentPreview?(performance.now()-accentPreview.start)/1000:0;
@@ -519,6 +520,7 @@ export function startLiveScene({
       if(smokeProtection){accentCue.curtain=0;accentCue.fan=0;}
       accentCue.variant=openingSection;accentCue.gather=openingGather;accentCue.travel=0;
     }
+    if(playing&&!accentTest&&!effectPreview){accentCue.fan*=.45;accentCue.gobo*=.70;}
     const performancePhase=stageEvents.phase;
     const performancePriority=performancePhase&&performancePhase.kind!=='led'&&performancePhase.level<.75;
     if(!accentTest&&!effectPreview){accentCue.curtain*=supportLevel;accentCue.fan*=supportLevel;accentCue.gobo*=supportLevel;}
@@ -584,7 +586,7 @@ export function startLiveScene({
     const hologramRect=stageFocus&&stageEvents.kind!=='laser'?protectedRectangle([-3,2,-6],[9,7,6],viewport):null;
     for(const mesh of scene.meshes){
       const houseBeam=/^(peripheral laser (ray|soft edge)|wall downward light cone|house fan|phrase laser ray)$/.test(mesh.name);
-      const fineBeam=/^(peripheral laser (ray|soft edge)|house fan|phrase laser ray|Strobe overhead fan beam|Strobe wall curtain beam|overhead shaft|overhead core|scanning fan)$/.test(mesh.name);
+      const fineBeam=/^(peripheral laser (ray|soft edge)|wall downward light cone|house fan|phrase laser ray|Strobe overhead fan beam|Strobe wall curtain beam|overhead shaft|overhead core|scanning fan)$/.test(mesh.name);
       if(!houseBeam&&!fineBeam)continue;
       const showBeam=/^(overhead shaft|overhead core|scanning fan)$/.test(mesh.name);
       const accentBeam=/^Strobe (overhead fan|wall curtain) beam$/.test(mesh.name);
