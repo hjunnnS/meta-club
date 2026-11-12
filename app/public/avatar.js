@@ -145,7 +145,7 @@ export function avatarFactory(B, scene, glow) {
     root.position.set(actor.x, actor.y, actor.z);
     root.rotation.y = actor.yaw;
     let wand, tip, trail, orbit, previousTip, previousTime = 0;
-    function showWand(visible, detailed) {
+    function showWand(visible, detailed, motion=null) {
       if (!visible && !wand) return;
       if (!wand) {
         wand = B.MeshBuilder.CreateCylinder('mood wand', { height: featuredWand ? 0.83 : 0.54, diameter: featuredWand ? 0.105 : 0.065, tessellation: 8 }, scene);
@@ -157,7 +157,13 @@ export function avatarFactory(B, scene, glow) {
       }
       wand.parent = detailed ? limbs[2] : root;
       wand.position.set(detailed ? -0.117 : 0.38, detailed ? (featuredWand ? -0.88 : -0.753) : 1.28, detailed ? 0 : 0.12);
-      wand.rotation.z = detailed ? -0.45 : -0.85;
+      wand.rotation.set(0,0,detailed ? -0.45 : -0.85);
+      if(detailed&&motion){
+        wand.rotation.set(motion.pitch,0,motion.roll);
+        const axis=B.Vector3.TransformNormal(B.Axis.Y,B.Matrix.RotationYawPitchRoll(0,motion.pitch,motion.roll));
+        const grip=(featuredWand?.83:.54)/2-.025;
+        wand.position.set(0,-.525,0);wand.position.subtractInPlace(axis.scale(grip));
+      }
       wand.setEnabled(visible);
       const drawTrail = visible && detailed && root.isEnabled();
       if (drawTrail && !trail) {
@@ -170,18 +176,20 @@ export function avatarFactory(B, scene, glow) {
         trail = null;
       }
       if (drawTrail) {
+        near.computeWorldMatrix(true);limbs[2].computeWorldMatrix(true);wand.computeWorldMatrix(true);
         tip.computeWorldMatrix(true);
         const point = tip.getAbsolutePosition(), now = performance.now();
         const speed = previousTip ? B.Vector3.Distance(point,previousTip)/Math.max(.016,(now-previousTime)/1000) : 0;
         const sweep = Math.min(1,speed/3.5);
-        trail.diameter = .035 + sweep*(featuredWand ? .20 : .13);
+        trail.diameter = .035 + sweep*(featuredWand ? .20 : .13)*(motion?motion.sweep:1);
+        trail.visibility=motion?(motion.reduced?0:Math.min(.85,sweep*motion.sweep*.85)):1;
         if(!orbit) {
           orbit=B.MeshBuilder.CreateTorus('wand body orbit',{diameter:1.12,thickness:.018,tessellation:32},scene);
           orbit.parent=root;orbit.position.y=1.03;orbit.material=trailMaterial;orbit.isPickable=false;
         }
-        orbit.setEnabled(sweep>.15);
+        orbit.setEnabled(sweep>.15&&(!motion||!motion.reduced&&motion.large>.55));
         orbit.rotation.z=.16*Math.sin(now/420);
-        orbit.visibility=sweep*.55;
+        orbit.visibility=sweep*.55*(motion?motion.sweep:1);
         previousTip=point.clone();previousTime=now;
       } else {
         previousTip=null;

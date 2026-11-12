@@ -112,3 +112,33 @@ function animateExtraDance(model,action,beats,style,drive,strength){
     }
   });
 }
+
+// Optional right-arm layer. Lowering the wand leaves all five base dances intact.
+export function animateWandDance(model,action,beats,energy=0,reduced=false){
+  if(!dances.has(action))return null;
+  const b=reduced?0:Math.max(0,beats),phase=b%16;
+  const big=Math.floor(b/16)%2,previous=b<16?0:1-big;
+  const fade=Math.min(1,phase/1.5),ease=fade*fade*(3-2*fade);
+  const large=previous+(big-previous)*ease;
+  const gain=(.45+.55*large)*(.75+.25*Math.max(0,Math.min(1,energy)));
+  const wave=Math.sin(b*Math.PI),fast=Math.sin(b*Math.PI*2),arm=model.limbs[2];
+  let roll=-.16,pitch=0;
+  if(action==='groove'){
+    arm.rotation.z=1.38+.38*wave*gain;arm.rotation.x=-.22+.18*fast*gain;
+    roll=-.16+.16*wave*gain;
+  }else if(action==='side-step'){
+    arm.rotation.z=1.25+.55*wave*gain;arm.rotation.x=-.35+.40*wave*gain;
+    roll=-.12+.23*wave*gain;pitch=.12*fast*gain;
+  }else if(action==='disco-point'){
+    const reach=.5-.5*Math.cos(b*Math.PI/2);
+    arm.rotation.z=.75+(1.40+.55*gain)*reach;arm.rotation.x=-.20-.25*(1-reach);
+    roll=-.12+.20*reach;pitch=.06*fast;
+  }else if(action==='hands-up'){
+    arm.rotation.z=2.65+.22*wave*gain;arm.rotation.x=-.10+.20*fast*gain;
+    roll=.20*fast*gain;pitch=.10*wave*gain;
+  }else{
+    arm.rotation.z=.48+.12*fast*gain;arm.rotation.x=-.60+.48*fast*gain;
+    roll=-.10+.15*fast*gain;pitch=.15*wave*gain;
+  }
+  return {roll,pitch,large,sweep:large*(.55+.45*Math.abs(wave)),reduced};
+}

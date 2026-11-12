@@ -9,7 +9,7 @@ import { rhythmFloor } from './rhythm-floor.js';
 import { playlistPosition, trackBeat, musicDynamics } from './music.js';
 import { effects, eventPlayer, ledScreen, houseScreen, houseLights, peripheralTests, peripheralCue, beamPulse } from '/stage/festival/events.js';
 import { permittedPath, edmCameraDistance, edmSeats, edmStage, edmFloor, edmBalcony, edmUpperRoute, edmStairRoute, nearbyEdmPole } from './edm-layout.js';
-import { dances, danceCamera, animateDance } from './free-dance.js';
+import { dances, danceCamera, animateDance, animateWandDance } from './free-dance.js';
 import { avatarFactory, playerView, staffNPC, animateStaff } from './avatar.js';
 export function startLiveScene({
   B,
@@ -711,9 +711,14 @@ export function startLiveScene({
         const absoluteBeat=beats+(playback?.cycle||0)*(playback?.track.duration||0)*(playback?.track.bpm||132)/60;
         const motion=podiumDanceAt(a,absoluteBeat,nearPole);
         m.near.setEnabled(true);m.far.setEnabled(false);
-        m.showWand(motion!=='pole-dance'&&Boolean(a.wand),true);
-        if(motion==='pole-dance')animatePoleDance(B,m,anchor.pole,playing?beats:0,musicEnergy,calmBeats.matches);
-        else {releasePoleGrip(m);animateDance(m,motion,calmBeats.matches?0:beats,undefined,musicEnergy,dynamics.level);}
+        if(motion==='pole-dance'){
+          m.showWand(false,true);animatePoleDance(B,m,anchor.pole,playing?beats:0,musicEnergy,calmBeats.matches);
+        }else{
+          releasePoleGrip(m);animateDance(m,motion,calmBeats.matches?0:beats,undefined,musicEnergy,dynamics.level);
+          const visibleWand=Boolean(a.wand&&(a.id===own||otherWands));
+          const wandMotion=visibleWand?animateWandDance(m,motion,beats,musicEnergy,calmBeats.matches):null;
+          m.showWand(visibleWand,true,wandMotion);
+        }
         detailed++;continue;
       }
       const pole=a.action==='pole-dance'?nearbyEdmPole(a,.95):null;
@@ -733,7 +738,8 @@ export function startLiveScene({
       const articulated = close || (a.ai && showSteps) || (a.id === wandGuest && otherWands);
       m.near.setEnabled(articulated);
       m.far.setEnabled(!articulated);
-      m.showWand(Boolean(a.wand && (a.id === own || otherWands)), articulated);
+      const visibleWand=Boolean(a.wand && (a.id === own || otherWands));
+      if(!dances.has(dance))m.showWand(visibleWand,articulated);
       if (a.ai) {
         ai++;
         if ((articulated ? m.torso : m.far).isInFrustum(planes)) visibleAI++;
@@ -742,14 +748,17 @@ export function startLiveScene({
         if (articulated) {
           animateDance(m, dance, response ? .85 + release * .6 : beats,
             response ? responders.indexOf(a.id) : a.ai && a.trainSlot == null ? a.danceStyle : undefined, musicEnergy,dynamics.level);
+          const wandMotion=visibleWand&&!response?animateWandDance(m,dance,beats,musicEnergy,calmBeats.matches):null;
           if (liftWand) {
             const reach = Math.min(1, (gather - .48) * 4);
             const arm = m.limbs[2];
             arm.rotation.z += (2.92 - arm.rotation.z) * reach;
             arm.rotation.x += (-.16 - arm.rotation.x) * reach;
           }
+          m.showWand(visibleWand,true,wandMotion);
           detailed++;
         } else {
+          m.showWand(visibleWand,false);
           const sway = Math.sin(phase / 2);
           m.far.position.x = a.action === 'side-step' ? 0.28 * sway : 0;
           m.far.position.y = 0.79 + (a.action === 'groove' ? 0.14 : 0.06) * Math.abs(beatWave);
