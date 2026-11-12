@@ -1,3 +1,4 @@
+import {animatePoleDance,releasePoleGrip} from './pole-dance.js';
 import { ceilingLights, musicSpeakers, strobeAccents, strobeAccentCue, accentDurations, movingLightPreview, addedFloorWallLights, podiumRimLights } from './ceiling-lights.js';
 import { clubAmbience, strobeDurations } from './ambience.js';
 import {activityFeedback} from './activity-feedback.js';
@@ -5,7 +6,7 @@ import {sceneLook} from './scene-look.js';
 import { rhythmFloor } from './rhythm-floor.js';
 import { playlistPosition, trackBeat, musicDynamics } from './music.js';
 import { effects, eventPlayer, ledScreen, houseScreen, houseLights, peripheralTests, peripheralCue, beamPulse } from '/stage/festival/events.js';
-import { permittedPath, edmCameraDistance, edmSeats, edmStage, edmFloor, edmBalcony, edmUpperRoute, edmStairRoute } from './edm-layout.js';
+import { permittedPath, edmCameraDistance, edmSeats, edmStage, edmFloor, edmBalcony, edmUpperRoute, edmStairRoute, nearbyEdmPole } from './edm-layout.js';
 import { dances, danceCamera, animateDance } from './free-dance.js';
 import { avatarFactory, playerView, staffNPC, animateStaff } from './avatar.js';
 export function startLiveScene({
@@ -208,7 +209,7 @@ export function startLiveScene({
       models.delete(id);
     }
   }
-  let preview, speakerCamera, connected=true, gameActive=false;
+  let preview, speakerCamera, connected=true, gameActive=false, poleApproaching=false;
   function speakerView(kind='speakers'){
     if(speakerCamera)return;
     cancelWalk();
@@ -242,6 +243,25 @@ export function startLiveScene({
   window.addEventListener('message', (e) => {
     if (e.source !== parent || e.origin !== location.origin) return;
     const { kind, data } = e.data || {};
+    if(kind==='cancel-pole-approach'&&poleApproaching){poleApproaching=false;cancelWalk();}
+    if(kind==='pole-dance-request'){
+      const actor=models.get(own)?.actor;
+      if(!connected||gameActive||speakerCamera||preview||!actor)return;
+      if(actor.action==='pole-dance'){cancelWalk();send('pole-action','idle');return;}
+      const foot={x:cam.position.x,y:cam.position.y-eyeHeight,z:cam.position.z};
+      const pole=nearbyEdmPole({...actor,...foot});if(!pole)return;
+      const dx=foot.x-pole.x,dz=foot.z-pole.z,length=Math.hypot(dx,dz)||1;
+      const goal={x:pole.x+dx/length*.56,y:.5,z:pole.z+(length<.01?.56:dz/length*.56)};
+      const done=()=>{
+        poleApproaching=false;
+        cam.rotation.y=Math.atan2(goal.x-pole.x,goal.z-pole.z);
+        send('move',{...goal,yaw:cam.rotation.y});send('pole-action','pole-dance');
+      };
+      poleApproaching=true;
+      if(!navigate(goal,done,(from,to)=>permittedPath(from,to,states))){
+        poleApproaching=false;send('gate-notice','봉 가까운 열린 자리에서 다시 눌러 주세요.');
+      }
+    }
     if (kind === 'clock') {
       if(epoch!==data.epoch){musicStartBeat=null;firstLaserAt=null;}
       epoch = data.epoch;
@@ -657,6 +677,14 @@ export function startLiveScene({
         m.root.position = B.Vector3.Lerp(m.root.position, target, Math.min(1, dt / 90));
         m.root.rotation.y = a.yaw;
       }
+      if(a.action!=='pole-dance')releasePoleGrip(m);
+      const pole=a.action==='pole-dance'?nearbyEdmPole(a,.95):null;
+      if(pole){
+        m.near.setEnabled(true);m.far.setEnabled(false);m.showWand(false,true);
+        animatePoleDance(B,m,pole,playing?beats:0,musicEnergy,calmBeats.matches);
+        detailed++;continue;
+      }
+      if(a.action==='pole-dance')releasePoleGrip(m);
       const adjacentRider = ownSlot != null && a.trainSlot != null && Math.abs(a.trainSlot - ownSlot) <= 1;
       const detailRadius = low ? (adjacentRider ? 12 : 8) : 21;
       const close = a.id === own || B.Vector3.DistanceSquared(scene.activeCamera.position, target) < detailRadius ** 2;

@@ -1,5 +1,5 @@
 import {background,extraGuestPlaces} from './visitors.js';
-import {edmSeats,nearbyEdmSeats} from './edm-layout.js';
+import {edmSeats,nearbyEdmSeats,nearbyEdmPole} from './edm-layout.js';
 import {dances} from './free-dance.js';
 import {performanceStatus} from './club-performances.js';
 import {effects} from '/stage/festival/events.js';
@@ -46,6 +46,10 @@ export class PersonalRoom {
    const moved=Math.hypot(a.x-data.x,a.z-data.z)>.015;
    Object.assign(a,{x:data.x,y:data.y,z:data.z,yaw:data.yaw});
    if(moved){a.action='walk';this.lastMove=Date.now();}return;
+  }
+  if(type==='action'&&data==='pole-dance'){
+   if(!nearbyEdmPole(a,.95)){this.emit('notice','단상 위 봉 가까이에서 시작해 주세요.');return;}
+   a.action=data;this.publish();return;
   }
   if(type==='action'&&a.seat===null&&(['idle','wave','dance'].includes(data)||dances.has(data))){a.action=data;this.publish();return;}
   if(type==='wand'&&typeof data==='boolean'){

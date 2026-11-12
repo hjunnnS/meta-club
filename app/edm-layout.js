@@ -128,3 +128,10 @@ export function nearbyEdmSeats(actor) {
     .filter(({seat,distance})=>distance<(seat.balcony?3.1:seat.table?3.8:2)&&Math.abs(actor.y-seat.y)<.5)
     .sort((a,b)=>a.distance-b.distance);
 }
+
+// Only the two physical podiums can host the separate grip dance.
+export function nearbyEdmPole(actor,radius=1.65){
+  if(!actor||actor.seat!=null||actor.trainSlot!=null||Math.abs(actor.y-.5)>.12)return null;
+  const poles=[{x:-15.3,z:-8.8},{x:-15.3,z:-1.6}];
+  return poles.find(p=>Math.hypot(actor.x-p.x,actor.z-p.z)<=radius)||null;
+}

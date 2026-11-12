@@ -1,5 +1,5 @@
 import {rhythmGame} from './rhythm-game.js';
-import { nearbyEdmSeats, edmSeats } from './edm-layout.js';
+import { nearbyEdmSeats, edmSeats, nearbyEdmPole } from './edm-layout.js';
 import { dances, danceButtons } from './free-dance.js';
 import { initShop } from './shop.js';
 import { musicPlayer } from './music.js';
@@ -97,6 +97,11 @@ function display(data) {
     : nearest?.seat.label ? nearest.seat.label+' 앉기' : nearest?.seat.table ? nearest.seat.table+'번 테이블 앉기' : '바 의자 앉기';
   el('seat').dataset.seat = nearest ? String(nearest.index) : '';
   el('seat').disabled = riding;
+  const poleActive=self?.action==='pole-dance';
+  el('pole-dance').hidden=!poleActive&&!nearbyEdmPole(self);
+  el('pole-dance').disabled=!self||sitting||riding;
+  el('pole-dance').textContent=poleActive?'봉 놓기':'봉 잡고 춤추기';
+  el('pole-dance').setAttribute('aria-pressed',String(poleActive));
   selectDance(self?.action, self?.seat != null || riding);
   if (self?.action === 'dance' || dances.has(self?.action)) guide('dance');
   if (ready) {
@@ -280,6 +285,7 @@ window.addEventListener('message', (event) => {
     frame('quality', el('quality').value);
     frame('other-wands', el('other-wands').checked);
   }
+  if(kind==='pole-action'&&ready&&['pole-dance','idle'].includes(data))room.send('action',data);
   if (kind === 'move' && ready) {
     room.send('move', data);
     if (visitOrigin && Math.hypot(data.x - visitOrigin.x, data.z - visitOrigin.z) > 0.5) guide('move');
@@ -336,15 +342,17 @@ el('fast-flash').onchange = e => frame('fast-flash', e.target.checked);
 el('quality').onchange = (e) => frame('quality', e.target.value);
 for (const action of ['join','leave'])
   el('train-' + action).onclick = () => room?.send('train', action);
+el('pole-dance').onclick=()=>frame('pole-dance-request');
 el('wand').onclick = () => room?.send('wand', el('wand').getAttribute('aria-pressed') !== 'true');
 el('other-wands').onchange = e => frame('other-wands', e.target.checked);
 el('seat').onclick = () => room?.send('seat', el('seat').dataset.seat === '' ? undefined : Number(el('seat').dataset.seat));
 const selectDance = danceButtons(el('dance-options'), (action) => {
+  frame('cancel-pole-approach');
   room?.send('action', action);
   map.contentDocument?.querySelector('canvas')?.focus();
 });
 for (const b of document.querySelectorAll('[data-action]'))
-  b.onclick = () => room?.send('action', b.dataset.action);
+  b.onclick = () => {frame('cancel-pole-approach');room?.send('action', b.dataset.action);};
 document.querySelector('a[href="/lobby"]').onclick = () => guide('exit');
 el('show-guide').onclick = () => {
   if (!el('guide').hidden) return el('dismiss').click();

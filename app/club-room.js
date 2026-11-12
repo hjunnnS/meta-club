@@ -2,7 +2,7 @@ import { DanceTrain, onTrainFloor } from './dance-train.js';
 import { effects } from '../stage/festival/events.js';
 import { localTest } from './local-test.js';
 import { ManagedChannelZones } from './managed-channel-zones.js';
-import { edmArea, permittedPath, edmSeats as seats, nearbyEdmSeats } from './edm-layout.js';
+import { edmArea, permittedPath, edmSeats as seats, nearbyEdmSeats, nearbyEdmPole } from './edm-layout.js';
 import { blockedMessage } from './message-filter.js';
 import { background, extraGuestPlaces } from './visitors.js';
 import { performanceStatus } from './club-performances.js';
@@ -23,7 +23,7 @@ if (!Number.isInteger(extraVisitors) || extraVisitors < 0 || extraVisitors > cap
   throw Error('CLUB_AI_EXTRA_WHEN_EMPTY must be an integer from 0 to ' + capacity);
 const floorEntry = { x: -1.8, y: 0.018, z: 6.4, yaw: -1.0 };
 import { dances } from './public/free-dance.js';
-const emotions = new Set(['idle', 'dance', 'wave', ...dances.keys()]);
+const emotions = new Set(['idle', 'dance', 'wave', 'pole-dance', ...dances.keys()]);
 function text(value, max) {
   return typeof value === 'string' && value.length <= max && !/[\u0000-\u001f\u007f]/.test(value)
     ? value.trim()
@@ -119,6 +119,7 @@ export class EdmRoom extends Room {
     this.onMessage('action', (c, a) => {
       const m = this.member(c);
       if (!m || !this.allowActivity(c) || !emotions.has(a) || m.seat !== null || this.train.riders.has(m.id)) return;
+      if(a==='pole-dance'&&!nearbyEdmPole(m,.95))return this.notice(c,'단상 위 봉 가까이에서 시작해 주세요.');
       m.action = a;
       this.dirty = true;
       if (a === 'wave' || a === 'dance') this.react(m, a, true);
