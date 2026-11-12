@@ -85,7 +85,7 @@ client=client.replace("const countdown = next ?", "const countdown = data.waitin
 client=client.replace("el('music').classList.toggle('awaiting', ready && !id);", "el('music').classList.toggle('awaiting', ready && !id);el('music').disabled=!ready;")
 client=client.replace("ready=false;needsPlace=true;snapshot=null;", "ready=false;el('music').disabled=true;needsPlace=true;snapshot=null;")
 client=client.replace("enter(new URLSearchParams(location.search).get('channel') || undefined);", "el('music').disabled=true;enter(new URLSearchParams(location.search).get('channel') || undefined);")
-client=client.replace("let visitOrigin;", "const beginAutomaticOpening=automaticOpening({music,getRoom:()=>room,frame,showMusic,note,button:el('music')});\nlet visitOrigin;")
+client=client.replace("el('music').disabled=true;enter(new URLSearchParams(location.search).get('channel') || undefined);", "const beginAutomaticOpening=automaticOpening({music,getRoom:()=>room,frame,showMusic,note,button:el('music')});\nel('music').disabled=true;enter(new URLSearchParams(location.search).get('channel') || undefined);")
 client=client.replace("    frame('other-wands', el('other-wands').checked);", "    frame('other-wands', el('other-wands').checked);\n    beginAutomaticOpening();")
 put('clubs/edm/client.js',client)
 landing='''<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>메타 클럽 · 화면 체험</title>
