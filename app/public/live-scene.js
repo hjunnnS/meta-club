@@ -209,7 +209,7 @@ export function startLiveScene({
       models.delete(id);
     }
   }
-  let preview, speakerCamera, connected=true, gameActive=false, poleApproaching=false;
+  let preview, speakerCamera, connected=true, gameActive=false, poleApproaching=false, poleApproach=null;
   function speakerView(kind='speakers'){
     if(speakerCamera)return;
     cancelWalk();
@@ -251,15 +251,20 @@ export function startLiveScene({
       const foot={x:cam.position.x,y:cam.position.y-eyeHeight,z:cam.position.z};
       const pole=nearbyEdmPole({...actor,...foot});if(!pole)return;
       const dx=foot.x-pole.x,dz=foot.z-pole.z,length=Math.hypot(dx,dz)||1;
-      const goal={x:pole.x+dx/length*.56,y:.5,z:pole.z+(length<.01?.56:dz/length*.56)};
+      const goal={x:pole.x+dx/length*.70,y:.5,z:pole.z+dz/length*.70};
       const done=()=>{
-        poleApproaching=false;
-        cam.rotation.y=Math.atan2(goal.x-pole.x,goal.z-pole.z);
-        send('move',{...goal,yaw:cam.rotation.y});send('pole-action','pole-dance');
+        poleApproaching=false;poleApproach=null;cancelWalk();
+        const at={x:cam.position.x,y:cam.position.y-eyeHeight,z:cam.position.z,yaw:cam.rotation.y};
+        if(!nearbyEdmPole({...actor,...at},.95))return;
+        cam.rotation.y=at.yaw=Math.atan2(at.x-pole.x,at.z-pole.z);
+        // Grip and its actual standing position are accepted as one update.
+        // Never report a target the walker only approached within its tolerance.
+        moveBefore={...at};lastSent=performance.now();send('pole-grip',at);
       };
-      poleApproaching=true;
+      if(Math.hypot(dx,dz)<=.85){done();return;}
+      poleApproaching=true;poleApproach={pole,done};
       if(!navigate(goal,done,(from,to)=>permittedPath(from,to,states))){
-        poleApproaching=false;send('gate-notice','봉 가까운 열린 자리에서 다시 눌러 주세요.');
+        poleApproaching=false;poleApproach=null;send('gate-notice','봉 가까운 열린 자리에서 다시 눌러 주세요.');
       }
     }
     if (kind === 'clock') {
@@ -348,6 +353,7 @@ export function startLiveScene({
     );
   }
   pad.onpointerdown = (e) => {
+    poleApproaching=false;poleApproach=null;
     if (padId !== null) return;
     padId = e.pointerId;
     pad.setPointerCapture(padId);
@@ -413,6 +419,7 @@ export function startLiveScene({
   canvas.addEventListener('pointerup', e=>{
     const tap=seatTap;seatTap=null;
     if(!tap||tap.id!==e.pointerId||tap.drag||activeSeat!==null||riding||speakerCamera||preview||!connected||gameActive)return;
+    if(poleApproaching){poleApproaching=false;poleApproach=null;cancelWalk();}
     const bounds=canvas.getBoundingClientRect();
     const hit=pickDestination((e.clientX-bounds.left)*engine.getRenderWidth()/bounds.width,
       (e.clientY-bounds.top)*engine.getRenderHeight()/bounds.height);
@@ -448,6 +455,7 @@ export function startLiveScene({
     }else if(!navigate(goal,arrived,permit))failed();
 
   });
+  canvas.addEventListener('keydown',e=>{if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)){poleApproaching=false;poleApproach=null;}});
   window.addEventListener('blur', () => joystick(0, 0));
   window.addEventListener('resize', () => engine.resize());
   // Keep member names; give the nearest AI name priority when labels overlap.
@@ -786,6 +794,10 @@ export function startLiveScene({
       wingCamera.setTarget(new B.Vector3(edmStage.dj.x,2.80,edmStage.dj.z));wingCamera.fov=.55;
       wingBroadcast.renderList=dj.near.getChildMeshes();
       wingBroadcast.resetRefreshCounter();nextWingBroadcast=now+1000/10;
+    }
+    if(poleApproaching&&poleApproach){
+      const {pole,done}=poleApproach,foot=cam.position.y-eyeHeight;
+      if(Math.abs(foot-.5)<.12&&Math.hypot(cam.position.x-pole.x,cam.position.z-pole.z)<=.85)done();
     }
     if (own && now - lastSent > 100 && activeSeat === null && !riding) {
       const pos = {

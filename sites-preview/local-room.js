@@ -43,13 +43,21 @@ export class PersonalRoom {
   if(type==='snapshot'){this.publish();return;}
   if(type==='move'){
    if(a.seat!==null||!data||!['x','y','z','yaw'].every(k=>Number.isFinite(data[k])))return;
+   const anchor=a.action==='pole-dance'?this.poleAnchor:null;
+   if(anchor&&Math.hypot(data.x-anchor.x,data.z-anchor.z)<.08&&Math.abs(data.y-anchor.y)<.08){a.yaw=data.yaw;return;}
+   if(anchor)this.poleAnchor=null;
    const moved=Math.hypot(a.x-data.x,a.z-data.z)>.015;
    Object.assign(a,{x:data.x,y:data.y,z:data.z,yaw:data.yaw});
    if(moved){a.action='walk';this.lastMove=Date.now();}return;
   }
+  if(type==='pole-grip'){
+   if(a.seat!==null||a.trainSlot!=null||!data||!['x','y','z','yaw'].every(k=>Number.isFinite(data[k]))||!nearbyEdmPole({...a,...data},.95)||Math.hypot(data.x-a.x,data.y-a.y,data.z-a.z)>.5)return;
+   Object.assign(a,{x:data.x,y:data.y,z:data.z,yaw:data.yaw,action:'pole-dance'});
+   this.poleAnchor={x:a.x,y:a.y,z:a.z};this.publish();return;
+  }
   if(type==='action'&&data==='pole-dance'){
    if(!nearbyEdmPole(a,.95)){this.emit('notice','단상 위 봉 가까이에서 시작해 주세요.');return;}
-   a.action=data;this.publish();return;
+   this.poleAnchor={x:a.x,y:a.y,z:a.z};a.action=data;this.publish();return;
   }
   if(type==='action'&&a.seat===null&&(['idle','wave','dance'].includes(data)||dances.has(data))){a.action=data;this.publish();return;}
   if(type==='wand'&&typeof data==='boolean'){

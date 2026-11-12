@@ -285,6 +285,7 @@ window.addEventListener('message', (event) => {
     frame('quality', el('quality').value);
     frame('other-wands', el('other-wands').checked);
   }
+  if(kind==='pole-grip'&&ready)room.send('pole-grip',data);
   if(kind==='pole-action'&&ready&&['pole-dance','idle'].includes(data))room.send('action',data);
   if (kind === 'move' && ready) {
     room.send('move', data);

@@ -37,6 +37,7 @@ export class EdmRoom extends Room {
     this.maxClients = capacity;
     this.setSeatReservationTime(seatSeconds);
     this.members = new Map();
+    this.poleAnchors = new WeakMap();
     this.train = new DanceTrain();
     this.zones = new ManagedChannelZones();
     this.preparing = [];
@@ -116,11 +117,23 @@ export class EdmRoom extends Room {
         c.send('clock', { sent, now: Date.now(), epoch: this.epoch, tracks: playlist() });
     });
     this.onMessage('move', (c, p) => this.move(c, p));
+    this.onMessage('pole-grip',(c,p)=>{
+      const m=this.member(c);
+      if(!m||!this.allowActivity(c)||m.seat!==null||this.train.riders.has(m.id)||!p||
+        !['x','y','z','yaw'].every(k=>Number.isFinite(p[k]))||!nearbyEdmPole({...m,...p},.95))return;
+      const elapsed=Math.max(0,(Date.now()-c.userData.lastMove)/1000);
+      if(Math.hypot(p.x-m.x,p.y-m.y,p.z-m.z)>Math.min(.5,elapsed*4.5+.16)||!this.positionMember(m.id,m,p))return;
+      Object.assign(m,{x:p.x,y:p.y,z:p.z,yaw:p.yaw,action:'pole-dance'});
+      this.poleAnchors.set(m,{x:p.x,y:p.y,z:p.z});
+      c.userData.lastMove=Date.now();this.dirty=true;
+    });
     this.onMessage('action', (c, a) => {
       const m = this.member(c);
       if (!m || !this.allowActivity(c) || !emotions.has(a) || m.seat !== null || this.train.riders.has(m.id)) return;
       if(a==='pole-dance'&&!nearbyEdmPole(m,.95))return this.notice(c,'단상 위 봉 가까이에서 시작해 주세요.');
       m.action = a;
+      if(a==='pole-dance')this.poleAnchors.set(m,{x:m.x,y:m.y,z:m.z});
+      else this.poleAnchors.delete(m);
       this.dirty = true;
       if (a === 'wave' || a === 'dance') this.react(m, a, true);
     });
@@ -303,6 +316,12 @@ export class EdmRoom extends Room {
       c.send('place', m);
       return;
     }
+    const anchor=m.action==='pole-dance'?this.poleAnchors.get(m):null;
+    if(anchor&&Math.hypot(p.x-anchor.x,p.z-anchor.z)<.08&&Math.abs(p.y-anchor.y)<.08){
+      // Heartbeats and small standing corrections must not become walking.
+      m.yaw=p.yaw;c.userData.lastMove=Date.now();this.dirty=true;return;
+    }
+    if(anchor)this.poleAnchors.delete(m);
     const walking = Math.hypot(p.x - m.x, p.z - m.z) > 0.025;
     Object.assign(m, { x: p.x, y: p.y, z: p.z, yaw: p.yaw });
     if (m.trainSlot === 0) {
