@@ -150,21 +150,56 @@ for side, label in [(-1,"West"),(1,"East")]:
         for i in range(5):
             z=bottom_z-2*i;y=i+.04
             box(label+" ramp posts",metal,edge-.055,edge+.055,z-.055,z+.055,y,y+.95)
-    centre_z,depth,corner=(-8.85,21.7,.4) if festival else (-13.8,11.8,.8)
+    centre_z,depth,corner=-13.8,11.8,.8
     octagon(label+" upper deck",deck,x,centre_z,10.8,depth,corner,3.64,4,True)
     inner=x-side*5.32;outer=x+side*5.32
-    front=1.25 if festival else -8.75
+    front=-8.75
     for edge in (inner,outer):
         beam(label+" deck handrail",ice,(edge,5,-18.9),(edge,5,front),.06)
-        for z in [-18.9,-16.5,-14.2,-11.8,-8.75]+([-5.5,-2.1,1.25] if festival else []):
+        for z in [-18.9,-16.5,-14.2,-11.8,-8.75]:
             box(label+" posts",metal,edge-.06,edge+.06,z-.06,z+.06,4,5)
     for xc in [x-4,x+4]:
-        for z in [-17.4,-9.4]+([.8] if festival else []):
+        for z in [-17.4,-9.4]:
             box(label+" supports",metal,xc-.21,xc+.21,z-.21,z+.21,0,3.64)
     front_left,front_right=(x-5.0,x+5.0) if festival else (x-4.5,x+4.5)
     for lo,hi in [(front_left,ramp_x-1.65),(ramp_x+1.65,front_right)]:
-        if hi-lo>.1:beam(label+" deck handrail",ice,(lo,5,top_z),(hi,5,top_z),.06)
+        if hi-lo>.1:beam(label+" deck handrail",ice,(lo,5,-8 if festival else top_z),(hi,5,-8 if festival else top_z),.06)
     beam(label+" deck handrail",ice,(x-4.5,5,-19.6),(x+4.5,5,-19.6),.06)
+
+if festival:
+    # Restore the VIP room footprint, then join it by narrower U-shaped outer galleries.
+    def gallery(x1,x2,z1,z2):box('U lounge floor',deck,x1,x2,z1,z2,3.64,4,True)
+    gallery(-20,-16.2,-8.2,2)
+    gallery(-21.2,-19.65,1.2,11.6) # bypass leaves the existing stairwell open overhead
+    gallery(-21.2,-16.2,.5,2)
+    gallery(-21.2,-16.2,10,11.6)
+    gallery(-20,-16.2,10,18.4)
+    gallery(16.2,20,-8.2,18.4)
+    octagon('U lounge floor',deck,14.6,-13.8,10.8,11.8,.8,3.64,4,True)
+    octagon('U lounge floor',deck,0,18.4,40,3.6,1.8,3.64,4,True)
+    gallery(8.95,20,8.5,10) # landing for the entrance-right stair
+    rect('U lounge stair',deck,8.95,12.05,10,18,4,0,-.01,True)
+    def guard(a,b):
+        beam('U lounge rail',ice,(a[0],5,a[1]),(b[0],5,b[1]),.045)
+        length=math.hypot(b[0]-a[0],b[1]-a[1]);count=max(1,math.ceil(length/2.5))
+        for j in range(count+1):
+            t=j/count;x=a[0]+(b[0]-a[0])*t;z=a[1]+(b[1]-a[1])*t
+            box('U lounge post',metal,x-.045,x+.045,z-.045,z+.045,4,5)
+    for a,b in [((-20,-8.2),(-20,1.2)),((-21.2,1.2),(-21.2,11.6)),
+        ((-20,11.6),(-20,18.4)),((-16.2,-8.2),(-16.2,16.6)),
+        ((-19.65,2.1),(-19.65,9.9)),((16.2,-8.2),(16.2,8.5)),
+        ((16.2,10),(16.2,16.6)),((20,-8.2),(20,18.4)),
+        ((-16.2,16.6),(16.2,16.6)),((-18.2,20.15),(18.2,20.15)),
+        ((-20,18.4),(-18.2,20.15)),((20,18.4),(18.2,20.15)),
+        ((8.95,8.5),(16.2,8.5)),((8.95,8.5),(8.95,10)),
+        ((9.28,-18.9),(9.28,-8.75)),((19.92,-18.9),(19.92,-8.75)),
+        ((10.1,-19.6),(19.1,-19.6)),((10.1,-8),(16.2,-8))]:guard(a,b)
+    for edge in [9.0,12.0]:
+        beam('U lounge rail',violet,(edge,1,18),(edge,5,10),.045)
+        for i in range(5):
+            z=18-2*i;box('U lounge post',metal,edge-.045,edge+.045,z-.045,z+.045,i,i+.95)
+    for x,z in [(-19.5,12),(-19.5,16),(19.5,12),(19.5,16),(-12,18.6),(12,18.6),(18.6,-17.4),(18.6,-9.4)]:
+        box('U lounge support',metal,x-.12,x+.12,z-.12,z+.12,0,3.64)
 
 # Frame the side rooms on their outer edges; their inner thresholds stay open.
 for side in (-1,1):
@@ -185,7 +220,7 @@ for side in (-1,1):
     beam("Lobby wing trim",ice,(side*3.9,1.25,20.7),(side*8.4,1.55,15.5),.08)
     if festival and side > 0:
         continue
-    for z in ([-18,-15,-12,-9,-6,-3,0] if festival else [-18,-15,-12,-9]):
+    for z in [-18,-15,-12,-9]:
         box("Upper deck fascia",violet,side*14.6-4.5,side*14.6+4.5,z,z+.07,4.002,4.018)
 # Proscenium brackets distinguish the elevated stage from the two audience decks.
 for side in (-1,1):
@@ -217,7 +252,7 @@ if festival:
     route[5] = (0,1.35,-11.2)
     route[9:] = [(-14.6,.045,6),(0,.018,0),(14.6,0,6),
                   (-17.9,.045,10.6),(-17.9,.045,10),(-17.9,4,2),
-                  (-17.9,4,.4),(-9.75,4,.4),(-9.75,4,-3.1)]
+                  (-17.9,4,-13),(-9.75,4,-13),(-9.75,4,-10.7)]
     stops.update(west=9,east=11,balcony=17)
 def ground(x,z):
     top=-999

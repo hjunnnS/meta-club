@@ -131,7 +131,7 @@ function playWall(ctx, beat, look = null) {
   ctx.fillRect(0,0,1024,384);
 }
 
-export function houseScreen(B, scene, broadcast) {
+export function houseScreen(B, scene, broadcast,wingBroadcast=null) {
   let title, overlay, lastFrame = -1;
   const screen = ledScreen(B, scene, 'EDM CLUB');
   screen.name = 'EDM house screen';
@@ -143,6 +143,14 @@ export function houseScreen(B, scene, broadcast) {
   const wingInk=new B.StandardMaterial('EDM wing artwork',scene);
   wingInk.disableLighting=true;wingInk.emissiveTexture=wingTexture;
   wingInk.emissiveColor=new B.Color3(.88,.88,.88);wingInk.backFaceCulling=false;
+  let wingProgram=null;
+  if(wingBroadcast){
+    wingProgram=new B.ShaderMaterial('EDM independent guest wings',scene,{
+      vertexSource:'precision highp float;attribute vec3 position;attribute vec2 uv;uniform mat4 worldViewProjection;varying vec2 vUV;void main(){vUV=uv;gl_Position=worldViewProjection*vec4(position,1.);}',
+      fragmentSource:'precision highp float;varying vec2 vUV;uniform sampler2D artwork;uniform sampler2D guests;uniform float live;void main(){vec4 bg=texture2D(artwork,vUV);vec4 feed=texture2D(guests,vUV);float edge=smoothstep(.03,.08,vUV.x)*(1.-smoothstep(.92,.97,vUV.x))*smoothstep(.15,.23,vUV.y)*(1.-smoothstep(.90,.97,vUV.y));gl_FragColor=vec4(mix(bg.rgb,feed.rgb,edge*live*feed.a),1.);}'
+    },{attributes:['position','uv'],uniforms:['worldViewProjection','live'],samplers:['artwork','guests']});
+    wingProgram.setTexture('artwork',wingTexture);wingProgram.setTexture('guests',wingBroadcast);wingProgram.setFloat('live',0);wingProgram.backFaceCulling=false;
+  }
   const casingInk=paint(B,scene,'EDM wing graphite','#10101b',.12);
   const wingRoots=[],wingWidth=edmStage.screen.width*edmStage.wingScreens.widthRatio;
   const wingHeight=edmStage.screen.height*edmStage.wingScreens.heightRatio;
@@ -154,7 +162,7 @@ export function houseScreen(B, scene, broadcast) {
     const casing=B.MeshBuilder.CreateBox('EDM wing screen casing',{width:wingWidth+.14,height:wingHeight+.14,depth:.12},scene);
     casing.parent=root;casing.position.z=-.09;casing.material=casingInk;casing.isPickable=false;casing.checkCollisions=true;
     const wing=B.MeshBuilder.CreatePlane('EDM wing screen '+(side<0?'left':'right'),{width:wingWidth,height:wingHeight,sideOrientation:B.Mesh.DOUBLESIDE},scene);
-    wing.parent=root;wing.material=wingInk;wing.isPickable=false;wing.checkCollisions=true;
+    wing.parent=root;wing.material=wingProgram||wingInk;wing.isPickable=false;wing.checkCollisions=true;
     // Bottom edges clear the upper-deck head height; cables attach the panels above.
     for(const x of [-wingWidth*.32,wingWidth*.32]){
       const height=10.9-(y+wingHeight/2);
@@ -188,8 +196,8 @@ export function houseScreen(B, scene, broadcast) {
     screen.material.dispose();
     screen.material = material;
   }
-  let lastSegment = -1, lastPerformance, lastDim;
-  return (track, beats, visible, accent, gather, calm, phraseBeat, release, cueColor, performanceTitle = null, dimBackground = false, roomPulse = 0, look = null) => {
+  let lastSegment = -1, lastPerformance, lastDim,lastCountdown=-1;
+  return (track, beats, visible, accent, gather, calm, phraseBeat, release, cueColor, performanceTitle = null, dimBackground = false, roomPulse = 0, look = null,countdown=0,wingLabel='중앙 플로어') => {
     flashInk.alpha=calm?0:roomPulse*.58;
     flashPanel.setEnabled(visible&&!calm&&roomPulse>.001);
     screen.setEnabled(visible);
@@ -198,7 +206,8 @@ export function houseScreen(B, scene, broadcast) {
     const segment = track && !performanceTitle ? Math.floor(Math.max(0, phraseBeat) % 32 / 8) : -1;
     if (broadcast) screen.material.setFloat('live', segment === 1 || segment === 2 ? 1 : 0);
     const frame = Math.floor(beats * 12);
-    if (title !== track || lastSegment !== segment || lastPerformance !== performanceTitle || lastDim !== dimBackground) {
+    if (title !== track || lastSegment !== segment || lastPerformance !== performanceTitle || lastDim !== dimBackground||lastCountdown!==countdown) {
+      lastCountdown=countdown;
       title = track;
       lastSegment = segment;
       lastPerformance = performanceTitle;
@@ -206,9 +215,17 @@ export function houseScreen(B, scene, broadcast) {
       overlay = performanceTitle ? lettering(performanceTitle) : segment === 1 || segment === 2 ? null : track ? lettering(track, 'EDM CLUB') : lettering('EDM CLUB');
     } else if (lastFrame === frame) return;
     lastFrame = frame;
+    wingProgram?.setFloat('live',track&&countdown===0?1:0);
+    if(countdown>0){
+      ctx.fillStyle='#090819';ctx.fillRect(0,0,1024,384);
+      ctx.textAlign='center';ctx.font='bold 260px system-ui';ctx.fillStyle=look?.secondary||'#9deaff';ctx.fillText(String(countdown),512,286);
+      wingCtx.fillStyle='#100c23';wingCtx.fillRect(0,0,1024,384);wingCtx.strokeStyle=look?.primary||'#9e6dff';wingCtx.lineWidth=10;wingCtx.strokeRect(18,18,988,348);
+      texture.update();wingTexture.update();return;
+    }
     if(track)playWall(wingCtx,calm?0:Math.max(0,phraseBeat),look);
     else mediaWall(wingCtx,calm?0:beats*.36);
     if(dimBackground){wingCtx.fillStyle='rgba(0,0,0,.80)';wingCtx.fillRect(0,0,1024,384);}
+    if(track){wingCtx.fillStyle='rgba(5,5,18,.86)';wingCtx.fillRect(0,318,1024,66);wingCtx.font='bold 35px system-ui';wingCtx.textAlign='center';wingCtx.fillStyle='#e6e1ff';wingCtx.fillText(wingLabel,512,363);}
     wingTexture.update();
     const portrait=segment===1||segment===2;
     if(portrait)flashInk.alpha*=.25;

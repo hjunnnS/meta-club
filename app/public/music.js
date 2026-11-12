@@ -47,8 +47,8 @@ export function prepareTrackBuffer(ctx,decoded,track) {
   return buffer;
 }
 
-export function musicPlayer(notice, playing, failed, {personalTimeline=false,onStart=()=>{}}={}) {
-  let personalStarted=false;
+export function musicPlayer(notice, playing, failed, {personalTimeline=false,onStart=()=>{},countdownSeconds=0,onCountdown=()=>{}}={}) {
+  let personalStarted=false,countdownPending=false;
   let ctx, analyser, frequencies,
     source,
     started = 0,
@@ -72,6 +72,7 @@ export function musicPlayer(notice, playing, failed, {personalTimeline=false,onS
     correctionEnd = 0;
   const cache = new Map();
   function stop() {
+    if(countdownPending){countdownPending=false;onCountdown(null);}
     generation++;
     pendingId = null;
     current = null;
@@ -92,7 +93,7 @@ export function musicPlayer(notice, playing, failed, {personalTimeline=false,onS
     return playlistPosition(tracks, epoch, now);
   }
   async function sync() {
-    if (!enabled || !epoch) return;
+    if (!enabled || !epoch || countdownPending) return;
     const next = target();
     if (!next) {
       if (current || pendingId) stop();
@@ -154,7 +155,8 @@ export function musicPlayer(notice, playing, failed, {personalTimeline=false,onS
       source.buffer = buffer;
       source.loop = true;
       source.connect(analyser);
-      started = correctionEnd = ctx.currentTime;
+      const lead=firstPersonalStart?Math.max(0,countdownSeconds):0;
+      started = correctionEnd = ctx.currentTime+lead;
       offset = actual.time;
       rate = 1;
       source.start(started, offset % buffer.duration);
@@ -166,9 +168,14 @@ export function musicPlayer(notice, playing, failed, {personalTimeline=false,onS
       pendingId = null;
       lastFailure = null;
       if(firstPersonalStart){
-        personalStarted=true;
-        epoch=Date.now()+Math.max(0,ctx.outputLatency||ctx.baseLatency||0)*1000;
-        onStart(epoch);
+        const audioEpoch=Date.now()+lead*1000+Math.max(0,ctx.outputLatency||ctx.baseLatency||0)*1000;
+        if(lead>0){
+          countdownPending=true;onCountdown({endsAt:audioEpoch,seconds:lead});
+          await new Promise(resolve=>setTimeout(resolve,Math.max(0,audioEpoch-Date.now())));
+          if(ticket!==generation)return;
+          countdownPending=false;onCountdown(null);
+        }
+        personalStarted=true;epoch=audioEpoch;onStart(epoch);
       }
       notice(actual.track.title);
       playing(id);
@@ -220,7 +227,7 @@ export function musicPlayer(notice, playing, failed, {personalTimeline=false,onS
     },
     status(at = performance.now()) {
       const next=target();
-      if(!source||!next||current!==next.track.id||ctx?.state!=='running'||lastFailure)return {playing:false};
+      if(countdownPending||!source||!next||current!==next.track.id||ctx?.state!=='running'||lastFailure)return {playing:false};
       const stamp=ctx.getOutputTimestamp?.();
       const audible=stamp&&stamp.contextTime>0
         ? stamp.contextTime+(at-stamp.performanceTime)/1000

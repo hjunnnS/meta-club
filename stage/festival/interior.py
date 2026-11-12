@@ -138,7 +138,7 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
         rug=finish('VIP woven rug',(.065,.052,.085),0,.98)
         cove=finish('VIP warm cove',(.52,.26,.10),0,.72,(.55,.29,.12))
         soft=finish('VIP violet cove',(.18,.08,.28),0,.78,(.26,.10,.38))
-        for j,z in enumerate([-10.2,-7.4,-3.1]):
+        for j,z in enumerate([-17.8,-15.0,-10.7]):
             x=-12.65
             octagon('VIP rug',rug,-11.9,z,4.0,2.72,.22,4.006,4.016)
             octagon('VIP sofa base',ink,x,z,1.70,2.40,.15,4.10,4.28)
@@ -155,7 +155,7 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
             beam('VIP sofa brass reveal',brass,(x+.84,4.24,z-1.04),(x+.84,4.24,z+1.04),.018)
             beam('VIP sofa underglow',cove,(x+.85,4.13,z-1.02),(x+.85,4.13,z+1.02),.022)
             beam('VIP outer floor glow',soft,(x-.83,4.04,z-1.08),(x-.83,4.04,z+1.08),.018)
-            # Low tables leave about .9m before the inner rail; z=.4 remains a clear cross-deck route.
+            # Low tables leave about .9m before the inner rail; z=-13 remains a clear cross-deck route.
             tx=-10.75
             octagon('VIP low table top',table,tx,z+.22,1.10,1.28,.16,4.43,4.51)
             for dx in [-.36,.36]:
@@ -308,7 +308,7 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
             continue
         for j in range(19):
             xx=side*(9.45+j*.56)
-            box('Deck fascia flutes',brass,xx-.047,xx+.047,2.02,2.10,3.64,3.98)
+            box('Deck fascia flutes',brass,xx-.047,xx+.047,-8.30,-8.22,3.64,3.98)
         # Side deck feature wall in the upper lounges.
         for j in range(6):
             xx=side*(10.4+j*1.7)

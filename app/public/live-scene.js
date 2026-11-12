@@ -23,6 +23,7 @@ export function startLiveScene({
   lockInput,
   place,
 }) {
+  const venueMeshes=scene.meshes.filter(mesh=>mesh.getTotalVertices()&&mesh.isEnabled());
   const send = (kind, data) => parent.postMessage({ kind, data }, location.origin);
   const models = new Map(),
     make = avatarFactory(B, scene, glow);
@@ -65,7 +66,19 @@ export function startLiveScene({
   scene.customRenderTargets.push(broadcast);
   const dj = staffNPC(B,scene,make,'dj');
   const bartender = staffNPC(B,scene,make,'bartender');
-  const updateBoard = houseScreen(B, scene, broadcast);
+  const wingCamera=new B.FreeCamera('EDM guest program camera',B.Vector3.Zero(),scene);
+  wingCamera.minZ=.08;wingCamera.fov=.85;
+  const wingBroadcast=new B.RenderTargetTexture('EDM guest program',{width:512,height:288},scene);
+  wingBroadcast.activeCamera=wingCamera;wingBroadcast.clearColor=new B.Color4(.025,.012,.065,0);
+  wingBroadcast.renderList=[];wingBroadcast.refreshRate=0;scene.customRenderTargets.push(wingBroadcast);
+  const updateBoard = houseScreen(B, scene, broadcast,wingBroadcast);
+  let nextWingBroadcast=0,openingCountdown=null;
+  const wingViews=[
+    {label:'중앙 플로어',target:[0,1,0],eye:[5,4.2,8],test:a=>Math.hypot(a.x,a.z)<9},
+    {label:'2층 라운지',target:[-12.4,4.9,-14],eye:[-9.7,6.6,-7],test:a=>a.y>3.5},
+    {label:'1층 테이블',target:[18.6,1.0,7.4],eye:[12.9,3.3,12.2],test:a=>a.x>16&&a.y<1},
+    {label:'1층 바',target:[-13.6,1.2,15.2],eye:[-8.8,3.3,11.5],test:a=>a.x< -8&&a.z>12&&a.y<1},
+  ];
   let nextBroadcast = 0;
 
   const lookPrimary=B.Color3.White(),lookSecondary=B.Color3.White();
@@ -242,6 +255,7 @@ export function startLiveScene({
         outputClock={id:data.id,time:data.time+Math.max(0,Math.min(.15,(Date.now()-data.sentAt)/1000)),at:performance.now()};
       else outputClock=null;
     }
+    if(kind==='opening-countdown')openingCountdown=data;
     if (kind === 'speaker-view') speakerView();
     if (kind === 'staff-view' && ['dj','bartender'].includes(data)) speakerView(data);
     if(kind==='accent-preview'&&Object.hasOwn(accentDurations,data)){
@@ -383,7 +397,7 @@ export function startLiveScene({
       if([...models.values()].some(m=>m.actor.seat===selected)){
         send('gate-notice','이미 앉아 있는 자리입니다. 다른 의자를 선택해 주세요.');return;
       }
-    }else if(!['Arena floor','Entry floor','Dance floor','DJ platform','DJ access','West dance zone','West deck ramp','West upper deck'].some(name=>names.includes(name)))return;
+    }else if(!['Arena floor','Entry floor','Dance floor','DJ platform','DJ access','West dance zone','West deck ramp','West upper deck','U lounge floor','U lounge stair'].some(name=>names.includes(name)))return;
     const goal=selected>=0?edmSeats[selected].exit:point;
     const arrived=selected<0?null:()=>{
       send('move',{x:cam.position.x,y:cam.position.y-eyeHeight,z:cam.position.z,yaw:cam.rotation.y});
@@ -394,14 +408,29 @@ export function startLiveScene({
     const failed=()=>send('gate-notice','걸어갈 수 있는 경로가 없습니다. 가까운 열린 바닥을 선택해 주세요.');
     if(selected>=0&&edmSeats[selected].balcony){
       const route=[],foot=cam.position.y-eyeHeight;
-      if(foot<3.5){
-        const onRamp=Math.abs(cam.position.x-edmBalcony.rampX)<1.45&&cam.position.z>edmBalcony.topZ-.2&&cam.position.z<edmBalcony.bottomZ+.2&&foot>.2;
-        if(!onRamp)route.push({x:edmBalcony.rampX,y:.045,z:edmBalcony.bottomZ+.6});
-        route.push({x:edmBalcony.rampX,y:4,z:edmBalcony.topZ-.6});
+      let x=cam.position.x,z=cam.position.z;
+      if(foot<3.95){
+        if(x>0){
+          const r=edmBalcony.rightRamp;
+          const onRamp=Math.abs(x-r.x)<1.45&&z>r.topZ-.2&&z<r.bottomZ+.2&&foot>.2;
+          if(!onRamp)route.push({x:r.x,y:0,z:r.bottomZ+.6});
+          route.push({x:r.x,y:4,z:r.topZ-.6},{x:17.9,y:4,z:9.2});x=17.9;z=9.2;
+        }else{
+          const onRamp=Math.abs(x-edmBalcony.rampX)<1.45&&z>edmBalcony.topZ-.2&&z<edmBalcony.bottomZ+.2&&foot>.2;
+          if(!onRamp)route.push({x:edmBalcony.rampX,y:.045,z:edmBalcony.bottomZ+.6});
+          route.push({x:edmBalcony.rampX,y:4,z:edmBalcony.topZ-.6});x=edmBalcony.rampX;z=1.4;
+        }
       }
-      if(foot<3.5||cam.position.x< -13.4){
-        route.push({x:edmBalcony.rampX,y:4,z:edmBalcony.crossZ},{x:edmBalcony.aisleX,y:4,z:edmBalcony.crossZ},{x:edmBalcony.aisleX,y:4,z:goal.z});
+      if(x>0&&z< -8)route.push({x:17.9,y:4,z});
+      if(x>0&&z<16.6){route.push({x:17.9,y:4,z:15.5},{x:17.9,y:4,z:18.4});z=18.4;}
+      if(z>=16.6){route.push({x:0,y:4,z:18.4},{x:-17.9,y:4,z:18.4},{x:-17.9,y:4,z:11.5});x=-17.9;z=11.5;}
+      if(z>2){
+        route.push({x:-20.4,y:4,z:11.5},{x:-20.4,y:4,z:1.2},{x:-17.9,y:4,z:1.2});x=-17.9;
       }
+      if(foot<3.95||x< -13.4){
+        route.push({x:edmBalcony.rampX,y:4,z:edmBalcony.crossZ},{x:edmBalcony.aisleX,y:4,z:edmBalcony.crossZ});
+      }
+      route.push({x:edmBalcony.aisleX,y:4,z:goal.z});
       route.push(goal);
       const advance=()=>{
         const next=route.shift();
@@ -552,7 +581,7 @@ export function startLiveScene({
     const lipGlow = ramp(cueBeat - 1.22, .28) * ramp(2.95 - cueBeat, .75);
     for (const lip of stageLips) illuminate(lip, cue.rgb, lipGlow);
     renderFloor(beats, celebrating, accent, cueBeat, cue.rgb, stageEvents.kind === 'laser' ? 1 : ['phoenix','whale','dragon','jellyfish','butterflies'].includes(stageEvents.kind) ? 2 : 0, roomPulse,look,Boolean(playing),musicEnergy);
-    updateBoard(playing ? playback.track.title : null, beats, !preview && !celebrating, Math.max(accent,startBeat>=0&&startBeat<.78?(1-startBeat/.78)*.85:0), gather, calmBeats.matches, phraseBeat, wallRelease, cue.hex, stageEvents.kind && stageEvents.kind !== 'led' ? effects[stageEvents.kind].label : null, strobing, roomPulse,look);
+    updateBoard(playing ? playback.track.title : null, beats, !preview && !celebrating, Math.max(accent,startBeat>=0&&startBeat<.78?(1-startBeat/.78)*.85:0), gather, calmBeats.matches, phraseBeat, wallRelease, cue.hex, stageEvents.kind && stageEvents.kind !== 'led' ? effects[stageEvents.kind].label : null, strobing, roomPulse,look,openingCountdown?Math.max(0,Math.min(3,Math.ceil((openingCountdown.endsAt-Date.now())/1000))):0,wingViews[Math.floor(Math.max(0,beats)/16)%4].label);
     const phase = beats * Math.PI * 2,
       beatWave = Math.sin(phase);
     washes.forEach(({ light, base }, i) => {
@@ -709,6 +738,19 @@ export function startLiveScene({
       }
       broadcast.resetRefreshCounter();
       nextBroadcast = now + 1000/12;
+    }
+    if(playing&&!preview&&!celebrating&&now>=nextWingBroadcast){
+      const shot=wingViews[Math.floor(Math.max(0,beats)/16)%wingViews.length];
+      const guests=[...models.values()].filter(m=>shot.test(m.actor)).slice(0,5);
+      wingCamera.position.copyFrom(B.Vector3.FromArray(shot.eye));
+      wingCamera.setTarget(B.Vector3.FromArray(shot.target));wingCamera.fov=.85;
+      if(guests.length){
+        const center=guests.reduce((v,m)=>v.add(m.root.position),B.Vector3.Zero()).scale(1/guests.length);center.y+=.95;
+        const offset=B.Vector3.FromArray(shot.eye).subtract(B.Vector3.FromArray(shot.target));
+        wingCamera.position.copyFrom(center).addInPlace(offset);wingCamera.setTarget(center);
+      }
+      wingBroadcast.renderList=[...venueMeshes,...guests.flatMap(m=>[...m.near.getChildMeshes(),m.far]),...bartender.near.getChildMeshes()];
+      wingBroadcast.resetRefreshCounter();nextWingBroadcast=now+1000/10;
     }
     if (own && now - lastSent > 100 && activeSeat === null && !riding) {
       const pos = {

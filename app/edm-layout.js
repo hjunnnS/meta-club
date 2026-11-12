@@ -6,7 +6,7 @@ export const edmStage={
   focusOrigins:[[-1.8,3.85,-13.10],[2.4,3.5,-13.50],[1.2,5.1,-17.15]],
 };
 // Match the west stair and extended upper-deck geometry in stage/build.py.
-export const edmBalcony={rampX:-17.9,bottomZ:10,topZ:2,crossZ:.4,aisleX:-9.75,sofaZ:[-10.2,-7.4,-3.1]};
+export const edmBalcony={rampX:-17.9,bottomZ:10,topZ:2,crossZ:-13,aisleX:-9.75,sofaZ:[-17.8,-15,-10.7],rightRamp:{x:10.5,bottomZ:18,topZ:10}};
 // Foot positions in the approved festival GLB (stage/build.py): metres, Y up.
 export function edmCameraDistance(target,direction,length) {
   const margin=.48;
@@ -31,11 +31,18 @@ export function edmArea({ x, y, z }) {
   const dx = Math.abs(Math.abs(x) - 14.6),
     side = x < 0 ? 'west' : 'east';
   if (x < 0 && (
-    (y >= 3.6 && octagon(dx, Math.abs(z + 8.85), 5.4, 10.85, 0.4)) ||
+    (y >= 3.6 && octagon(dx, Math.abs(z + 13.8), 5.4, 5.9, 0.8)) ||
     (Math.abs(x-edmBalcony.rampX)<=1.55 && z>=edmBalcony.topZ && z<=edmBalcony.bottomZ && Math.abs(y-(4+(z-2)*(.045-4)/8))<.35)
   )) {
     return { tier: 2, group: side + '-deck' };
   }
+  const upperRect=(x1,x2,z1,z2)=>y>=3.6&&x>=x1&&x<=x2&&z>=z1&&z<=z2;
+  if(upperRect(-20,-16.2,-8.2,2)||upperRect(-21.2,-19.65,1.2,11.6)||
+    upperRect(-21.2,-16.2,.5,2)||upperRect(-21.2,-16.2,10,11.6)||upperRect(-20,-16.2,10,18.4)||
+    upperRect(16.2,20,-8.2,18.4)||upperRect(8.95,20,8.5,10)||
+    (y>=3.6&&octagon(Math.abs(x),Math.abs(z-18.4),20,1.8,1.8))||
+    (x>0&&y>=3.6&&octagon(dx,Math.abs(z+13.8),5.4,5.9,.8))||
+    (x>=8.95&&x<=12.05&&z>=10&&z<=18&&Math.abs(y-(18-z)*.5)<.35))return {tier:2,group:'u-lounge'};
   // The reclaimed east-wall sofa row and its open aisle remain accessible.
   if (x >= 16.1 && z >= -19 && z <= 19 && y >= -.08 && y < .7)
     return { tier: 0, group: 'east-tables' };

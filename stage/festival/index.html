@@ -55,7 +55,7 @@ async function open(){
  finally{URL.revokeObjectURL(model);}
  for(const m of scene.materials)if('maxSimultaneousLights' in m)m.maxSimultaneousLights=10;
  const glow=new B.GlowLayer('light diffusion',scene,{blurKernelSize:48});glow.intensity=.53;
- const views={'입구':[[0,1.65,25],[0,3.4,-16]],'발코니':[[-9.75,5.65,-3.1],[0,3.4,-16]],'바': [[-13.6,1.7,14.45],[0,3.4,-16]],'테이블':[[6.5,4.1,19],[19,.9,4]],'계단':[[-11.5,2.6,12],[-17.9,2,6]],'바 직원':[[-11.3,1.95,14],[-13.6,1.4,17.4]],'DJ':[[3.9,4.0,-11.9],[0,2.75,-15.6]],'부채꼴 빛':[[0,2.4,18.2],[0,5,-3.5]],'회전 무늬':[[0,7.4,17],[0,.2,3]],'벽 커튼':[[0,2.3,18.2],[0,4,-3]],'무대':[[0,1.67,3],[0,3.6,-17]]};
+ const views={'입구':[[0,1.65,25],[0,3.4,-16]],'발코니':[[-9.75,5.65,-10.7],[0,3.4,-16]],'바': [[-13.6,1.7,14.45],[0,3.4,-16]],'테이블':[[6.5,4.1,19],[19,.9,4]],'계단':[[-11.5,2.6,12],[-17.9,2,6]],'바 직원':[[-11.3,1.95,14],[-13.6,1.4,17.4]],'DJ':[[3.9,4.0,-11.9],[0,2.75,-15.6]],'부채꼴 빛':[[0,2.4,18.2],[0,5,-3.5]],'회전 무늬':[[0,7.4,17],[0,.2,3]],'벽 커튼':[[0,2.3,18.2],[0,4,-3]],'무대':[[0,1.67,3],[0,3.6,-17]]};
  const nav=document.querySelector('nav'), tour=document.querySelector('.tour');
  const play=document.querySelector('#play'), slider=tour.querySelector('input'), locationLabel=document.querySelector('#location');
  const points=reviewRoute.map(p=>B.Vector3.FromArray(p));
@@ -67,9 +67,9 @@ async function open(){
  const walk=document.querySelector('#walk');
  const keys=new Set(), movementKeys=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight']);
  const floors=new Set(), barriers=new Set();
- const barrierNames=/^(Rear wall|Side wall|Entry parapet|(East|West) (deck handrail|ramp rail))$/;
- const floorNames=/^(Arena floor|Entry floor|Dance floor|DJ platform|DJ access|(East|West) (dance zone|deck ramp|upper deck))$/;
- const solidNames=/^(Rear wall|Side wall|Entry parapet|DJ booth|DJ platform|DJ access|(East|West) (deck ramp|upper deck|ramp rail|ramp posts|deck handrail|posts|supports)|Lobby wings|Side room (fins|parapet)|Perimeter acoustic bays|Deck banquettes|Deck backrests|VIP (sofa (base|cushion|back|arm|return)|low table top|table leg)|West speaker (cabinet|plinth)|Bar base|Bar stone slab|Stool foot|Stool stem|Upholstered stools|Backbar cabinet|Velvet sofa plinth|Velvet sofa cushions|Channel tufted sofa back|Cocktail table (stem|top)|Wall booth (base|seat|back|table|leg)|Entrance return walls|Entry (end|side) enclosure|Portal uprights|Stage pylons|Stage surround|Stage backdrop|Festival LED backing)$/;
+ const barrierNames=/^(Rear wall|Side wall|Entry parapet|U lounge rail|(East|West) (deck handrail|ramp rail))$/;
+ const floorNames=/^(Arena floor|Entry floor|Dance floor|DJ platform|DJ access|U lounge (floor|stair)|(East|West) (dance zone|deck ramp|upper deck))$/;
+ const solidNames=/^(Rear wall|Side wall|Entry parapet|DJ booth|DJ platform|DJ access|U lounge (floor|stair|rail|post|support)|(East|West) (deck ramp|upper deck|ramp rail|ramp posts|deck handrail|posts|supports)|Lobby wings|Side room (fins|parapet)|Perimeter acoustic bays|Deck banquettes|Deck backrests|VIP (sofa (base|cushion|back|arm|return)|low table top|table leg)|West speaker (cabinet|plinth)|Bar base|Bar stone slab|Stool foot|Stool stem|Upholstered stools|Backbar cabinet|Velvet sofa plinth|Velvet sofa cushions|Channel tufted sofa back|Cocktail table (stem|top)|Wall booth (base|seat|back|table|leg)|Entrance return walls|Entry (end|side) enclosure|Portal uprights|Stage pylons|Stage surround|Stage backdrop|Festival LED backing)$/;
  for(const m of scene.meshes){
    if(!m.getTotalVertices())continue;
    const names=[m.name,m.parent?.name];
