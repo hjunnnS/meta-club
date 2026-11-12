@@ -97,6 +97,9 @@ function display(data) {
     : nearest?.seat.label ? nearest.seat.label+' 앉기' : nearest?.seat.table ? nearest.seat.table+'번 테이블 앉기' : '바 의자 앉기';
   el('seat').dataset.seat = nearest ? String(nearest.index) : '';
   el('seat').disabled = riding;
+  // Keep the exit reachable even when the one-line activity bar overflows.
+  el('seat').parentElement.style.order = sitting ? '-1' : '';
+  el('seat').dataset.sitting = String(sitting);
   const poleActive=['pole-dance','podium-dance'].includes(self?.action);
   el('pole-dance').hidden=!poleActive&&!nearbyEdmPole(self);
   el('pole-dance').disabled=!self||sitting||riding;
@@ -348,7 +351,10 @@ for (const action of ['join','leave'])
 el('pole-dance').onclick=()=>frame('pole-dance-request');
 el('wand').onclick = () => room?.send('wand', el('wand').getAttribute('aria-pressed') !== 'true');
 el('other-wands').onchange = e => frame('other-wands', e.target.checked);
-el('seat').onclick = () => room?.send('seat', el('seat').dataset.seat === '' ? undefined : Number(el('seat').dataset.seat));
+el('seat').onclick = () => {
+  if(el('seat').dataset.sitting === 'true') room?.send('stand');
+  else room?.send('seat', el('seat').dataset.seat === '' ? undefined : Number(el('seat').dataset.seat));
+};
 const selectDance = danceButtons(el('dance-options'), (action) => {
   frame('cancel-pole-approach');
   room?.send('action', action);

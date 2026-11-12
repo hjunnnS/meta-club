@@ -155,16 +155,17 @@ export class EdmRoom extends Room {
       this.dirty = true;
       if (a === 'wave' || a === 'dance') this.react(m, a, true);
     });
-    this.onMessage('seat', (c, requested) => {
+    const seatActivity = (c, requested, standOnly=false) => {
       const m = this.member(c);
       if (!m || !this.allowActivity(c) || this.train.riders.has(m.id)) return;
+      if(standOnly&&m.seat==null){c.send('place',m);return;}
       if (m.seat !== null) {
         const exit = seats[m.seat]?.exit || c.userData.preSeat;
         if (!exit || !this.positionMember(c.sessionId, m, exit)) return;
         Object.assign(m, exit);
         m.seat = null;
         m.table = null;
-        m.action = 'idle';delete m.seatMotion;
+        m.action = 'idle';delete m.seatMotion;delete c.userData.preSeat;
       } else {
         if (requested !== undefined && !Number.isInteger(requested)) return;
         const occupied = new Set([...this.members.values()].map(other=>other.seat));
@@ -181,7 +182,9 @@ export class EdmRoom extends Room {
       }
       this.dirty = true;
       c.send('place', m);
-    });
+    };
+    this.onMessage('seat', (c, requested)=>seatActivity(c,requested));
+    this.onMessage('stand', c=>seatActivity(c,undefined,true));
     this.setSimulationInterval(() => {
       if (this.dirty) {
         this.broadcast('snapshot', this.snapshot());

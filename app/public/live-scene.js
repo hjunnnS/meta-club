@@ -199,6 +199,13 @@ export function startLiveScene({
       }
       model.actor = {...a};
       if (a.id === self) {
+        // Authoritative snapshots also release the walker if a placement message
+        // was missed; rendering a standing avatar alone does not unlock walking.
+        const nextSeat=a.seat??null;
+        if(activeSeat!==nextSeat){
+          activeSeat=nextSeat;feedback.seat(null);place(a);moveBefore=null;
+          if(nextSeat===null){delete model.seatMotionKey;delete model.seatArrival;}
+        }
         riding = a.trainSlot > 0;
         if (riding) {cancelWalk();place(a);}
         const activity = a.trainSlot == null && dances.has(a.action) ? viewDance(a) : null;
@@ -341,10 +348,12 @@ export function startLiveScene({
     if (kind === 'place') {
       feedback.seat(null);
       const wasSeated=activeSeat!=null;
-      activeSeat = data.seat;
+      activeSeat = data.seat??null;
       const model=models.get(own);
       if(model&&(data.seatMotion||wasSeated)){
-        model.actor={...model.actor,...data};view.actor(model,null,data.seat!=null);view.pole(null);
+        model.actor={...data};
+        if(data.seat==null){delete model.seatMotionKey;delete model.seatArrival;}
+        view.actor(model,null,data.seat!=null);view.pole(null);
       }
       place(data);
       moveBefore = null;

@@ -79,10 +79,12 @@ export class PersonalRoom {
    if(data&&!a.wand)for(const ai of this.reactive)if(Math.hypot(ai.x-a.x,ai.z-a.z)<4){ai.action='disco-point';ai.until=Date.now()+2400;}
    a.wand=data;this.publish();return;
   }
-  if(type==='seat'){
+  if(type==='seat'||type==='stand'){
+   // Standing is idempotent: a repeated click must never sit down again.
+   if(type==='stand'&&a.seat==null){this.emit('place',{...a});this.publish();return;}
    if(a.seat!==null){
     const exit=edmSeats[a.seat]?.exit||this.preSeat;if(!exit)return;
-    Object.assign(a,exit,{seat:null,table:null,action:'idle'});delete a.seatMotion;
+    Object.assign(a,exit,{seat:null,table:null,action:'idle'});delete a.seatMotion;this.preSeat=null;
    }else{
     if(data!==undefined&&!Number.isInteger(data))return;
     const found=nearbyEdmSeats(a).find(s=>data===undefined||s.index===data);
