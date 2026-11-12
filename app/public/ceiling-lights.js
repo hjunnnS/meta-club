@@ -1,3 +1,4 @@
+import {edmFloor} from './edm-layout.js';
 import {strobeSchedule,strobeDurations} from '../../stage/festival/events.js';
 // Thin light segments follow the existing truss and leave the stage sightline open.
 export function ceilingLights(B, scene) {
@@ -307,5 +308,126 @@ export function movingLightPreview(B,scene){
       pool.position.copyFrom(target);pool.rotation.y=travel*.12;poolInk.emissiveColor.copyFrom(color);poolInk.alpha=fade*chase*(.34+hit*.22);
       if(i===2){const light=lights[side<0?0:1];light.position.copyFrom(origin);light.direction.copyFrom(delta).normalize();light.diffuse.copyFrom(color);light.intensity=fade*(8+hit*10);}
     });
+  };
+}
+
+// Additive rig: existing light/render functions, show clocks and floor shader are untouched.
+export function addedFloorWallLights(B,scene){
+  const rig=new B.TransformNode('Added floor and wall fixtures',scene),fixtures=[];
+  const soft=new B.DynamicTexture('Added lighting soft pool',{width:64,height:64},scene,false);
+  const ctx=soft.getContext(),fade=ctx.createRadialGradient(32,32,0,32,32,31);
+  fade.addColorStop(0,'rgba(255,255,255,.80)');fade.addColorStop(.4,'rgba(255,255,255,.3)');fade.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=fade;ctx.fillRect(0,0,64,64);soft.hasAlpha=true;soft.update();
+  const bodyInk=new B.StandardMaterial('Added graphite fixtures',scene);bodyInk.diffuseColor=B.Color3.FromHexString('#151927');bodyInk.specularColor=B.Color3.Black();
+  const vertex='precision highp float;attribute vec3 position;attribute vec2 uv;uniform mat4 worldViewProjection;varying vec2 vUV;void main(){vUV=uv;gl_Position=worldViewProjection*vec4(position,1.);}';
+  const protection=`uniform vec4 protect0,protect1,protect2,protect3;uniform float renderHeight;
+    bool inside(vec2 q,vec4 r){return r.z>r.x&&r.w>r.y&&q.x>=r.x&&q.x<=r.z&&q.y>=r.y&&q.y<=r.w;}
+    bool covered(){vec2 q=vec2(gl_FragCoord.x,renderHeight-gl_FragCoord.y);return inside(q,protect0)||inside(q,protect1)||inside(q,protect2)||inside(q,protect3);}`;
+  function ink(pool){
+    const material=new B.ShaderMaterial('Added '+(pool?'pool':'beam')+' ink',scene,{
+      vertexSource:vertex,
+      fragmentSource:'precision highp float;varying vec2 vUV;uniform vec3 tint;uniform float level;uniform sampler2D softPool;'+protection+
+        'void main(){if(covered())discard;float a='+ (pool?'texture2D(softPool,vUV).a*.24':'(.65+.35*sin(vUV.x*3.141593))*.065')+'*level;gl_FragColor=vec4(tint,a);}'
+    },{attributes:['position','uv'],uniforms:['worldViewProjection','tint','level','renderHeight','protect0','protect1','protect2','protect3'],samplers:pool?['softPool']:[],needAlphaBlending:true});
+    material.backFaceCulling=false;material.alphaMode=B.Engine.ALPHA_ADD;if(pool)material.setTexture('softPool',soft);return material;
+  }
+  function fixture(group,origin,side,index){
+    const material=ink(false),poolInk=ink(true);
+    const body=B.MeshBuilder.CreateBox('Added '+group+' fixture',{width:.24,height:.23,depth:.31},scene);
+    body.parent=rig;body.position.copyFrom(origin);body.material=bodyInk;body.isPickable=false;body.checkCollisions=false;
+    const beam=B.MeshBuilder.CreateCylinder('Added '+group+' shaft',{height:1,diameterBottom:.025,diameterTop:.24,tessellation:8},scene);
+    beam.parent=rig;beam.material=material;beam.rotationQuaternion=new B.Quaternion();beam.isPickable=false;
+    const pool=B.MeshBuilder.CreateGround('Added '+group+' footprint',{width:2.5,height:2.5},scene);
+    pool.parent=rig;pool.material=poolInk;pool.isPickable=false;
+    for(const layer of scene.effectLayers||[])if(typeof layer.addExcludedMesh==='function'){layer.addExcludedMesh(beam);layer.addExcludedMesh(pool);}
+    fixtures.push({group,side,index,origin,body,beam,pool,material,poolInk,target:B.Vector3.Zero(),tint:B.Color3.White(),gain:0});
+  }
+  const half=edmFloor.width/2,back=edmFloor.minZ,depth=edmFloor.depth;
+  // Four heads on each edge above the floor. Rear heads sit above the media wall.
+  for(let i=0;i<4;i++){
+    const x=half*[-.66,-.22,.22,.66][i],z=back+depth*[.15,.38,.62,.86][i];
+    fixture('floor',new B.Vector3(x,9.8,back+1.15),0,i);
+    fixture('floor',new B.Vector3(-half-1.25,8.8,z),-1,i+4);
+    fixture('floor',new B.Vector3(half+1.25,8.8,z),1,i+8);
+    fixture('floor',new B.Vector3(x,8.8,edmFloor.maxZ+1.25),0,i+12);
+  }
+  for(const side of [-1,1])for(const [i,z]of [-8,-1,6,13].entries())fixture('wall',new B.Vector3(side*21.2,7.2,z),side,i);
+  // Audience-only physical washes cannot light the DJ or media panels.
+  const lights=[0,1].map(i=>{
+    const light=new B.SpotLight('Added audience wash '+i,B.Vector3.Zero(),new B.Vector3(0,-1,0),.42,3,scene);
+    light.range=36;light.intensity=0;light.renderPriority=1;light.specular=B.Color3.Black();return light;
+  });
+  // Separate audience materials preserve the staff's existing light budgets and colors.
+  const copies=new WeakMap(),owned=new WeakSet();let actorStamp='',nextActors=0,audience=[];
+  function audienceMeshes(models,now){
+    if(now<nextActors)return;nextActors=now+750;
+    const meshes=[...models.values()].flatMap(model=>model.near.getChildMeshes());
+    const stamp=meshes.map(mesh=>mesh.uniqueId).join(',');if(stamp===actorStamp)return;actorStamp=stamp;
+    audience=meshes;
+    for(const mesh of audience){
+      const original=mesh.material;
+      if(!original||owned.has(original)||original.disableLighting||original.getClassName?.()!=='StandardMaterial')continue;
+      let copy=copies.get(original);
+      if(!copy){copy=original.clone('Added wash audience '+original.name);copy.maxSimultaneousLights=Math.max(6,original.maxSimultaneousLights||4);copies.set(original,copy);owned.add(copy);}
+      mesh.material=copy;
+    }
+    lights.forEach(light=>light.includedOnlyMeshes=audience);
+  }
+  const palettes=[['#75dfff','#c49bff'],['#ff8fcf','#8cbbff'],['#84e4d1','#d2a3ff'],['#9bbfff','#ffcf91']].map(pair=>pair.map(B.Color3.FromHexString));
+  const delta=new B.Vector3(),direction=new B.Vector3();
+  return ({beat,playing,energy,reduced,models,rectangles,renderHeight})=>{
+    const now=performance.now();audienceMeshes(models,now);
+    const b=playing?Math.max(0,beat):0,section=Math.floor(b/16),phase=b%16;
+    const handoff=reduced?0:Math.max(0,Math.min(1,(phase-14)/2));
+    const blend=handoff*handoff*(3-2*handoff),floorGain=section%2?blend:1-blend,wallGain=1-floorGain;
+    const turn=Math.floor(b/32)%4,pair=palettes[turn],motion=reduced?0:b;
+    const hit=reduced?0:Math.exp(-(b%1)*8)*Math.max(.20,Math.min(1,energy));
+    const guests=[...models.values()].filter(m=>m.actor.y<.8&&m.actor.x>-19&&m.actor.x<19);
+    const guards=Array.from({length:4},(_,i)=>{
+      const r=rectangles[i];return r?new B.Vector4(r.left-5,r.top-5,r.right+5,r.bottom+5):new B.Vector4(1,1,0,0);
+    });
+    for(const f of fixtures){
+      const wall=f.group==='wall',i=f.index,side=f.side||((i%4)<2?-1:1);
+      const gain=playing?(wall?wallGain:floorGain)*(reduced?.23:.72+.28*hit):0;
+      f.gain=gain;f.beam.setEnabled(gain>.005);f.pool.setEnabled(gain>.005);
+      if(gain<=.005)continue;
+      const sweep=.5+.5*Math.sin(motion*Math.PI/8+i*.57+turn*.8);
+      if(wall){
+        f.target.set(-side*(1.5+5.2*sweep),.065,back+depth*(.28+.56*(.5+.5*Math.sin(motion*Math.PI/12+i*.55))));
+      }else if(i<4){
+        f.target.set((i-1.5)*3.1+Math.sin(motion*Math.PI/8+i)*2,.065,back+depth*(.40+.42*sweep));
+      }else if(i>=12){
+        f.target.set((i%4-1.5)*3+Math.sin(motion*Math.PI/8+i)*2,.065,back+depth*(.18+.46*sweep));
+      }else{
+        f.target.set(side*(1.5+4*Math.sin(motion*Math.PI/8+i*.4)),.065,back+depth*(.20+.65*sweep));
+      }
+      // Some passes aim through existing guests, then sweep back into the open floor.
+      if(guests.length&&i%3===0){
+        const guest=guests[(Math.floor(b/4)+i)%guests.length].actor;
+        const reach=reduced?0:.5-.5*Math.cos((b%4)*Math.PI/2);
+        f.target.x+=(guest.x-f.target.x)*reach*.65;
+        f.target.z+=(Math.max(back+2,Math.min(wall?18:edmFloor.maxZ+5,guest.z))-f.target.z)*reach*.65;
+      }
+      const sideLimit=wall?19:15,frontLimit=wall?18:edmFloor.maxZ+5;
+      f.target.x=Math.max(-sideLimit,Math.min(sideLimit,f.target.x));f.target.z=Math.max(back+2,Math.min(frontLimit,f.target.z));
+      f.tint.copyFrom(pair[side<0?0:1]);
+      if(hit>.7&&i%4===Math.floor(b/4)%4)B.Color3.LerpToRef(f.tint,B.Color3.White(),.32,f.tint);
+      delta.copyFrom(f.target).subtractInPlace(f.origin);
+      f.beam.position.copyFrom(f.origin).addInPlace(delta.scale(.5));f.beam.scaling.y=delta.length();
+      direction.copyFrom(delta).normalize();B.Quaternion.FromUnitVectorsToRef(B.Axis.Y,direction,f.beam.rotationQuaternion);
+      f.pool.position.copyFrom(f.target);f.pool.scaling.set(wall?1.25:1,1,wall?1.25:1);
+      for(const material of [f.material,f.poolInk]){
+        material.setColor3('tint',f.tint);material.setFloat('level',gain);material.setFloat('renderHeight',renderHeight);
+        guards.forEach((r,j)=>material.setVector4('protect'+j,r));
+      }
+    }
+    for(const [i,light]of lights.entries()){
+      const candidates=fixtures.filter(f=>f.gain>.005&&(f.side<0?0:1)===i);
+      const selected=candidates[(Math.floor(b/4)+i)%Math.max(1,candidates.length)];
+      if(!selected||!audience.length){light.intensity=0;continue;}
+      light.position.copyFrom(selected.origin);light.direction.copyFrom(selected.target).subtractInPlace(selected.origin).normalize();
+      light.diffuse.copyFrom(selected.tint);light.angle=selected.group==='wall'?.30:.45;
+      light.intensity=selected.gain*(selected.group==='wall'?32+16*hit:9+7*hit);
+    }
   };
 }

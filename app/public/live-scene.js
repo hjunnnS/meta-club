@@ -1,4 +1,4 @@
-import { ceilingLights, musicSpeakers, strobeAccents, strobeAccentCue, accentDurations, movingLightPreview } from './ceiling-lights.js';
+import { ceilingLights, musicSpeakers, strobeAccents, strobeAccentCue, accentDurations, movingLightPreview, addedFloorWallLights } from './ceiling-lights.js';
 import { clubAmbience, strobeDurations } from './ambience.js';
 import {activityFeedback} from './activity-feedback.js';
 import {sceneLook} from './scene-look.js';
@@ -35,6 +35,7 @@ export function startLiveScene({
   const renderAccents = strobeAccents(B,scene);
   let accentPreview=null;
   const renderMovingPreview=movingLightPreview(B,scene);
+  const renderAddedFloorWall=addedFloorWallLights(B,scene);
   let movingPreview=null;
   const floorStrobe={active:false,on:0};
   const renderAmbience = clubAmbience(B,scene,(active,on)=>{floorStrobe.active=active;floorStrobe.on=on;});
@@ -619,6 +620,8 @@ export function startLiveScene({
     }).filter(Boolean);
     const djRect=protectedRectangle([edmStage.dj.x-.65,edmStage.dj.y+.55,edmStage.dj.z-.45],[edmStage.dj.x+.65,edmStage.dj.y+2.1,edmStage.dj.z+.45],viewport);
     const hologramRect=stageFocus&&stageEvents.kind!=='laser'?protectedRectangle([-3,2,-6],[9,7,6],viewport):null;
+    renderAddedFloorWall({beat:beats,playing:Boolean(playing),energy:musicEnergy,reduced:calmBeats.matches,models,
+      rectangles:[...screenRects,djRect],renderHeight:engine.getRenderHeight()});
     for(const mesh of scene.meshes){
       const houseBeam=/^(peripheral laser (ray|soft edge)|wall downward light cone|house fan|phrase laser ray)$/.test(mesh.name);
       const fineBeam=/^(peripheral laser (ray|soft edge)|wall downward light cone|house fan|phrase laser ray|Strobe overhead fan beam|Strobe wall curtain beam|overhead shaft|overhead core|scanning fan)$/.test(mesh.name);
