@@ -105,7 +105,7 @@ for z in (22.0,23,24,25,26):
 # Approved rectangular floor, reduced by 10% of area: 348.075 square metres.
 if festival:
     fw,fd=17.5*math.sqrt(1.3*.9),17*math.sqrt(1.3*.9)
-    floor_back=-7+17*math.sqrt(1.3)*(1-math.sqrt(.9))/2
+    floor_back=-15.6+.825
     floor_front=floor_back+fd
     box('Dance floor',indigo,-fw/2,fw/2,floor_back,floor_front,.002,.018,True)
     for x in [-fw/2,fw/2]:box('Dance floor perimeter',violet,x-.035,x+.035,floor_back,floor_front,.018,.034)
@@ -122,10 +122,16 @@ else:
 for x in (-3.0,3.0):
     box("Processional lane",ice,x-.06,x+.06,8.7,20.7,.003,.021)
 
-octagon("DJ platform",deck,0,-14.2,15,8.4,1.15,-.03,1.35,True)
-rect("DJ access",deck,-2.0,2.0,-10.05,-7.6,1.35,0,-.01,True)
+if festival:
+    # Only the supporting deck behind the booth frontage remains.
+    # The audience floor abuts its front face without an apron or access wedge.
+    box('DJ platform',deck,-7.5,7.5,-18.4,-15.6+.825,-.03,1.35,True)
+else:
+    octagon("DJ platform",deck,0,-14.2,15,8.4,1.15,-.03,1.35,True)
+    rect("DJ access",deck,-2.0,2.0,-10.05,-7.6,1.35,0,-.01,True)
 for x1,x2 in [(-6.25,-2.2),(2.2,6.25)]:
-    box("Stage lip",pink,x1,x2,-10.13,-10.02,1.18,1.31)
+    lip_z=-15.6+.825 if festival else -10.075
+    box("Stage lip",pink,x1,x2,lip_z-.055,lip_z+.055,1.18,1.31)
 booth_z = -15.6 if festival else -15.75
 octagon("DJ booth",metal,0,booth_z,6.9,1.65,.45,1.35,2.45)
 box("Booth trim",ice,-3,3,booth_z+.81,booth_z+.85,2.32,2.43)
@@ -242,7 +248,7 @@ for side in (-1,1):
         box("Side room parapet",wall,x-.12,x+.12,2.6,9.8,.05,.82)
         for z in [2.6,9.8]:
             beam("Side room return",rim,(x,2.2,z),(x-side*2.4,1.45,z),.13)
-    for r in [9.5,10.1]:
+    for r in ([] if festival else [9.5,10.1]):
         start=-.9 if side==1 else P-.9
         ring("Arena apron",violet,r,r+.12,start,start+1.8,.002,.028,32)
     # The two approach walls converge on the audience floor.
@@ -279,7 +285,8 @@ route=[(0,0,25),(0,0,12),(0,.018,0),(0,.018,-7.6),(0,1.35,-10.05),(0,1.35,-13),
 stops=dict(entry=0,floor=2,stage=5,west=9,east=11,balcony=15)
 if festival:
     # Stop in front of the relocated booth, keeping the approach and return clear.
-    route[5] = (0,1.35,-11.2)
+    route[4] = route[6] = (0,.018,-10.05)
+    route[5] = (0,.018,-14.0)
     route[9:] = [(-14.6,0,6),(0,.018,0),(14.6,0,6),
                   (-16.7,0,9.5),(-18.275,0,9.5),(-18.275,0,8.8),(-18.275,2,5.0),
                   (-20.125,2,5.0),(-20.125,4,9.5),(-16.7,4,9.5),(-16.7,4,-5.5),(-17.0,4,-7.9)]

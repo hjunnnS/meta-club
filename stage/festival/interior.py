@@ -90,8 +90,8 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
             x=s*(.33+.28*i)
             box('Booth equalizer',cyan if i%3 else pink,x-.045,x+.045,-12.046,-12.02,1.56,1.7+.45*abs(math.sin(i)))
         for i in range(4):
-            x=s*(2.1+i*1.35);near=(x,1.58,-11.1);far=(s*(7.0+i*1.7),8.85-i*.28,-8.5+i*1.4)
-            post('Stage spot body',black,x,1.35,-11.1,.22,.23)
+            x=s*(4.0+i*.75);near=(x,1.58,-15.1);far=(s*(7.0+i*1.7),8.85-i*.28,-8.5+i*1.4)
+            post('Stage spot body',black,x,1.35,-15.1,.22,.23)
             tint=[(.25,.046,1),(.025,.37,1),(1,.023,.37)][i%3]
             haze=finish('Beam wash '+str(s)+' '+str(i),tint,0,1,tint)
             materials[haze].update(alphaMode='BLEND',doubleSided=True)

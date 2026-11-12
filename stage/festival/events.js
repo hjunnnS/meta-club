@@ -541,7 +541,7 @@ function peripheralLighting(B,scene) {
   const half=edmFloor.width/2,back=edmFloor.minZ,front=edmFloor.maxZ;
   // Two jets per side follow the actual rectangular floor, leaving the central
   // entrance and DJ access clear. Count, plume shape and timing stay unchanged.
-  const smokeStations=[[-half*.58,.09,back-.16],[half*.58,.09,back-.16],
+  const smokeStations=[[-half*.58,.09,back+.16],[half*.58,.09,back+.16],
     [half+.16,.09,back+edmFloor.depth*.30],[half+.16,.09,back+edmFloor.depth*.70],
     [half*.58,.09,front+.16],[-half*.58,.09,front+.16],
     [-half-.16,.09,back+edmFloor.depth*.70],[-half-.16,.09,back+edmFloor.depth*.30]];

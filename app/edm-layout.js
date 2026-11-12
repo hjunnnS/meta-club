@@ -5,8 +5,8 @@ export const edmStage={
   booth:{x:0,z:-15.6},dj:{x:0,y:1.35,z:-16.05},
   focusOrigins:[[-1.8,3.85,-13.10],[2.4,3.5,-13.50],[1.2,5.1,-17.15]],
 };
-// Approved rectangular layout, then reduced by 10% of area around the same centre.
-export const edmFloor={width:17.5*Math.sqrt(1.3*.9),depth:17*Math.sqrt(1.3*.9),minZ:-7+17*Math.sqrt(1.3)*(1-Math.sqrt(.9))/2};
+// Keep the reduced area; join the rear edge directly to the DJ booth frontage.
+export const edmFloor={width:17.5*Math.sqrt(1.3*.9),depth:17*Math.sqrt(1.3*.9),minZ:edmStage.booth.z+.825};
 edmFloor.maxZ=edmFloor.minZ+edmFloor.depth;edmFloor.centerZ=(edmFloor.minZ+edmFloor.maxZ)/2;
 export const edmBalcony={
   pockets:[

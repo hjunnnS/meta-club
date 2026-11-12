@@ -5,7 +5,7 @@ import {sceneLook} from './scene-look.js';
 import { rhythmFloor } from './rhythm-floor.js';
 import { playlistPosition, trackBeat, musicDynamics } from './music.js';
 import { effects, eventPlayer, ledScreen, houseScreen, houseLights, peripheralTests, peripheralCue, beamPulse } from '/stage/festival/events.js';
-import { permittedPath, edmCameraDistance, edmSeats, edmStage, edmBalcony, edmUpperRoute, edmStairRoute } from './edm-layout.js';
+import { permittedPath, edmCameraDistance, edmSeats, edmStage, edmFloor, edmBalcony, edmUpperRoute, edmStairRoute } from './edm-layout.js';
 import { dances, danceCamera, animateDance } from './free-dance.js';
 import { avatarFactory, playerView, staffNPC, animateStaff } from './avatar.js';
 export function startLiveScene({
@@ -92,11 +92,11 @@ export function startLiveScene({
   }
   const boothFace = lightStrip('Booth center fill', 0, 1.91, edmStage.booth.z+.91, 5.98, .79);
   const boothEnds = [-1, 1].map(side => lightStrip('Booth end glow', side*2.77, 1.91, edmStage.booth.z+.96, .45, .79));
-  const stageLips = [-1, 1].map(side => lightStrip('Stage lip cue', side*4.225, 1.15, -9.985, 4.05, .34));
+  const stageLips = [-1, 1].map(side => lightStrip('Stage lip cue', side*4.225, 1.15, edmFloor.minZ+.08, 4.05, .34));
   const stageRelays=[];
   for(const side of [-1,1])for(let i=0;i<6;i++){
-    const z=(edmStage.booth.z+1.26)*(1-i/5)+(-10.35)*(i/5);
-    const mesh=lightStrip('Stage floor light relay',side*1.8,1.365,z,.22,.025);
+    const z=(edmFloor.minZ+.22)+(i/5)*1.8;
+    const mesh=lightStrip('Stage floor light relay',side*1.8,.055,z,.22,.025);
     mesh.scaling.z=.48/.032;stageRelays.push({mesh,index:i});
   }
   function illuminate(mesh, color, level) {
