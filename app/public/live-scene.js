@@ -501,7 +501,7 @@ export function startLiveScene({
     floorLevel+=(floorTarget-floorLevel)*blend;
     Object.assign(look,{ambient:ambientLevel,decor:decorLevel,beams:beamLevel*supportLevel,
       white:whiteLevel*(stageFocus?.65:1),floor:floorLevel,support:supportLevel,
-      protectedMeshes:[...djMeshes,scene.getMeshByName('EDM house screen')].filter(Boolean)});
+      protectedMeshes:[...djMeshes,...scene.meshes.filter(mesh=>/^EDM (house screen|wing screen (left|right))$/.test(mesh.name))]});
     renderCeiling(beats,strobing,musicEnergy,roomPulse,look);
     renderSpeakers(beats,audioBands,Boolean(playing),dt,calmBeats.matches);
     const accentAge=accentPreview?(performance.now()-accentPreview.start)/1000:0;
@@ -578,10 +578,10 @@ export function startLiveScene({
       B.Color3.Lerp(base,i%2?lookSecondary:lookPrimary,.72).scaleToRef(strobing ? .10 : look.decor*(dancers ? 1 + .14*Math.sin(phase/4+i*2) : 1), material.emissiveColor);
     });
     const viewport=scene.activeCamera.viewport.toGlobal(engine.getRenderWidth(),engine.getRenderHeight());
-    const display=scene.getMeshByName('EDM house screen');
-    display?.computeWorldMatrix(true);
-    const bounds=display?.getBoundingInfo().boundingBox;
-    const screenRect=display?.isEnabled()&&bounds?protectedRectangle(bounds.minimumWorld.asArray(),bounds.maximumWorld.asArray(),viewport):null;
+    const screenRects=scene.meshes.filter(mesh=>/^EDM (house screen|wing screen (left|right))$/.test(mesh.name)&&mesh.isEnabled()).map(display=>{
+      display.computeWorldMatrix(true);const bounds=display.getBoundingInfo().boundingBox;
+      return protectedRectangle(bounds.minimumWorld.asArray(),bounds.maximumWorld.asArray(),viewport);
+    }).filter(Boolean);
     const djRect=protectedRectangle([edmStage.dj.x-.65,edmStage.dj.y+.55,edmStage.dj.z-.45],[edmStage.dj.x+.65,edmStage.dj.y+2.1,edmStage.dj.z+.45],viewport);
     const hologramRect=stageFocus&&stageEvents.kind!=='laser'?protectedRectangle([-3,2,-6],[9,7,6],viewport):null;
     for(const mesh of scene.meshes){
@@ -593,11 +593,11 @@ export function startLiveScene({
       const base=showBeam||accentBeam?mesh.visibility:houseBeam?look.beams*(performancePriority?.65:1):1;
       if(effectPreview||accentTest){mesh.visibility=1;continue;}
       let targetGain=1;
-      if(fineBeam&&mesh.isEnabled()&&(screenRect||hologramRect)){
+      if(fineBeam&&mesh.isEnabled()&&(screenRects.length||hologramRect)){
         const world=mesh.computeWorldMatrix(true);
         const a=B.Vector3.Project(new B.Vector3(0,-.5,0),world,scene.getTransformMatrix(),viewport);
         const b=B.Vector3.Project(new B.Vector3(0,.5,0),world,scene.getTransformMatrix(),viewport);
-        if(crossesRectangle(a,b,screenRect)||crossesRectangle(a,b,djRect)||crossesRectangle(a,b,hologramRect))targetGain=.12;
+        if(screenRects.some(rect=>crossesRectangle(a,b,rect))||crossesRectangle(a,b,djRect)||crossesRectangle(a,b,hologramRect))targetGain=.12;
       }
       const previous=beamClearance.get(mesh)??1,gain=previous+(targetGain-previous)*blend;
       beamClearance.set(mesh,gain);mesh.visibility=base*gain;

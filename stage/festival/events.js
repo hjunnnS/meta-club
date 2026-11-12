@@ -137,6 +137,35 @@ export function houseScreen(B, scene, broadcast) {
   screen.name = 'EDM house screen';
   screen.scaling.set(1.42, 1.21, 1);
   screen.position.set(edmStage.screen.x,edmStage.screen.y,edmStage.screen.z);
+  // Center remains the largest screen. Fold two smaller faces towards the audience.
+  const wingTexture=new B.DynamicTexture('EDM shared wing artwork',{width:1024,height:384},scene,false);
+  const wingCtx=wingTexture.getContext();
+  const wingInk=new B.StandardMaterial('EDM wing artwork',scene);
+  wingInk.disableLighting=true;wingInk.emissiveTexture=wingTexture;
+  wingInk.emissiveColor=new B.Color3(.88,.88,.88);wingInk.backFaceCulling=false;
+  const casingInk=paint(B,scene,'EDM wing graphite','#10101b',.12);
+  const wingRoots=[],wingWidth=edmStage.screen.width*edmStage.wingScreens.widthRatio;
+  const wingHeight=edmStage.screen.height*edmStage.wingScreens.heightRatio;
+  for(const side of [-1,1]){
+    const root=new B.TransformNode('EDM angled wing '+side,scene);
+    const half=wingWidth/2,{angle,gap,y}=edmStage.wingScreens;
+    root.position.set(edmStage.screen.x+side*(edmStage.screen.width/2+gap+half*Math.cos(angle)),y,edmStage.screen.z+half*Math.sin(angle));
+    root.rotation.y=-side*angle;
+    const casing=B.MeshBuilder.CreateBox('EDM wing screen casing',{width:wingWidth+.14,height:wingHeight+.14,depth:.12},scene);
+    casing.parent=root;casing.position.z=-.09;casing.material=casingInk;casing.isPickable=false;casing.checkCollisions=true;
+    const wing=B.MeshBuilder.CreatePlane('EDM wing screen '+(side<0?'left':'right'),{width:wingWidth,height:wingHeight,sideOrientation:B.Mesh.DOUBLESIDE},scene);
+    wing.parent=root;wing.material=wingInk;wing.isPickable=false;wing.checkCollisions=true;
+    // Bottom edges clear the upper-deck head height; cables attach the panels above.
+    for(const x of [-wingWidth*.32,wingWidth*.32]){
+      const height=10.9-(y+wingHeight/2);
+      const cable=B.MeshBuilder.CreateCylinder('EDM wing suspension',{height,diameter:.025,tessellation:4},scene);
+      cable.parent=root;cable.position.set(x,wingHeight/2+height/2,-.09);cable.material=casingInk;cable.isPickable=false;
+    }
+    wingRoots.push(root);
+  }
+  for(const mesh of scene.meshes){
+    if([mesh.name,mesh.parent?.name].some(name=>['Wing blade housings','Wing LED arrays'].includes(name)))mesh.setEnabled(false);
+  }
   const flashInk=paint(B,scene,'screen synchronized flash','#fff3df');
   flashInk.disableLighting=true;flashInk.backFaceCulling=false;
   const flashPanel=B.MeshBuilder.CreatePlane('screen flash accent',{width:12.8,height:5.3},scene);
@@ -164,6 +193,7 @@ export function houseScreen(B, scene, broadcast) {
     flashInk.alpha=calm?0:roomPulse*.58;
     flashPanel.setEnabled(visible&&!calm&&roomPulse>.001);
     screen.setEnabled(visible);
+    wingRoots.forEach(root=>root.setEnabled(visible));
     if (!visible) return;
     const segment = track && !performanceTitle ? Math.floor(Math.max(0, phraseBeat) % 32 / 8) : -1;
     if (broadcast) screen.material.setFloat('live', segment === 1 || segment === 2 ? 1 : 0);
@@ -176,6 +206,10 @@ export function houseScreen(B, scene, broadcast) {
       overlay = performanceTitle ? lettering(performanceTitle) : segment === 1 || segment === 2 ? null : track ? lettering(track, 'EDM CLUB') : lettering('EDM CLUB');
     } else if (lastFrame === frame) return;
     lastFrame = frame;
+    if(track)playWall(wingCtx,calm?0:Math.max(0,phraseBeat),look);
+    else mediaWall(wingCtx,calm?0:beats*.36);
+    if(dimBackground){wingCtx.fillStyle='rgba(0,0,0,.80)';wingCtx.fillRect(0,0,1024,384);}
+    wingTexture.update();
     const portrait=segment===1||segment===2;
     if(portrait)flashInk.alpha*=.25;
     if(portrait){
