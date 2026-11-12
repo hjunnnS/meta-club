@@ -402,7 +402,7 @@ export function startLiveScene({
       if([...models.values()].some(m=>m.actor.seat===selected)){
         send('gate-notice','이미 앉아 있는 자리입니다. 다른 의자를 선택해 주세요.');return;
       }
-    }else if(!['Arena floor','Entry floor','Dance floor','DJ platform','DJ access','West dance zone','West deck ramp','West upper deck','U lounge floor','U lounge stair'].some(name=>names.includes(name)))return;
+    }else if(!['Arena floor','Entry floor','Dance floor','Auxiliary dance podium','Auxiliary dance ramp','DJ platform','DJ access','West dance zone','West deck ramp','West upper deck','U lounge floor','U lounge stair'].some(name=>names.includes(name)))return;
     const goal=selected>=0?edmSeats[selected].exit:point;
     const arrived=selected<0?null:()=>{
       send('move',{x:cam.position.x,y:cam.position.y-eyeHeight,z:cam.position.z,yaw:cam.rotation.y});
