@@ -243,6 +243,7 @@ export function playerView(B, scene, cam, canvas, eyeHeight, controls, { followD
   window.addEventListener('keydown',keyArrival);
   let orbitYaw=0,orbitPitch=0,orbitReady=false,orbitDrag=null,framedSeat=null;
   let poleView=null,poleTransitionUntil=0,poleLookTarget=null;
+  let seatView=null,seatTransitionUntil=0,seatLookTarget=null;
   function orbitDown(event){
     if(!independentLook||!thirdPerson||preview||![0,2].includes(event.button))return;
     orbitDrag={id:event.pointerId,x:event.clientX,y:event.clientY};
@@ -255,6 +256,7 @@ export function playerView(B, scene, cam, canvas, eyeHeight, controls, { followD
     const handedness=scene.useRightHandedSystem?-1:1;
     const sensitivity=Math.max(300,cam.angularSensibility*.18);
     if(poleTransitionUntil){poleTransitionUntil=0;poleLookTarget=null;}
+    seatTransitionUntil=0;seatLookTarget=null;
     orbitYaw+=dx*handedness/sensitivity;
     orbitPitch=Math.max(-.65,Math.min(.80,orbitPitch+dy*handedness/sensitivity));
   }
@@ -327,6 +329,14 @@ export function playerView(B, scene, cam, canvas, eyeHeight, controls, { followD
       const safe=cameraLimit?Math.max(0,Math.min(span,cameraLimit(target,axis,span+.5)-.5)):span;
       if(poleView){
         target.set((model.root.position.x+poleView.pole.x)/2,model.root.position.y+1.22,(model.root.position.z+poleView.pole.z)/2);
+      }else if(seatView){
+        // Observe from above the sofa back, with the pivot shifted into the aisle.
+        // A normal walking orbit starts behind the seat, inside its back or wall.
+        const seat=edmSeats[model.actor.seat];
+        const towardStage=new B.Vector3(edmStage.dj.x-model.root.position.x,0,edmStage.dj.z-model.root.position.z).normalize();
+        const intoAisle=new B.Vector3(seat.exit.x-seat.x,0,seat.exit.z-seat.z).normalize();
+        target.copyFrom(model.root.position).addInPlace(towardStage.scale(3)).addInPlace(intoAisle.scale(1.1));
+        target.y=model.root.position.y+2.1;
       }else target.addInPlace(axis.scale(safe));
       direction=forward.negate();direction.y+=followLift;direction.normalize();length=zoomDistance;
     }else if (activity) {
@@ -349,7 +359,12 @@ export function playerView(B, scene, cam, canvas, eyeHeight, controls, { followD
     const hit = scene.pickWithRay(new B.Ray(target, direction, length),
       mesh => mesh.checkCollisions || mesh.name.startsWith('wall/') || mesh.name.startsWith('floor/'));
     const distance = hit?.hit ? Math.max(0.08, hit.distance - 0.12) : length;
-    if(independentLook&&performance.now()<poleTransitionUntil){
+    if(independentLook&&performance.now()<seatTransitionUntil){
+      const mix=1-Math.exp(-Math.min(scene.getEngine().getDeltaTime(),100)/150);
+      camera.position.copyFrom(B.Vector3.Lerp(camera.position,target.add(direction.scale(distance)),mix));
+      seatLookTarget=B.Vector3.Lerp(seatLookTarget||camera.getTarget(),target,mix);
+      camera.setTarget(seatLookTarget);
+    }else if(independentLook&&performance.now()<poleTransitionUntil){
       const mix=1-Math.exp(-Math.min(scene.getEngine().getDeltaTime(),100)/170);
       const desired=target.add(direction.scale(distance));
       camera.position.copyFrom(B.Vector3.Lerp(camera.position,desired,mix));
@@ -386,8 +401,19 @@ export function playerView(B, scene, cam, canvas, eyeHeight, controls, { followD
     actor(next, activityCamera = null, stationary = false) {
       model = next;
       const nextSeat=next?.actor.seat??null;
-      if(independentLook&&stationary&&nextSeat!==framedSeat&&edmSeats[nextSeat]?.balcony){
-        orbitYaw=next.actor.yaw;orbitPitch=.18;orbitReady=true;cancelArrival();
+      if(independentLook&&nextSeat!==framedSeat){
+        const seat=edmSeats[nextSeat];
+        if(stationary&&seat?.exit&&(seat.table||seat.balcony)){
+          const saved=seatView?.saved||{yaw:orbitYaw,pitch:orbitPitch,ready:orbitReady,zoom:zoomDistance};
+          seatView={saved};cancelArrival();orbitDrag=null;
+          const dx=edmStage.dj.x-next.actor.x,dz=edmStage.dj.z-next.actor.z;
+          orbitYaw=Math.atan2(-dx,-dz);orbitPitch=.10;orbitReady=true;zoomDistance=3.4;
+          seatLookTarget=follow.getTarget().clone();seatTransitionUntil=performance.now()+700;
+        }else if(seatView){
+          const saved=seatView.saved;seatView=null;
+          orbitYaw=saved.yaw;orbitPitch=saved.pitch;orbitReady=saved.ready;zoomDistance=saved.zoom;
+          seatLookTarget=follow.getTarget().clone();seatTransitionUntil=performance.now()+700;
+        }
       }
       framedSeat=nextSeat;
       if(model&&!arrivalSeen){
