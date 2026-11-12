@@ -1,3 +1,4 @@
+import {requestPodium,validPodiumArrival,beginPodium,clearPodium} from './podium-activity.js';
 import { DanceTrain, onTrainFloor } from './dance-train.js';
 import { effects } from '../stage/festival/events.js';
 import { localTest } from './local-test.js';
@@ -6,7 +7,7 @@ import { edmArea, permittedPath, edmSeats as seats, nearbyEdmSeats, nearbyEdmPol
 import { blockedMessage } from './message-filter.js';
 import { background, extraGuestPlaces } from './visitors.js';
 import { performanceStatus } from './club-performances.js';
-import { playlistPosition } from './public/music.js';
+import { playlistPosition,trackBeat } from './public/music.js';
 import { playlist } from './music.js';
 import { Room } from '@colyseus/core';
 import { profile } from './store.js';
@@ -38,6 +39,7 @@ export class EdmRoom extends Room {
     this.setSeatReservationTime(seatSeconds);
     this.members = new Map();
     this.poleAnchors = new WeakMap();
+    this.podiumClaims=new Map();
     this.train = new DanceTrain();
     this.zones = new ManagedChannelZones();
     this.preparing = [];
@@ -117,6 +119,21 @@ export class EdmRoom extends Room {
         c.send('clock', { sent, now: Date.now(), epoch: this.epoch, tracks: playlist() });
     });
     this.onMessage('move', (c, p) => this.move(c, p));
+    this.onMessage('podium-request',(c,data)=>{
+      const m=this.member(c);if(!m||!this.allowActivity(c))return;
+      const place=requestPodium(this.podiumClaims,[...this.members.values(),...this.ai],m,data?.podium,Date.now());
+      if(!place)return this.notice(c,'단상에 빈 자리가 없습니다. 다른 단상을 선택해 주세요.');
+      clearPodium(m);m.action='idle';this.poleAnchors.delete(m);this.dirty=true;c.send('podium-place',place);
+    });
+    this.onMessage('podium-cancel',c=>this.podiumClaims.delete(c.sessionId));
+    this.onMessage('podium-start',(c,data)=>{
+      const m=this.member(c),now=Date.now();
+      if(!m||!this.allowActivity(c)||!validPodiumArrival(this.podiumClaims,m,data,now)||!this.positionMember(m.id,m,data))return;
+      const position=playlistPosition(playlist(),this.epoch,now);
+      const beat=trackBeat(position,0)+(position?.cycle||0)*(position?.track.duration||0)*(position?.track.bpm||132)/60;
+      beginPodium(this.podiumClaims,m,data,beat);this.poleAnchors.set(m,{x:m.x,y:m.y,z:m.z});
+      c.userData.lastMove=now;this.dirty=true;
+    });
     this.onMessage('pole-grip',(c,p)=>{
       const m=this.member(c);
       if(!m||!this.allowActivity(c)||m.seat!==null||this.train.riders.has(m.id)||!p||
@@ -131,6 +148,7 @@ export class EdmRoom extends Room {
       const m = this.member(c);
       if (!m || !this.allowActivity(c) || !emotions.has(a) || m.seat !== null || this.train.riders.has(m.id)) return;
       if(a==='pole-dance'&&!nearbyEdmPole(m,.95))return this.notice(c,'단상 위 봉 가까이에서 시작해 주세요.');
+      clearPodium(m);this.podiumClaims.delete(m.id);
       m.action = a;
       if(a==='pole-dance')this.poleAnchors.set(m,{x:m.x,y:m.y,z:m.z});
       else this.poleAnchors.delete(m);
@@ -316,12 +334,12 @@ export class EdmRoom extends Room {
       c.send('place', m);
       return;
     }
-    const anchor=m.action==='pole-dance'?this.poleAnchors.get(m):null;
+    const anchor=['pole-dance','podium-dance'].includes(m.action)?this.poleAnchors.get(m):null;
     if(anchor&&Math.hypot(p.x-anchor.x,p.z-anchor.z)<.08&&Math.abs(p.y-anchor.y)<.08){
       // Heartbeats and small standing corrections must not become walking.
       m.yaw=p.yaw;c.userData.lastMove=Date.now();this.dirty=true;return;
     }
-    if(anchor)this.poleAnchors.delete(m);
+    if(anchor){this.poleAnchors.delete(m);clearPodium(m);}
     const walking = Math.hypot(p.x - m.x, p.z - m.z) > 0.025;
     Object.assign(m, { x: p.x, y: p.y, z: p.z, yaw: p.yaw });
     if (m.trainSlot === 0) {
@@ -391,6 +409,7 @@ export class EdmRoom extends Room {
       this.zones.location('human', client.sessionId),
       null,
     );
+    this.podiumClaims.delete(client.sessionId);
     this.members.delete(client.sessionId);
     if (connected.get(identity)?.client === client) connected.delete(identity);
     if (remember) {

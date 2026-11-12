@@ -97,10 +97,10 @@ function display(data) {
     : nearest?.seat.label ? nearest.seat.label+' 앉기' : nearest?.seat.table ? nearest.seat.table+'번 테이블 앉기' : '바 의자 앉기';
   el('seat').dataset.seat = nearest ? String(nearest.index) : '';
   el('seat').disabled = riding;
-  const poleActive=self?.action==='pole-dance';
+  const poleActive=['pole-dance','podium-dance'].includes(self?.action);
   el('pole-dance').hidden=!poleActive&&!nearbyEdmPole(self);
   el('pole-dance').disabled=!self||sitting||riding;
-  el('pole-dance').textContent=poleActive?'봉 놓기':'봉 잡고 춤추기';
+  el('pole-dance').textContent=poleActive?'단상 춤 멈추기':'단상에서 춤추기';
   el('pole-dance').setAttribute('aria-pressed',String(poleActive));
   selectDance(self?.action, self?.seat != null || riding);
   if (self?.action === 'dance' || dances.has(self?.action)) guide('dance');
@@ -215,6 +215,7 @@ async function enter(channelId) {
     next.onMessage('place', (m) => {
       if (room === next && ready) frame('place', m);
     });
+    next.onMessage('podium-place',m=>{if(room===next&&ready)frame('podium-place',m);});
     next.onMessage('notice', note);
     next.onMessage('clock', (m) => {
       if (room === next) {
@@ -285,6 +286,7 @@ window.addEventListener('message', (event) => {
     frame('quality', el('quality').value);
     frame('other-wands', el('other-wands').checked);
   }
+  if(['podium-request','podium-start','podium-cancel'].includes(kind)&&ready)room.send(kind,data);
   if(kind==='pole-grip'&&ready)room.send('pole-grip',data);
   if(kind==='pole-action'&&ready&&['pole-dance','idle'].includes(data))room.send('action',data);
   if (kind === 'move' && ready) {

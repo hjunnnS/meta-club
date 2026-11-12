@@ -1,3 +1,4 @@
+import {podiumSlots,podiumDanceAt} from './podium-activity.js';
 import {animatePoleDance,releasePoleGrip} from './pole-dance.js';
 import { ceilingLights, musicSpeakers, strobeAccents, strobeAccentCue, accentDurations, movingLightPreview, addedFloorWallLights, podiumRimLights } from './ceiling-lights.js';
 import { clubAmbience, strobeDurations } from './ambience.js';
@@ -201,8 +202,9 @@ export function startLiveScene({
         if (riding) {cancelWalk();place(a);}
         const activity = a.trainSlot == null && dances.has(a.action) ? viewDance(a) : null;
         view.actor(model, activity, a.seat != null);
-        if(a.action!=='pole-dance')poleViewReleased=false;
-        view.pole(a.action==='pole-dance'&&!poleViewReleased?nearbyEdmPole(a,.95):null);
+        const onPodium=['pole-dance','podium-dance'].includes(a.action);
+        if(!onPodium)poleViewReleased=false;
+        view.pole(onPodium&&!poleViewReleased?(a.action==='podium-dance'?podiumSlots[a.podiumSlot]?.pole:nearbyEdmPole(a,.95)):null);
       }
       remaining.delete(a.id);
     }
@@ -243,45 +245,46 @@ export function startLiveScene({
     preview = { screen, camera };
   }
   function requestPoleDance(clickedPole=null){
-      const actor=models.get(own)?.actor;
-      if(!connected||gameActive||speakerCamera||preview||!actor)return;
-      if(actor.action==='pole-dance'){
-        poleViewReleased=true;view.pole(null);cancelWalk();send('pole-action','idle');
-        if(!clickedPole)return;
-      }
-      const foot={x:cam.position.x,y:cam.position.y-eyeHeight,z:cam.position.z};
-      const pole=clickedPole||nearbyEdmPole({...actor,...foot});if(!pole)return;
-      const dx=foot.x-pole.x,dz=foot.z-pole.z,length=Math.hypot(dx,dz)||1;
-      const goal={x:pole.x+dx/length*.70,y:.5,z:pole.z+dz/length*.70};
-      const done=()=>{
-        poleApproaching=false;poleApproach=null;cancelWalk();
-        const at={x:cam.position.x,y:cam.position.y-eyeHeight,z:cam.position.z,yaw:cam.rotation.y};
-        if(!nearbyEdmPole({...actor,...at},.95))return;
-        cam.rotation.y=at.yaw=Math.atan2(at.x-pole.x,at.z-pole.z);
-        // Grip and its actual standing position are accepted as one update.
-        // Never report a target the walker only approached within its tolerance.
-        poleViewReleased=false;moveBefore={...at};lastSent=performance.now();send('pole-grip',at);
-      };
-      if(Math.abs(foot.y-.5)<.12&&Math.hypot(dx,dz)<=.85){done();return;}
-      poleApproaching=true;poleApproach={pole,done};
-      const failed=()=>{poleApproaching=false;poleApproach=null;send('gate-notice','봉으로 이어지는 열린 통로에서 다시 눌러 주세요.');};
-      const route=[];
-      if(foot.y>3.5){
-        const descent=edmStairRoute({x:0,y:0,z:0},foot.x>0?1:-1).reverse();
-        route.push(...edmUpperRoute(foot,descent[0]),...descent);
-      }
-      route.push(goal);
-      const advance=()=>{
-        const next=route.shift();if(!next){done();return;}
-        if(!navigate(next,advance,(from,to)=>permittedPath(from,to,states)))failed();
-      };
-      advance();
+    const actor=models.get(own)?.actor;
+    if(!connected||gameActive||speakerCamera||preview||!actor||actor.seat!=null||actor.trainSlot!=null)return;
+    if(['pole-dance','podium-dance'].includes(actor.action)){
+      poleViewReleased=true;view.pole(null);cancelWalk();send('pole-action','idle');
+      if(!clickedPole)return;
+    }
+    const foot={x:cam.position.x,y:cam.position.y-eyeHeight,z:cam.position.z};
+    const pole=clickedPole||nearbyEdmPole({...actor,...foot});if(!pole)return;
+    send('podium-request',{podium:pole.z===-8.8?0:1});
+  }
+  function approachPodium(data){
+    const goal=podiumSlots[data?.slot],actor=models.get(own)?.actor;
+    if(!goal||!actor||actor.seat!=null||actor.trainSlot!=null)return;
+    const pole=goal.pole,foot={x:cam.position.x,y:cam.position.y-eyeHeight,z:cam.position.z};
+    const done=()=>{
+      poleApproaching=false;poleApproach=null;cancelWalk();
+      const at={x:cam.position.x,y:cam.position.y-eyeHeight,z:cam.position.z,yaw:cam.rotation.y};
+      if(Math.abs(at.y-.5)>.12||Math.hypot(at.x-goal.x,at.z-goal.z)>.22){send('podium-cancel');return;}
+      cam.rotation.y=at.yaw=Math.atan2(at.x-pole.x,at.z-pole.z);
+      poleViewReleased=false;moveBefore={...at};lastSent=performance.now();send('podium-start',{...at,slot:data.slot});
+    };
+    if(Math.abs(foot.y-.5)<.12&&Math.hypot(foot.x-goal.x,foot.z-goal.z)<.12){done();return;}
+    poleApproaching=true;poleApproach={pole,goal,done};
+    const failed=()=>{poleApproaching=false;poleApproach=null;send('podium-cancel');send('gate-notice','단상으로 이어지는 열린 통로에서 다시 눌러 주세요.');};
+    const route=[];
+    if(foot.y>3.5){
+      const descent=edmStairRoute({x:0,y:0,z:0},foot.x>0?1:-1).reverse();
+      route.push(...edmUpperRoute(foot,descent[0]),...descent);
+    }
+    route.push(goal);
+    const advance=()=>{const next=route.shift();if(!next){done();return;}
+      if(!navigate(next,advance,(from,to)=>permittedPath(from,to,states)))failed();};
+    advance();
   }
   window.addEventListener('message', (e) => {
     if (e.source !== parent || e.origin !== location.origin) return;
     const { kind, data } = e.data || {};
-    if(kind==='cancel-pole-approach'&&poleApproaching){poleApproaching=false;cancelWalk();}
+    if(kind==='cancel-pole-approach'&&poleApproaching){poleApproaching=false;poleApproach=null;cancelWalk();send('podium-cancel');}
     if(kind==='pole-dance-request')requestPoleDance();
+    if(kind==='podium-place')approachPodium(data);
     if (kind === 'clock') {
       if(epoch!==data.epoch){musicStartBeat=null;firstLaserAt=null;}
       epoch = data.epoch;
@@ -429,7 +432,7 @@ export function startLiveScene({
     const can=index>=0&&!occupied&&activeSeat===null&&!riding&&!speakerCamera&&connected&&!gameActive;
     const pole=pickedPole(hit),canPole=Boolean(pole)&&activeSeat===null&&!riding&&!speakerCamera&&connected&&!gameActive;
     feedback.seat(can?edmSeats[index]:null);canvas.style.cursor=can||canPole?'pointer':'grab';
-    canvas.title=canPole?'클릭하면 단상으로 걸어가 봉을 잡고 춤춥니다.':can?(edmSeats[index].label||edmSeats[index].table+'번 테이블')+' · 클릭하면 걸어가 앉습니다.':'';
+    canvas.title=canPole?'클릭하면 단상 빈 자리로 걸어가 춤춥니다.':can?(edmSeats[index].label||edmSeats[index].table+'번 테이블')+' · 클릭하면 걸어가 앉습니다.':'';
   });
   canvas.addEventListener('pointerdown', e=>{
     seatTap=e.button===0?{id:e.pointerId,x:e.clientX,y:e.clientY,drag:false}:null;
@@ -441,7 +444,7 @@ export function startLiveScene({
   canvas.addEventListener('pointerup', e=>{
     const tap=seatTap;seatTap=null;
     if(!tap||tap.id!==e.pointerId||tap.drag||activeSeat!==null||riding||speakerCamera||preview||!connected||gameActive)return;
-    if(poleApproaching){poleApproaching=false;poleApproach=null;cancelWalk();}
+    if(poleApproaching){poleApproaching=false;poleApproach=null;cancelWalk();send('podium-cancel');}
     const bounds=canvas.getBoundingClientRect();
     const hit=pickDestination((e.clientX-bounds.left)*engine.getRenderWidth()/bounds.width,
       (e.clientY-bounds.top)*engine.getRenderHeight()/bounds.height);
@@ -479,7 +482,7 @@ export function startLiveScene({
     }else if(!navigate(goal,arrived,permit))failed();
 
   });
-  canvas.addEventListener('keydown',e=>{if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)){poleApproaching=false;poleApproach=null;}});
+  canvas.addEventListener('keydown',e=>{if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)){if(poleApproaching)send('podium-cancel');poleApproaching=false;poleApproach=null;}});
   window.addEventListener('blur', () => joystick(0, 0));
   window.addEventListener('resize', () => engine.resize());
   // Keep member names; give the nearest AI name priority when labels overlap.
@@ -709,7 +712,17 @@ export function startLiveScene({
         m.root.position = B.Vector3.Lerp(m.root.position, target, Math.min(1, dt / 90));
         m.root.rotation.y = a.yaw;
       }
-      if(a.action!=='pole-dance')releasePoleGrip(m);
+      if(!['pole-dance','podium-dance'].includes(a.action))releasePoleGrip(m);
+      if(a.action==='podium-dance'&&podiumSlots[a.podiumSlot]){
+        const anchor=podiumSlots[a.podiumSlot],nearPole=Boolean(nearbyEdmPole(a,.95));
+        const absoluteBeat=beats+(playback?.cycle||0)*(playback?.track.duration||0)*(playback?.track.bpm||132)/60;
+        const motion=podiumDanceAt(a,absoluteBeat,nearPole);
+        m.near.setEnabled(true);m.far.setEnabled(false);
+        m.showWand(motion!=='pole-dance'&&Boolean(a.wand),true);
+        if(motion==='pole-dance')animatePoleDance(B,m,anchor.pole,playing?beats:0,musicEnergy,calmBeats.matches);
+        else {releasePoleGrip(m);animateDance(m,motion,calmBeats.matches?0:beats,undefined,musicEnergy,dynamics.level);}
+        detailed++;continue;
+      }
       const pole=a.action==='pole-dance'?nearbyEdmPole(a,.95):null;
       if(pole){
         m.near.setEnabled(true);m.far.setEnabled(false);m.showWand(false,true);
@@ -820,8 +833,8 @@ export function startLiveScene({
       wingBroadcast.resetRefreshCounter();nextWingBroadcast=now+1000/10;
     }
     if(poleApproaching&&poleApproach){
-      const {pole,done}=poleApproach,foot=cam.position.y-eyeHeight;
-      if(Math.abs(foot-.5)<.12&&Math.hypot(cam.position.x-pole.x,cam.position.z-pole.z)<=.85)done();
+      const {goal,done}=poleApproach,foot=cam.position.y-eyeHeight;
+      if(Math.abs(foot-.5)<.12&&Math.hypot(cam.position.x-goal.x,cam.position.z-goal.z)<.12)done();
     }
     if (own && now - lastSent > 100 && activeSeat === null && !riding) {
       const pos = {
@@ -862,7 +875,7 @@ export function startLiveScene({
       lastGateNotice = performance.now();
     }
     if(allowed&&Math.hypot(to.x-from.x,to.z-from.z)>.001){
-      if(models.get(own)?.actor.action==='pole-dance')poleViewReleased=true;
+      if(['pole-dance','podium-dance'].includes(models.get(own)?.actor.action))poleViewReleased=true;
       view.pole(null);
     }
     return allowed;

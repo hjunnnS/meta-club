@@ -1,3 +1,5 @@
+import {requestPodium,validPodiumArrival,beginPodium,clearPodium} from './podium-activity.js';
+import {playlistPosition,trackBeat} from './music.js';
 import {background,extraGuestPlaces} from './visitors.js';
 import {edmSeats,nearbyEdmSeats,nearbyEdmPole} from './edm-layout.js';
 import {dances} from './free-dance.js';
@@ -8,6 +10,7 @@ import {blockedMessage} from './trial-message-filter.js';
 export class PersonalRoom {
  constructor(tracks){
   this.tracks=tracks;this.epoch=Date.now();this.musicStarted=false;this.sessionId=crypto.randomUUID();this.roomId='personal';this.handlers=new Map();
+  this.podiumClaims=new Map();
   this.self={id:this.sessionId,ai:false,nickname:'체험자',avatar:'indigo',x:-1.8,y:.018,z:6.4,yaw:-.08,action:'idle',seat:null,table:null,wand:false};
   this.reactive=[-1,1].map((side,i)=>({id:'ai-'+(i+3),ai:true,nickname:'AI 손님 '+(i+4),avatar:i?'rose':'teal',x:side*4,y:.018,z:1,yaw:side*.2,action:'groove',wand:true}));
   this.extra=extraGuestPlaces.map((p,i)=>({id:'floor-dancer-'+i,ai:true,nickname:'AI 손님 '+(i+6),avatar:['teal','rose','gold','indigo'][i%4],...p}));
@@ -43,12 +46,24 @@ export class PersonalRoom {
   if(type==='snapshot'){this.publish();return;}
   if(type==='move'){
    if(a.seat!==null||!data||!['x','y','z','yaw'].every(k=>Number.isFinite(data[k])))return;
-   const anchor=a.action==='pole-dance'?this.poleAnchor:null;
+   const anchor=['pole-dance','podium-dance'].includes(a.action)?this.poleAnchor:null;
    if(anchor&&Math.hypot(data.x-anchor.x,data.z-anchor.z)<.08&&Math.abs(data.y-anchor.y)<.08){a.yaw=data.yaw;return;}
-   if(anchor)this.poleAnchor=null;
+   if(anchor){this.poleAnchor=null;clearPodium(a);}
    const moved=Math.hypot(a.x-data.x,a.z-data.z)>.015;
    Object.assign(a,{x:data.x,y:data.y,z:data.z,yaw:data.yaw});
    if(moved){a.action='walk';this.lastMove=Date.now();}return;
+  }
+  if(type==='podium-request'){
+   const place=requestPodium(this.podiumClaims,[a,...this.ai()],a,data?.podium,Date.now());
+   if(!place){this.emit('notice','단상에 빈 자리가 없습니다. 다른 단상을 선택해 주세요.');return;}
+   clearPodium(a);a.action='idle';this.poleAnchor=null;this.publish();this.emit('podium-place',place);return;
+  }
+  if(type==='podium-cancel'){this.podiumClaims.delete(a.id);return;}
+  if(type==='podium-start'){
+   if(!validPodiumArrival(this.podiumClaims,a,data,Date.now()))return;
+   const position=playlistPosition(this.tracks,this.epoch,Date.now());
+   const beat=trackBeat(position,0)+(position?.cycle||0)*(position?.track.duration||0)*(position?.track.bpm||132)/60;
+   beginPodium(this.podiumClaims,a,data,beat);this.poleAnchor={x:a.x,y:a.y,z:a.z};this.publish();return;
   }
   if(type==='pole-grip'){
    if(a.seat!==null||a.trainSlot!=null||!data||!['x','y','z','yaw'].every(k=>Number.isFinite(data[k]))||!nearbyEdmPole({...a,...data},.95)||Math.hypot(data.x-a.x,data.y-a.y,data.z-a.z)>.5)return;
@@ -59,7 +74,7 @@ export class PersonalRoom {
    if(!nearbyEdmPole(a,.95)){this.emit('notice','단상 위 봉 가까이에서 시작해 주세요.');return;}
    this.poleAnchor={x:a.x,y:a.y,z:a.z};a.action=data;this.publish();return;
   }
-  if(type==='action'&&a.seat===null&&(['idle','wave','dance'].includes(data)||dances.has(data))){a.action=data;this.publish();return;}
+  if(type==='action'&&a.seat===null&&(['idle','wave','dance'].includes(data)||dances.has(data))){clearPodium(a);this.podiumClaims.delete(a.id);a.action=data;this.publish();return;}
   if(type==='wand'&&typeof data==='boolean'){
    if(data&&!a.wand)for(const ai of this.reactive)if(Math.hypot(ai.x-a.x,ai.z-a.z)<4){ai.action='disco-point';ai.until=Date.now()+2400;}
    a.wand=data;this.publish();return;

@@ -12,6 +12,7 @@ modules=['pole-dance.js','live-scene.js','music.js','free-dance.js','avatar.js',
 for name in modules:copy('app/public/'+name,'clubs/edm/'+name)
 # The Node server exposes live-scene.js at scene.js; preserve that public URL.
 copy('app/public/live-scene.js','clubs/edm/scene.js')
+copy('app/podium-activity.js','clubs/edm/podium-activity.js')
 copy('app/edm-layout.js','clubs/edm/edm-layout.js');copy('app/visitors.js','clubs/edm/visitors.js')
 put('clubs/edm/local-room.js',(ROOT/'sites-preview/local-room.js').read_text())
 put('clubs/edm/auto-opening.js',(ROOT/'sites-preview/auto-opening.js').read_text())
@@ -65,6 +66,7 @@ async function enter(){
   ready=false;needsPlace=true;snapshot=null;attempts=0;loginRequired=false;
   next.onMessage('snapshot',m=>{if(room===next)display(m);});
   next.onMessage('place',m=>{if(ready)frame('place',m);});
+  next.onMessage('podium-place',m=>{if(ready)frame('podium-place',m);});
   next.onMessage('notice',note);
   next.onMessage('occupancy',()=>el('population').textContent='개인 체험 · AI 손님 20명');
   next.onMessage('clock',m=>{music.clock(m);if(ready)frame('clock',{offset:0,epoch:m.epoch,tracks:m.tracks});});
