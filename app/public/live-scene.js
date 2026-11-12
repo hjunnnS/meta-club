@@ -590,7 +590,7 @@ export function startLiveScene({
     // rapid section uses the same rounded 100ms phase as its own shutter.
     const tileStrobe=strobing?{active:true,on:Math.floor((Math.round((stageEvents.phase?.age||0)*1000)-7000)/100)%2===0?1:0}:floorStrobe;
     renderFloor(beats, celebrating, accent, cueBeat, cue.rgb, stageEvents.kind === 'laser' ? 1 : ['phoenix','whale','dragon','jellyfish','butterflies'].includes(stageEvents.kind) ? 2 : 0, roomPulse,look,Boolean(playing),musicEnergy,tileStrobe);
-    updateBoard(playing ? playback.track.title : null, beats, !preview && !celebrating, Math.max(accent,startBeat>=0&&startBeat<.78?(1-startBeat/.78)*.85:0), gather, calmBeats.matches, phraseBeat, wallRelease, cue.hex, stageEvents.kind && stageEvents.kind !== 'led' ? effects[stageEvents.kind].label : null, strobing, roomPulse,look,openingCountdown?Math.max(0,Math.min(3,Math.ceil((openingCountdown.endsAt-Date.now())/1000))):0,'DJ · 음악 그래픽',audioBands);
+    updateBoard(playing ? playback.track.title : null, beats, !preview && !celebrating, Math.max(accent,startBeat>=0&&startBeat<.78?(1-startBeat/.78)*.85:0), gather, calmBeats.matches, phraseBeat, wallRelease, cue.hex, stageEvents.kind && stageEvents.kind !== 'led' ? effects[stageEvents.kind].label : null, strobing, roomPulse,look,openingCountdown?Math.max(0,Math.min(3,Math.ceil((openingCountdown.endsAt-Date.now())/1000))):0,'DJ · 음악 그래픽',audioBands,celebrating);
     const phase = beats * Math.PI * 2,
       beatWave = Math.sin(phase);
     washes.forEach(({ light, base }, i) => {
@@ -621,7 +621,7 @@ export function startLiveScene({
       return protectedRectangle(bounds.minimumWorld.asArray(),bounds.maximumWorld.asArray(),viewport);
     }).filter(Boolean);
     const djRect=protectedRectangle([edmStage.dj.x-.65,edmStage.dj.y+.55,edmStage.dj.z-.45],[edmStage.dj.x+.65,edmStage.dj.y+2.1,edmStage.dj.z+.45],viewport);
-    const hologramRect=stageFocus&&stageEvents.kind!=='laser'?protectedRectangle([-3,2,-6],[9,7,6],viewport):null;
+    const hologramRect=stageFocus&&stageEvents.kind!=='laser'?protectedRectangle([-6,1.7,edmFloor.centerZ-6],[6,8,edmFloor.centerZ+6],viewport):null;
     renderAddedFloorWall({beat:beats,playing:Boolean(playing),energy:musicEnergy,reduced:calmBeats.matches,models,
       rectangles:[...screenRects,djRect],renderHeight:engine.getRenderHeight()});
     for(const mesh of scene.meshes){

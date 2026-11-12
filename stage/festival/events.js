@@ -245,12 +245,12 @@ export function houseScreen(B, scene, broadcast,wingBroadcast=null) {
     screen.material = material;
   }
   let lastSegment = -1, lastPerformance, lastDim,lastCountdown=-1;
-  return (track, beats, visible, accent, gather, calm, phraseBeat, release, cueColor, performanceTitle = null, dimBackground = false, roomPulse = 0, look = null,countdown=0,wingLabel='중앙 플로어',audioBands=[]) => {
+  return (track, beats, visible, accent, gather, calm, phraseBeat, release, cueColor, performanceTitle = null, dimBackground = false, roomPulse = 0, look = null,countdown=0,wingLabel='중앙 플로어',audioBands=[],keepWings=false) => {
     flashInk.alpha=calm?0:roomPulse*.58;
     flashPanel.setEnabled(visible&&!calm&&roomPulse>.001);
     screen.setEnabled(visible);
-    wingRoots.forEach(root=>root.setEnabled(visible));
-    if (!visible) return;
+    wingRoots.forEach(root=>root.setEnabled(visible||keepWings));
+    if (!visible&&!keepWings) return;
     drawEqualizer(track,audioBands,calm);
     const segment = track && !performanceTitle ? Math.floor(Math.max(0, phraseBeat) % 32 / 8) : -1;
     if (broadcast) screen.material.setFloat('live', segment === 1 || segment === 2 ? 1 : 0);
@@ -906,7 +906,7 @@ function phoenix(B, scene, root) {
   return t => {
     const u = t / effects.phoenix.seconds;
     bird.scaling.setAll(1.48 * Math.max(0.01, Math.min(1, t/1.2, (1-u)*9)));
-    bird.position.set(2+2*Math.sin(2*Math.PI*u),4.4+.4*Math.sin(Math.PI*u),-2+2*Math.sin(Math.PI*u));
+    bird.position.set(0,4.4+.4*Math.sin(Math.PI*u),edmFloor.centerZ);
     bird.rotation.y = 0.7*Math.cos(2*Math.PI*u);
     bird.rotation.z = -0.12*Math.sin(2*Math.PI*u);
     for (const {wing,sign} of wings) wing.rotation.z = sign*(0.18+0.5*Math.sin(t*3.7));

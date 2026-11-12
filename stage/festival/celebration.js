@@ -1,3 +1,4 @@
+import {edmFloor} from '/clubs/edm/edm-layout.js';
 // Deterministic particles share the channel event's elapsed time, including late joins.
 export function celebration(B, scene, root, seconds, holographic = false, selection = 'both', bpm = 120, automaticPaper = 'confetti') {
   const ink = new B.StandardMaterial('celebration particles', scene);
@@ -38,7 +39,7 @@ export function celebration(B, scene, root, seconds, holographic = false, select
       const phase=ending?(time-(seconds-2.8))/2.8:time/2.3;
       const angle=noise(p.idx,13)*Math.PI*2;
       const radius=(ending?phase:1-phase)*(1.2+noise(p.idx,14)*3.7);
-      p.position.set(3+radius*Math.cos(angle),4.2+(noise(p.idx,15)-.5)*radius,1+radius*Math.sin(angle));
+      p.position.set(radius*Math.cos(angle),4.2+(noise(p.idx,15)-.5)*radius,edmFloor.centerZ+radius*Math.sin(angle));
       const blink=.35+.65*Math.abs(Math.sin(time*7+p.idx));
       p.scaling.setAll(blink);
       p.color=new B.Color4(.75+noise(p.idx,16)*.25,.85,1,Math.min(1,Math.max(0,1-phase)*3));

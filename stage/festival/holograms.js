@@ -1,3 +1,4 @@
+import {edmFloor} from '/clubs/edm/edm-layout.js';
 // Original procedural holograms. All parts belong to the event root for disposal.
 export function hologram(B, scene, root, kind) {
   const colors = {whale:'#4ce4ff', dragon:'#55ffc9', jellyfish:'#d788ff', butterflies:'#ff9edf'};
@@ -57,22 +58,45 @@ export function hologram(B, scene, root, kind) {
     blade(body,[0,.7,-.5],[0,2,-1.7],[0,.7,-2.2]);
     motion=t=>{body.rotation.x=.09*Math.sin(t*1.6);body.rotation.y=.75+.2*Math.sin(t*.4);};
   } else if (kind === 'dragon') {
-    const segments=Array.from({length:18},(_,i)=>oval('dragon coil',body,0,0,0,1-i*.025,.95-i*.025,1.1));
-    const head=new B.TransformNode('dragon head',scene); head.parent=body;
-    oval('dragon skull',head,0,0,0,1.45,1.1,1.65);
-    oval('dragon snout',head,0,-.18,.9,.9,.55,1.2);
-    for(const side of [-1,1]) {
-      blade(head,[side*.3,.3,-.4],[side*1,1.9,-1],[side*.7,.3,-.8]);
-      oval('dragon eye',head,side*.59,.25,.62,.18,.18,.18);
+    // An open serpentine silhouette, tapered tail and unmistakable dragon head.
+    const segments=Array.from({length:26},(_,i)=>{
+      const taper=1-i/29;
+      const mesh=oval('dragon scaled body',body,0,0,0,.95*taper,.88*taper,.72);
+      if(i>1&&i<22)blade(mesh,[0,.37,-.18],[0,1.10,-.40],[0,.38,-.57]);
+      return mesh;
+    });
+    const head=new B.TransformNode('dragon head',scene);head.parent=body;
+    oval('dragon skull',head,0,.08,0,1.55,1.15,1.65);
+    oval('dragon long muzzle',head,0,-.11,1.0,1.05,.52,1.7);
+    oval('dragon lower jaw',head,0,-.43,1.04,.95,.22,1.5);
+    function tendril(name,parent,points,radius){
+      const mesh=B.MeshBuilder.CreateTube(name,{path:points.map(p=>B.Vector3.FromArray(p)),radius,tessellation:6},scene);
+      mesh.parent=parent;mesh.material=ink;mesh.isPickable=false;return mesh;
+    }
+    for(const side of [-1,1]){
+      tendril('dragon antler',head,[[side*.47,.43,-.35],[side*.65,1.22,-.60],[side*1.03,1.78,-1.03]],.075);
+      tendril('dragon antler branch',head,[[side*.65,1.22,-.60],[side*1.02,1.30,-.38]],.05);
+      oval('dragon brow',head,side*.59,.38,.48,.6,.25,.5);
+      oval('dragon eye',head,side*.67,.22,.65,.20,.16,.16);
+      blade(head,[side*.25,-.27,1.46],[side*.37,-.73,1.57],[side*.46,-.28,1.18]);
+      tendril('dragon flowing whisker',head,[[side*.42,-.03,1.55],[side*1.15,.12,1.75],[side*1.9,.50,1.38],[side*2.2,.70,.85]],.025);
+      blade(head,[side*.52,.06,-.48],[side*1.45,.24,-1.38],[side*.57,-.25,-.75]);
+      for(const index of [5,13]){
+        const leg=new B.TransformNode('dragon leg',scene);leg.parent=segments[index];
+        tendril('dragon bent leg',leg,[[side*.30,-.12,0],[side*.90,-.55,.15],[side*.73,-1.0,.55]],.13);
+        for(let claw=0;claw<3;claw++)
+          tendril('dragon claw',leg,[[side*.73+(claw-1)*.14,-1,.55],[side*.73+(claw-1)*.22,-1.12,.98]],.035);
+      }
     }
     motion=t=>{
       segments.forEach((mesh,i)=>{
-        const a=t*.65-i*.29;
-        mesh.position.set(3*Math.cos(a),.55*Math.sin(a*2),3*Math.sin(a));
+        const a=t*.85-i*.27;
+        mesh.position.set(2.55*Math.sin(a),.65*Math.cos(a*.8),3.5-i*.28);
+        mesh.rotation.y=Math.atan2(2.55*(Math.sin(a)-Math.sin(a-.27)),.28);
       });
       head.position.copyFrom(segments[0].position);
-      head.rotation.y=-t*.65;
-      body.rotation.y=t*.15;
+      head.rotation.y=segments[0].rotation.y;
+      body.rotation.y=.32*Math.sin(t*.3);
     };
   } else if (kind === 'jellyfish') {
     oval('jellyfish bell',body,0,.8,0,4.4,2.6,4.4);
@@ -102,11 +126,16 @@ export function hologram(B, scene, root, kind) {
       return {butterfly,wings,i};
     });
     motion=t=>{
-      const gather=Math.sin(Math.PI*Math.min(1,t/14));
-      for(const {butterfly,wings,i} of swarm) {
-        const side=i%2?1:-1,a=(i%12)/12*Math.PI*2;
-        butterfly.position.set(side*(.7+2.3*Math.abs(Math.sin(a)))*gather+(1-gather)*5*Math.sin(i*2.4+t),
-          1.8*Math.cos(a)*gather+(1-gather)*2*Math.cos(i+t),.5*Math.sin(i+t));
+      // Emerge as one close cluster; then burst outward in every direction.
+      const expansion=Math.max(0,Math.min(1,(t-4)/5.5));
+      const spread=expansion*expansion*(3-2*expansion);
+      for(const {butterfly,wings,i} of swarm){
+        const a=i*2.3999632297,y=1-2*(i+.5)/swarm.length;
+        const horizontal=Math.sqrt(1-y*y),radius=.55+spread*(4.7+(i%4)*.24);
+        butterfly.position.set(Math.cos(a)*horizontal*radius+.10*Math.sin(t*2+i),
+          y*radius*.46+.12*Math.sin(t*1.7+i),Math.sin(a)*horizontal*radius+.10*Math.cos(t*2+i));
+        butterfly.rotation.y=a+Math.PI/2;
+        butterfly.rotation.z=.15*Math.sin(t*2+i);
         for(const {wing,side:s} of wings)wing.rotation.y=s*.8*Math.sin(t*8+i);
       }
     };
@@ -114,7 +143,7 @@ export function hologram(B, scene, root, kind) {
   return t=>{
     const fade=Math.max(.001,Math.min(1,t/1.5,(14-t)/1.5));
     body.scaling.setAll(fade);
-    body.position.set(3+1.4*Math.sin(t*.22),(kind==='jellyfish'?5.0:4.0)+.2*Math.sin(t*.7),1+1.2*Math.sin(t*.3));
+    body.position.set(0,(kind==='jellyfish'?5.0:4.0)+.2*Math.sin(t*.7),edmFloor.centerZ);
     motion(t);
   };
 }
