@@ -156,9 +156,11 @@ export function houseScreen(B, scene, broadcast,wingBroadcast=null) {
   const casingInk=paint(B,scene,'EDM wing graphite','#10101b',.12);
   const equalizerTexture=new B.DynamicTexture('EDM wing equalizer pixels',{width:384,height:512},scene,false);
   const equalizerCtx=equalizerTexture.getContext(),equalizerLevels=Array(2).fill(0);
-  const equalizerInk=new B.StandardMaterial('EDM wing equalizer ink',scene);
-  equalizerInk.disableLighting=true;equalizerInk.diffuseColor=B.Color3.Black();equalizerInk.emissiveTexture=equalizerTexture;
-  equalizerInk.emissiveColor=new B.Color3(.72,.72,.72);equalizerInk.backFaceCulling=false;
+  const equalizerInk=new B.ShaderMaterial('EDM wing equalizer ink',scene,{
+    vertexSource:'precision highp float;attribute vec3 position;attribute vec2 uv;uniform mat4 worldViewProjection;varying vec2 vUV;void main(){vUV=uv;gl_Position=worldViewProjection*vec4(position,1.);}',
+    fragmentSource:'precision highp float;varying vec2 vUV;uniform sampler2D pixels;void main(){gl_FragColor=vec4(texture2D(pixels,vUV).rgb*.85,1.);}'
+  },{attributes:['position','uv'],uniforms:['worldViewProjection'],samplers:['pixels']});
+  equalizerInk.setTexture('pixels',equalizerTexture);equalizerInk.backFaceCulling=false;
   let equalizerAt=-Infinity;
   function drawEqualizer(track,bands,calm){
     const now=performance.now();if(now-equalizerAt<45)return;
@@ -195,6 +197,7 @@ export function houseScreen(B, scene, broadcast,wingBroadcast=null) {
     panelBack.parent=root;panelBack.position.set(0,panelY,-.09);panelBack.material=casingInk;panelBack.isPickable=false;
     const panel=B.MeshBuilder.CreatePlane('EDM wing equalizer '+(side<0?'left':'right'),{width:wingWidth,height:panelHeight,sideOrientation:B.Mesh.DOUBLESIDE},scene);
     panel.parent=root;panel.position.set(0,panelY,.005);panel.material=equalizerInk;panel.isPickable=false;
+    for(const layer of scene.effectLayers||[])if(typeof layer.addExcludedMesh==='function')layer.addExcludedMesh(panel);
     // Bottom edges clear the upper-deck head height; cables attach the panels above.
     for(const x of [-wingWidth*.32,wingWidth*.32]){
       const height=10.9-(y+wingHeight/2);
