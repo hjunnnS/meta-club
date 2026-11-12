@@ -1,3 +1,4 @@
+import {tableSeatTarget,animateSeatArrival} from './seat-presentation.js';
 import {podiumSlots,podiumDanceAt} from './podium-activity.js';
 import {animatePoleDance,releasePoleGrip} from './pole-dance.js';
 import { ceilingLights, musicSpeakers, strobeAccents, strobeAccentCue, accentDurations, movingLightPreview, addedFloorWallLights, podiumRimLights } from './ceiling-lights.js';
@@ -339,7 +340,12 @@ export function startLiveScene({
     }
     if (kind === 'place') {
       feedback.seat(null);
+      const wasSeated=activeSeat!=null;
       activeSeat = data.seat;
+      const model=models.get(own);
+      if(model&&(data.seatMotion||wasSeated)){
+        model.actor={...model.actor,...data};view.actor(model,null,data.seat!=null);view.pole(null);
+      }
       place(data);
       moveBefore = null;
     }
@@ -410,29 +416,18 @@ export function startLiveScene({
     return {x:-15.3,z:Math.abs(hit.pickedPoint.z+8.8)<Math.abs(hit.pickedPoint.z+1.6)?-8.8:-1.6};
   }
   function pickedSeat(hit){
-    if(!hit?.hit)return -1;
-    const names=[hit.pickedMesh.name,hit.pickedMesh.parent?.name];
-    const balcony=names.some(name=>/^VIP sofa (base|cushion|back|arm|return)$/.test(name));
-    const booth=names.some(name=>/^Wall booth (seat|table|back|base)$/.test(name));
-    if(!balcony&&!booth)return -1;
-    let index=-1,best=Infinity;
-    edmSeats.forEach((s,i)=>{
-      if(balcony?!s.balcony:!s.table)return;
-      const d=Math.hypot(s.x-hit.pickedPoint.x,s.z-hit.pickedPoint.z);
-      if(d<best){index=i;best=d;}
-    });
-    return index;
+    return tableSeatTarget(hit,models.get(own)?.actor,new Set([...models.values()].map(m=>m.actor.seat)));
   }
   canvas.addEventListener('pointerleave',()=>feedback.seat(null));
   canvas.addEventListener('pointermove',e=>{
     if(e.buttons||performance.now()-hoverAt<80)return;hoverAt=performance.now();
     const r=canvas.getBoundingClientRect();
     const hit=pickDestination((e.clientX-r.left)*engine.getRenderWidth()/r.width,(e.clientY-r.top)*engine.getRenderHeight()/r.height);
-    const index=pickedSeat(hit),occupied=[...models.values()].some(m=>m.actor.seat===index);
-    const can=index>=0&&!occupied&&activeSeat===null&&!riding&&!speakerCamera&&connected&&!gameActive;
+    const selection=pickedSeat(hit),index=selection?.index??-1;
+    const can=index>=0&&activeSeat===null&&!riding&&!speakerCamera&&connected&&!gameActive;
     const pole=pickedPole(hit),canPole=Boolean(pole)&&activeSeat===null&&!riding&&!speakerCamera&&connected&&!gameActive;
     feedback.seat(can?edmSeats[index]:null);canvas.style.cursor=can||canPole?'pointer':'grab';
-    canvas.title=canPole?'클릭하면 단상 빈 자리로 걸어가 춤춥니다.':can?(edmSeats[index].label||edmSeats[index].table+'번 테이블')+' · 클릭하면 걸어가 앉습니다.':'';
+    canvas.title=canPole?'클릭하면 단상 빈 자리로 걸어가 춤춥니다.':selection?(selection.index<0?selection.exact?'이미 사용 중인 자리입니다.':'이 테이블에 빈자리가 없습니다.':selection.label+' · 클릭하면 '+(selection.exact?'선택한 자리':'가까운 빈자리')+'로 걸어가 앉습니다.'):'';
   });
   canvas.addEventListener('pointerdown', e=>{
     seatTap=e.button===0?{id:e.pointerId,x:e.clientX,y:e.clientY,drag:false}:null;
@@ -452,12 +447,9 @@ export function startLiveScene({
     const point=hit.pickedPoint,names=[hit.pickedMesh.name,hit.pickedMesh.parent?.name];
     const pole=pickedPole(hit);
     if(pole){requestPoleDance(pole);return;}
-    const selected=pickedSeat(hit);
-    if(selected>=0){
-      if([...models.values()].some(m=>m.actor.seat===selected)){
-        send('gate-notice','이미 앉아 있는 자리입니다. 다른 의자를 선택해 주세요.');return;
-      }
-    }else if(!['Arena floor','Entry floor','Dance floor','Auxiliary dance podium','DJ platform','DJ access','West dance zone','West deck ramp','West upper deck','U lounge floor','U lounge stair'].some(name=>names.includes(name)))return;
+    const selection=pickedSeat(hit),selected=selection?.index??-1;
+    if(selection&&selected<0){send('gate-notice',selection.exact?'이미 앉아 있는 자리입니다. 다른 의자를 선택해 주세요.':'이 테이블에 빈자리가 없습니다. 다른 테이블을 선택해 주세요.');return;}
+    if(!selection&&!['Arena floor','Entry floor','Dance floor','Auxiliary dance podium','DJ platform','DJ access','West dance zone','West deck ramp','West upper deck','U lounge floor','U lounge stair'].some(name=>names.includes(name)))return;
     const goal=selected>=0?edmSeats[selected].exit:point;
     const arrived=selected<0?null:()=>{
       send('move',{x:cam.position.x,y:cam.position.y-eyeHeight,z:cam.position.z,yaw:cam.rotation.y});
@@ -713,6 +705,7 @@ export function startLiveScene({
         m.root.rotation.y = a.yaw;
       }
       if(!['pole-dance','podium-dance'].includes(a.action))releasePoleGrip(m);
+      if(animateSeatArrival(B,m,a,Date.now()+offset,calmBeats.matches)){m.showWand(Boolean(a.wand),true);detailed++;continue;}
       if(a.action==='podium-dance'&&podiumSlots[a.podiumSlot]){
         const anchor=podiumSlots[a.podiumSlot],nearPole=Boolean(nearbyEdmPole(a,.95));
         const absoluteBeat=beats+(playback?.cycle||0)*(playback?.track.duration||0)*(playback?.track.bpm||132)/60;

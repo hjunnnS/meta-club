@@ -164,7 +164,7 @@ export class EdmRoom extends Room {
         Object.assign(m, exit);
         m.seat = null;
         m.table = null;
-        m.action = 'idle';
+        m.action = 'idle';delete m.seatMotion;
       } else {
         if (requested !== undefined && !Number.isInteger(requested)) return;
         const occupied = new Set([...this.members.values()].map(other=>other.seat));
@@ -175,6 +175,8 @@ export class EdmRoom extends Room {
         if (!this.positionMember(c.sessionId, m, seats[idx])) return;
         c.userData.preSeat = { x: m.x, y: m.y, z: m.z, yaw: m.yaw };
         const {exit,label,balcony,area,...pose} = seats[idx];
+        if(seats[idx].table||seats[idx].balcony)m.seatMotion={from:{...c.userData.preSeat},at:Date.now(),seat:idx};
+        clearPodium(m);this.poleAnchors.delete(m);this.podiumClaims.delete(m.id);
         Object.assign(m, pose, { seat: idx, table: pose.table ?? null, action: 'sit' });
       }
       this.dirty = true;

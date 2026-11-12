@@ -82,12 +82,14 @@ export class PersonalRoom {
   if(type==='seat'){
    if(a.seat!==null){
     const exit=edmSeats[a.seat]?.exit||this.preSeat;if(!exit)return;
-    Object.assign(a,exit,{seat:null,table:null,action:'idle'});
+    Object.assign(a,exit,{seat:null,table:null,action:'idle'});delete a.seatMotion;
    }else{
     if(data!==undefined&&!Number.isInteger(data))return;
     const found=nearbyEdmSeats(a).find(s=>data===undefined||s.index===data);
     if(!found){this.emit('notice','가까운 빈 의자 앞에서 앉기를 눌러 주세요.');return;}
     this.preSeat={x:a.x,y:a.y,z:a.z,yaw:a.yaw};
+    if(found.seat.table||found.seat.balcony)a.seatMotion={from:{...this.preSeat},at:Date.now(),seat:found.index};
+    clearPodium(a);this.podiumClaims.delete(a.id);this.poleAnchor=null;
     const {exit,label,balcony,area,...pose}=found.seat;Object.assign(a,pose,{seat:found.index,table:pose.table??null,action:'sit'});
    }
    this.emit('place',{...a});this.publish();return;
