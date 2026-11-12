@@ -1,5 +1,12 @@
 // One non-colliding surface: annular chase, alternating grid and diagonal grid flow.
 export function rhythmFloor(B, scene) {
+  const pastel=['#d6b8ef','#b9e7ee','#f5bfd6','#e6d2fa'].map(B.Color3.FromHexString);
+  for(const [i,part]of scene.meshes.filter(m=>m.material&&[m.name,m.parent?.name].some(n=>['Dance floor','Dance floor perimeter','Floor markers','Inlaid smoked glass','Pixel traces','Flush optical fibre'].includes(n))).entries()){
+    const material=part.material.clone('Pastel circular floor '+i);part.material=material;
+    const color=pastel[i%pastel.length];
+    if('albedoColor'in material){material.albedoColor=color.scale(.55);material.albedoTexture=null;material.metallic=0;material.roughness=.72;}
+    if(material.emissiveColor)material.emissiveColor=color.scale(/perimeter|markers|fibre|traces/i.test(part.name+' '+part.parent?.name)?.55:.10);
+  }
   const mesh = B.MeshBuilder.CreateGround('dance floor keys', { width: 16.6, height: 16.6 }, scene);
   mesh.position.y = 0.042;
   mesh.isPickable = false;
@@ -66,7 +73,7 @@ export function rhythmFloor(B, scene) {
         lit=max(lit,flash);
         // An opaque dark bed covers the old annular inlays, including between grid cells.
         // The shader is unlit: room spotlights cannot bleach the colored tiles to white.
-        vec3 dark=vec3(.006,.006,.016);
+        vec3 dark=sceneColor*.12;
         vec3 surface=mix(dark,color,lit)*mix(.68+.32*intensity,1.,1.-grid);
         surface=mix(dark,surface,tile.y);
         float alpha=mix(intensity*(.18+.82*lit)*tile.y,1.,grid);
@@ -89,8 +96,8 @@ export function rhythmFloor(B, scene) {
     const primary=B.Color3.FromHexString(look?.primary||'#9e6dff');
     const secondary=B.Color3.FromHexString(look?.secondary||'#9deaff');
     // Keep the board's hue pair while retaining the saturated primary in bright cells.
-    material.setColor3('sceneColor',primary.scale(.78));
-    material.setColor3('sceneLight',B.Color3.Lerp(primary,secondary,.32).scale(.90));
+    material.setColor3('sceneColor',B.Color3.Lerp(primary,B.Color3.White(),.48));
+    material.setColor3('sceneLight',B.Color3.Lerp(secondary,B.Color3.White(),.36));
     const energy=Number.isFinite(bass)?Math.max(0,Math.min(1,bass)):0;
     const downbeat=Math.floor(b)%4===0;
     material.setFloat('beatHit',active?Math.exp(-(b%1)*9)*(.25+.75*energy)*(downbeat?1:.35):0);

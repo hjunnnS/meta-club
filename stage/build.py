@@ -141,6 +141,13 @@ for side, label in [(-1,"West"),(1,"East")]:
     for z in [1.7,10.3]:
         box(label+" threshold",violet,x-3.65,x+3.65,z,z+.13,.055,.07)
     box(label+" zone edge",violet,x+side*4.65-.08,x+side*4.65+.08,2.6,9.4,.05,.09)
+    if festival:
+        rect('West deck ramp',deck,-18.55,-17.25,2,10,4,.045,-.01,True)
+        for edge in [-18.5,-17.3]:
+            beam('West ramp rail',violet,(edge,1,10),(edge,5,2),.045)
+            for i in range(5):
+                z=10-i*2;box('West ramp posts',metal,edge-.04,edge+.04,z-.04,z+.04,i,i+.95)
+        continue
     # EDM: move the west ramp into the reclaimed speaker footprint and extend the lounge forwards.
     ramp_x=-17.9 if festival else x
     top_z,bottom_z=(2,10) if festival else (-8,0)
@@ -169,36 +176,37 @@ for side, label in [(-1,"West"),(1,"East")]:
 if festival:
     # Restore the VIP room footprint, then join it by narrower U-shaped outer galleries.
     def gallery(x1,x2,z1,z2):box('U lounge floor',deck,x1,x2,z1,z2,3.64,4,True)
-    gallery(-20,-16.2,-8.2,2)
-    gallery(-21.2,-19.65,1.2,11.6) # bypass leaves the existing stairwell open overhead
+    gallery(-20,-16.2,-14.1,2)
+    gallery(-21.2,-19.65,1.2,11.6)
     gallery(-21.2,-16.2,.5,2)
     gallery(-21.2,-16.2,10,11.6)
     gallery(-20,-16.2,10,18.4)
-    gallery(16.2,20,-8.2,18.4)
-    octagon('U lounge floor',deck,14.6,-13.8,10.8,11.8,.8,3.64,4,True)
+    gallery(16.2,20,-14.1,18.4)
+    gallery(-21.4,-16,-14.1,-10.3)
+    gallery(16,21.4,-14.1,-10.3)
+    gallery(-2.7,2.7,14.8,20.2)
     octagon('U lounge floor',deck,0,18.4,40,3.6,1.8,3.64,4,True)
-    gallery(8.95,20,8.5,10) # landing for the entrance-right stair
-    rect('U lounge stair',deck,8.95,12.05,10,18,4,0,-.01,True)
+    gallery(9.85,11.15,16,17.6)
+    rect('U lounge stair',deck,9.85,11.15,8,16,0,4,-.01,True)
     def guard(a,b):
         beam('U lounge rail',ice,(a[0],5,a[1]),(b[0],5,b[1]),.045)
         length=math.hypot(b[0]-a[0],b[1]-a[1]);count=max(1,math.ceil(length/2.5))
         for j in range(count+1):
             t=j/count;x=a[0]+(b[0]-a[0])*t;z=a[1]+(b[1]-a[1])*t
             box('U lounge post',metal,x-.045,x+.045,z-.045,z+.045,4,5)
-    for a,b in [((-20,-8.2),(-20,1.2)),((-21.2,1.2),(-21.2,11.6)),
-        ((-20,11.6),(-20,18.4)),((-16.2,-8.2),(-16.2,2)),((-16.2,10),(-16.2,16.6)),
-        ((-19.65,2.1),(-19.65,9.9)),((16.2,-8.2),(16.2,8.5)),
-        ((16.2,10),(16.2,16.6)),((20,-8.2),(20,18.4)),
-        ((-16.2,16.6),(16.2,16.6)),((-18.2,20.15),(18.2,20.15)),
-        ((-20,18.4),(-18.2,20.15)),((20,18.4),(18.2,20.15)),
-        ((8.95,8.5),(16.2,8.5)),((8.95,8.5),(8.95,10)),
-        ((9.28,-18.9),(9.28,-8.75)),((19.92,-18.9),(19.92,-8.75)),
-        ((10.1,-19.6),(19.1,-19.6)),((10.1,-8),(16.2,-8))]:guard(a,b)
-    for edge in [9.0,12.0]:
-        beam('U lounge rail',violet,(edge,1,18),(edge,5,10),.045)
+    for a,b in [((-20,-10.3),(-20,1.2)),((-21.2,1.2),(-21.2,11.6)),
+        ((-20,11.6),(-20,18.4)),((-16.2,-10.3),(-16.2,2)),((-16.2,10),(-16.2,16.6)),
+        ((-19.65,2.1),(-19.65,9.9)),((16.2,-10.3),(16.2,16.6)),((20,-10.3),(20,18.4)),
+        ((-16.2,16.6),(-2.7,16.6)),((2.7,16.6),(9.8,16.6)),((11.2,16.6),(16.2,16.6)),
+        ((-18.2,20.15),(18.2,20.15)),((-20,18.4),(-18.2,20.15)),((20,18.4),(18.2,20.15)),
+        ((-16,-14.1),(-16,-10.3)),((16,-14.1),(16,-10.3)),((-21.35,-14.1),(-21.35,-10.3)),((21.35,-14.1),(21.35,-10.3)),
+        ((-21.35,-14.1),(-16,-14.1)),((16,-14.1),(21.35,-14.1)),
+        ((-2.7,14.8),(2.7,14.8)),((-2.7,14.8),(-2.7,16.6)),((2.7,14.8),(2.7,16.6))]:guard(a,b)
+    for edge in [9.9,11.1]:
+        beam('U lounge rail',violet,(edge,1,8),(edge,5,16),.045)
         for i in range(5):
-            z=18-2*i;box('U lounge post',metal,edge-.045,edge+.045,z-.045,z+.045,i,i+.95)
-    for x,z in [(-19.5,12),(-19.5,16),(19.8,0),(19.8,-19),(-6.3,19.9),(6.3,19.9)]:
+            z=8+2*i;box('U lounge post',metal,edge-.04,edge+.04,z-.04,z+.04,i,i+.95)
+    for x,z in [(-19.5,12),(-19.5,16),(19.8,0),(-6.3,19.9),(6.3,19.9)]:
         box('U lounge support',metal,x-.12,x+.12,z-.12,z+.12,0,3.64)
 
 # Frame the side rooms on their outer edges; their inner thresholds stay open.
@@ -220,7 +228,7 @@ for side in (-1,1):
     beam("Lobby wing trim",ice,(side*3.9,1.25,20.7),(side*8.4,1.55,15.5),.08)
     if festival and side > 0:
         continue
-    for z in [-18,-15,-12,-9]:
+    for z in ([] if festival else [-18,-15,-12,-9]):
         box("Upper deck fascia",violet,side*14.6-4.5,side*14.6+4.5,z,z+.07,4.002,4.018)
 # Proscenium brackets distinguish the elevated stage from the two audience decks.
 for side in (-1,1):
@@ -252,7 +260,7 @@ if festival:
     route[5] = (0,1.35,-11.2)
     route[9:] = [(-14.6,.045,6),(0,.018,0),(14.6,0,6),
                   (-17.9,.045,10.6),(-17.9,.045,10),(-17.9,4,2),
-                  (-17.9,4,-13),(-9.75,4,-13),(-9.75,4,-10.7)]
+                  (-17.9,4,-10.65),(-17.1,4,-10.65),(-17.1,4,-12.2)]
     stops.update(west=9,east=11,balcony=17)
 def ground(x,z):
     top=-999

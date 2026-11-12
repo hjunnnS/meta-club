@@ -138,31 +138,32 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
         rug=finish('VIP woven rug',(.065,.052,.085),0,.98)
         cove=finish('VIP warm cove',(.52,.26,.10),0,.72,(.55,.29,.12))
         soft=finish('VIP violet cove',(.18,.08,.28),0,.78,(.26,.10,.38))
-        for j,z in enumerate([-17.8,-15.0,-10.7]):
-            x=-12.65
-            octagon('VIP rug',rug,-11.9,z,4.0,2.72,.22,4.006,4.016)
-            octagon('VIP sofa base',ink,x,z,1.70,2.40,.15,4.10,4.28)
-            for dz in [-.72,0,.72]:
-                octagon('VIP sofa cushion',velvet,x+.06,z+dz,1.45,.69,.12,4.28,4.49)
-                beam('VIP cushion seam',cushion,(x+.70,4.48,z+dz-.25),(x+.70,4.48,z+dz+.25),.012)
-            # Backrest faces the central walking lane; the open seat faces the stage beyond the inner rail.
-            octagon('VIP sofa back',velvet,x-.75,z,.22,2.42,.08,4.28,4.91)
-            for dz in [-.72,0,.72]:
-                box('VIP back upholstery',cushion,x-.625,x-.60,z+dz-.29,z+dz+.29,4.51,4.82)
-            for side in [-1,1]:
-                octagon('VIP sofa arm',velvet,x+.03,z+side*1.11,1.62,.20,.07,4.28,4.72)
-            octagon('VIP sofa return',velvet,x+1.03,z-.94,1.05,.63,.12,4.14,4.49)
-            beam('VIP sofa brass reveal',brass,(x+.84,4.24,z-1.04),(x+.84,4.24,z+1.04),.018)
-            beam('VIP sofa underglow',cove,(x+.85,4.13,z-1.02),(x+.85,4.13,z+1.02),.022)
-            beam('VIP outer floor glow',soft,(x-.83,4.04,z-1.08),(x-.83,4.04,z+1.08),.018)
-            # Low tables leave about .9m before the inner rail; z=-13 remains a clear cross-deck route.
-            tx=-10.75
-            octagon('VIP low table top',table,tx,z+.22,1.10,1.28,.16,4.43,4.51)
-            for dx in [-.36,.36]:
-                for dz in [-.44,.44]:post('VIP table leg',brass,tx+dx,4.04,z+.22+dz,.034,.39)
-            beam('VIP table edge glow',cove,(tx+.55,4.445,z-.22),(tx+.55,4.445,z+.66),.015)
-            post('VIP table lamp base',brass,tx,4.51,z+.22,.10,.025)
-            post('VIP table lamp diffuser',cove,tx,4.535,z+.22,.065,.13)
+        def furnished(cx,cz,fx,fz):
+            sx,sz=-fz,fx
+            def pt(u,v,y):return (cx+fx*u+sx*v,y,cz+fz*u+sz*v)
+            def ob(name,mat,u,v,w,d,cut,lo,hi):
+                xx,_,zz=pt(u,v,0);octagon(name,mat,xx,zz,w if fx else d,d if fx else w,cut,lo,hi)
+            def bx(name,mat,u1,u2,v1,v2,lo,hi):
+                points=[pt(u,v,0) for u in [u1,u2] for v in [v1,v2]]
+                box(name,mat,min(p[0] for p in points),max(p[0] for p in points),min(p[2] for p in points),max(p[2] for p in points),lo,hi)
+            def line(name,mat,a,b,r):beam(name,mat,pt(a[0],a[2],a[1]),pt(b[0],b[2],b[1]),r)
+            ob('VIP rug',rug,1,0,4.1,3.2,.18,4.006,4.016)
+            ob('VIP sofa base',ink,0,0,1.70,2.40,.15,4.10,4.28)
+            for v in [-.72,0,.72]:
+                ob('VIP sofa cushion',velvet,.06,v,1.45,.69,.12,4.28,4.49)
+                bx('VIP back upholstery',cushion,-.625,-.60,v-.29,v+.29,4.51,4.82)
+            ob('VIP sofa back',velvet,-.75,0,.22,2.42,.08,4.28,4.91)
+            for v in [-1.11,1.11]:ob('VIP sofa arm',velvet,.03,v,1.62,.20,.07,4.28,4.72)
+            ob('VIP sofa return',velvet,1.03,-.94,1.05,.63,.12,4.14,4.49)
+            line('VIP sofa underglow',cove,(.85,4.13,-1.02),(.85,4.13,1.02),.022)
+            ob('VIP low table top',table,1.9,.22,1.1,1.28,.16,4.43,4.51)
+            for u in [1.54,2.26]:
+                for v in [-.22,.66]:
+                    x,_,z=pt(u,v,0);post('VIP table leg',brass,x,4.04,z,.034,.39)
+            x,_,z=pt(1.9,.22,0);post('VIP table lamp diffuser',cove,x,4.51,z,.065,.15)
+        furnished(-20.5,-12.2,1,0)
+        furnished(0,19.2,0,-1)
+        furnished(20.5,-12.2,-1,0)
     # Rotate the complete bar 180 degrees around (-13.65, 16.2).
     # The tall bottle display moves behind the stools, clearing the stage sightline.
     def bar_box(name,mat,x1,x2,z1,z2,lo,hi):
@@ -306,9 +307,6 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
             beam('Wall cornice',silver,(side*21.2,6.75,zz),(side*21.2,6.75,min(20.5,zz+4.7)),.11)
         if side > 0:
             continue
-        for j in range(19):
-            xx=side*(9.45+j*.56)
-            box('Deck fascia flutes',brass,xx-.047,xx+.047,-8.30,-8.22,3.64,3.98)
         # Side deck feature wall in the upper lounges.
         for j in range(6):
             xx=side*(10.4+j*1.7)

@@ -5,8 +5,10 @@ import { hologram } from './holograms.js';
 export const effects = {
   led: { label: 'LED 전광판', seconds: 15 },
   laser: { label: '레이저 쇼', seconds: 16 },
-  fountain: { label: '분수 불꽃 시험', seconds: 5 },
-  confetti: { label: '종이조각 시험', seconds: 7 },
+  fountain: { label: '분수 불꽃 시험', seconds: 7 },
+  confetti: { label: '종이조각 · 안에서 밖', seconds: 7 },
+  'confetti-down': {label:'종이조각 · 위에서 아래',seconds:7},
+  'confetti-in': {label:'종이조각 · 밖에서 안',seconds:7},
   phoenix: { label: '불사조', seconds: 14 },
   whale: { label: '대형 고래', seconds: 14 },
   dragon: { label: '네온 용', seconds: 14 },
@@ -225,7 +227,6 @@ export function houseScreen(B, scene, broadcast,wingBroadcast=null) {
     if(track)playWall(wingCtx,calm?0:Math.max(0,phraseBeat),look);
     else mediaWall(wingCtx,calm?0:beats*.36);
     if(dimBackground){wingCtx.fillStyle='rgba(0,0,0,.80)';wingCtx.fillRect(0,0,1024,384);}
-    if(track){wingCtx.fillStyle='rgba(5,5,18,.86)';wingCtx.fillRect(0,318,1024,66);wingCtx.font='bold 35px system-ui';wingCtx.textAlign='center';wingCtx.fillStyle='#e6e1ff';wingCtx.fillText(wingLabel,512,363);}
     wingTexture.update();
     const portrait=segment===1||segment===2;
     if(portrait)flashInk.alpha*=.25;
@@ -383,7 +384,12 @@ function laserBlackouts(start, seconds=effects.laser.seconds) {
   return cuts;
 }
 
-export const strobeDurations={normal:5,transition:7};
+export function strobeTiming(bpm=132){const bar=240/Math.max(1,bpm);return {normal:Math.ceil(10/bar)*bar,transition:Math.ceil(14/bar)*bar};}
+export const strobeDurations=strobeTiming(132);
+export function beamPulse(beat,bpm=132,previewAge=null){
+  const timing=strobeSchedule(beat,bpm),active=previewAge!==null||((beat%16+16)%16>=12)||timing.flash&&timing.elapsed<strobeTiming(bpm)[timing.kind];
+  return !active||Math.floor((previewAge??beat*60/bpm)/.1)%2===0?1:0;
+}
 export function pairedFlash(elapsed) {
   const ms=Math.floor(elapsed*1000+.000001),phase=((ms%650)+650)%650;
   return phase<200&&Math.floor(phase/50)%2===0?1:0;
@@ -394,15 +400,13 @@ export function washLook(elapsed,flashTime=elapsed-1) {
   return Math.min(1,elapsed/.25,(4-elapsed)/.6);
 }
 export function strobeSchedule(beat,bpm=120) {
-  const period=32*60/Math.max(1,bpm),cycle=Math.floor(beat/32);
-  const seconds=(((beat%32)+32)%32)*60/Math.max(1,bpm);
-  const normalAt=Math.max(period/2,strobeDurations.transition+.2);
-  const smokeAt=normalAt+strobeDurations.normal+.25;
-  let smokeTime=seconds-smokeAt;
-  if(smokeTime<0)smokeTime=cycle>0?smokeTime+period:-1;
-  const kind=seconds<normalAt?'transition':'normal',sceneIndex=((cycle%3)+3)%3;
-  const flash=sceneIndex===0?kind==='transition':sceneIndex===1?kind==='normal':false;
-  return {kind,flash,elapsed:beat<0?-1:seconds<normalAt?seconds:seconds-normalAt,smokeTime:beat<0?-1:smokeTime};
+  const durations=strobeTiming(bpm),beatSeconds=60/Math.max(1,bpm);
+  // Alternate at 12-bar boundaries. Both longer looks leave a gap for the smoke cue.
+  const period=48*beatSeconds,cycle=Math.floor(beat/48);
+  const seconds=(((beat%48)+48)%48)*beatSeconds;
+  const kind=cycle%2===0?'transition':'normal';
+  const smokeTime=seconds-durations[kind]-.25;
+  return {kind,flash:beat>=0&&seconds<durations[kind],elapsed:beat<0?-1:seconds,smokeTime:beat<0?-1:smokeTime};
 }
 export const peripheralTests = {smoke:6, laser:4, wash:4};
 export function peripheralCue(beat,bpm=120,preview=null,playing=true,arrangement=1) {
@@ -562,7 +566,8 @@ function peripheralLighting(B,scene) {
       const washLevel=cue.wash*(cue.crowd&&!moving?.25:1);
       cone.setEnabled(washLevel>.001);pool.setEnabled(washLevel>.001);
       ink.alpha=(moving?.10:.055)*strength*washLevel+white*.045;poolInk.alpha=(moving?.32:.12)*strength*washLevel+white*.28;
-      rayInk.alpha=cue.laser*strength*(.65+.35*energy);
+      const gate=calm.matches?1:beamPulse(beat,bpm,cue.preview&&cue.laser>0?cue.smokeTime:null);
+      rayInk.alpha=cue.laser*strength*(.65+.35*energy)*gate;
       haloInk.alpha=rayInk.alpha*.13;
       for(const {ray,halo,spread} of rays) {
         ray.setEnabled(cue.laser>.001);halo.setEnabled(cue.laser>.001);if(!ray.isEnabled())continue;
@@ -855,13 +860,13 @@ export function eventPlayer(B, scene, now = Date.now, fastFlash = () => false) {
     stop();
     current = event;
     root = new B.TransformNode('stage event', scene);
-    const particlePreview = ['fountain','confetti'].includes(event.kind);
+    const particlePreview = ['fountain','confetti','confetti-down','confetti-in'].includes(event.kind);
     animate = particlePreview ? null : ['whale','dragon','jellyfish','butterflies'].includes(event.kind)
       ? hologram(B, scene, root, event.kind)
       : {led: marquee, laser: lasers, phoenix}[event.kind](B, scene, root, event, fastFlash);
     bodies=event.kind==='led'?[]:root.getChildMeshes();
     adorn = event.kind === 'led' ? null : celebration(B, scene, root, duration(event),
-      !particlePreview && event.kind !== 'laser', particlePreview ? event.kind : 'both', event.bpm || 120);
+      !particlePreview && event.kind !== 'laser', particlePreview ? event.kind : 'both', event.bpm || 120, ['confetti','confetti-down','confetti-in'][Math.abs(Number(String(event.id).match(/\d+$/)?.[0])||0)%3]);
     tick();
   }
   function tick() {

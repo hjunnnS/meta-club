@@ -4,8 +4,8 @@ import {activityFeedback} from './activity-feedback.js';
 import {sceneLook} from './scene-look.js';
 import { rhythmFloor } from './rhythm-floor.js';
 import { playlistPosition, trackBeat, musicDynamics } from './music.js';
-import { effects, eventPlayer, ledScreen, houseScreen, houseLights, peripheralTests, peripheralCue } from '/stage/festival/events.js';
-import { permittedPath, edmCameraDistance, edmSeats, edmStage, edmBalcony } from './edm-layout.js';
+import { effects, eventPlayer, ledScreen, houseScreen, houseLights, peripheralTests, peripheralCue, beamPulse } from '/stage/festival/events.js';
+import { permittedPath, edmCameraDistance, edmSeats, edmStage, edmBalcony, edmUpperRoute } from './edm-layout.js';
 import { dances, danceCamera, animateDance } from './free-dance.js';
 import { avatarFactory, playerView, staffNPC, animateStaff } from './avatar.js';
 export function startLiveScene({
@@ -75,7 +75,7 @@ export function startLiveScene({
   let nextWingBroadcast=0,openingCountdown=null;
   const wingViews=[
     {label:'중앙 플로어',target:[0,1,0],eye:[5,4.2,8],test:a=>Math.hypot(a.x,a.z)<9},
-    {label:'2층 라운지',target:[-12.4,4.9,-14],eye:[-9.7,6.6,-7],test:a=>a.y>3.5},
+    {label:'2층 라운지',target:[-19,4.9,-12.2],eye:[-15.8,6.5,-8],test:a=>a.y>3.5},
     {label:'1층 테이블',target:[18.6,1.0,7.4],eye:[12.9,3.3,12.2],test:a=>a.x>16&&a.y<1},
     {label:'1층 바',target:[-13.6,1.2,15.2],eye:[-8.8,3.3,11.5],test:a=>a.x< -8&&a.z>12&&a.y<1},
   ];
@@ -408,30 +408,15 @@ export function startLiveScene({
     const failed=()=>send('gate-notice','걸어갈 수 있는 경로가 없습니다. 가까운 열린 바닥을 선택해 주세요.');
     if(selected>=0&&edmSeats[selected].balcony){
       const route=[],foot=cam.position.y-eyeHeight;
-      let x=cam.position.x,z=cam.position.z;
+      let upper={x:cam.position.x,z:cam.position.z};
       if(foot<3.95){
-        if(x>0){
-          const r=edmBalcony.rightRamp;
-          const onRamp=Math.abs(x-r.x)<1.45&&z>r.topZ-.2&&z<r.bottomZ+.2&&foot>.2;
-          if(!onRamp)route.push({x:r.x,y:0,z:r.bottomZ+.6});
-          route.push({x:r.x,y:4,z:r.topZ-.6},{x:17.9,y:4,z:9.2});x=17.9;z=9.2;
-        }else{
-          const onRamp=Math.abs(x-edmBalcony.rampX)<1.45&&z>edmBalcony.topZ-.2&&z<edmBalcony.bottomZ+.2&&foot>.2;
-          if(!onRamp)route.push({x:edmBalcony.rampX,y:.045,z:edmBalcony.bottomZ+.6});
-          route.push({x:edmBalcony.rampX,y:4,z:edmBalcony.topZ-.6});x=edmBalcony.rampX;z=1.4;
-        }
+        const right=upper.x>0,r=right?edmBalcony.rightRamp:{x:edmBalcony.rampX,bottomZ:10,topZ:2};
+        const direction=Math.sign(r.topZ-r.bottomZ);
+        const onRamp=Math.abs(upper.x-r.x)<.57&&upper.z>=Math.min(r.topZ,r.bottomZ)-.2&&upper.z<=Math.max(r.topZ,r.bottomZ)+.2&&foot>.2;
+        if(!onRamp)route.push({x:r.x,y:right?0:.045,z:r.bottomZ-direction*.6});
+        upper={x:r.x,z:r.topZ+direction*.6};route.push({...upper,y:4});
       }
-      if(x>0&&z< -8)route.push({x:17.9,y:4,z});
-      if(x>0&&z<16.6){route.push({x:17.9,y:4,z:15.5},{x:17.9,y:4,z:18.4});z=18.4;}
-      if(z>=16.6){route.push({x:0,y:4,z:18.4},{x:-17.9,y:4,z:18.4},{x:-17.9,y:4,z:11.5});x=-17.9;z=11.5;}
-      if(z>2){
-        route.push({x:-20.4,y:4,z:11.5},{x:-20.4,y:4,z:1.2},{x:-17.9,y:4,z:1.2});x=-17.9;
-      }
-      if(foot<3.95||x< -13.4){
-        route.push({x:edmBalcony.rampX,y:4,z:edmBalcony.crossZ},{x:edmBalcony.aisleX,y:4,z:edmBalcony.crossZ});
-      }
-      route.push({x:edmBalcony.aisleX,y:4,z:goal.z});
-      route.push(goal);
+      route.push(...edmUpperRoute(upper,edmSeats[selected].area),goal);
       const advance=()=>{
         const next=route.shift();
         if(!next){arrived?.();return;}
@@ -550,6 +535,7 @@ export function startLiveScene({
       accentCue.variant=openingSection;accentCue.gather=openingGather;accentCue.travel=0;
     }
     if(playing&&!accentTest&&!effectPreview){accentCue.fan*=.45;accentCue.gobo*=.70;}
+    accentCue.pulse=calmBeats.matches?1:beamPulse(beats,bpm,accentTest?.kind==='curtain'?accentAge:null);
     const performancePhase=stageEvents.phase;
     const performancePriority=performancePhase&&performancePhase.kind!=='led'&&performancePhase.level<.75;
     if(!accentTest&&!effectPreview){accentCue.curtain*=supportLevel;accentCue.fan*=supportLevel;accentCue.gobo*=supportLevel;}

@@ -65,7 +65,7 @@ function guide(step) {
 }
 function display(data) {
   snapshot = data;
-  const names = {fountain:'분수 불꽃 시험',confetti:'종이조각 시험',laser:'레이저 쇼',phoenix:'불사조',whale:'대형 고래',dragon:'네온 용',jellyfish:'우주 해파리',butterflies:'나비 군집'};
+  const names = {fountain:'분수 불꽃 시험',confetti:'종이조각 · 안에서 밖','confetti-down':'종이조각 · 위에서 아래','confetti-in':'종이조각 · 밖에서 안',laser:'레이저 쇼',phoenix:'불사조',whale:'대형 고래',dragon:'네온 용',jellyfish:'우주 해파리',butterflies:'나비 군집'};
   const next = data.nextPerformance;
   const seconds = next ? Math.max(0, Math.ceil((next.start - data.performanceNow) / 1000)) : 0;
   const countdown = next ? '다음 ' + names[next.kind] + ' · ' + Math.floor(seconds/60) + ':' + String(seconds%60).padStart(2,'0') : '';

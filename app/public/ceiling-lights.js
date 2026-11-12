@@ -209,7 +209,7 @@ export function strobeAccents(B,scene) {
     const hit=reduced?0:Math.exp(-(((beat%1)+1)%1)*6)*Math.max(0,Math.min(1,bass));
     curtainInk.forEach((material,i)=>{
       B.Color3.LerpToRef(material.emissiveColor,palettes[variant][i],blend,material.emissiveColor);
-      material.alpha=cue.curtain*(.48+hit*.38)*(reduced?.65:.76+.24*Math.sin(beat*Math.PI+i*Math.PI)**2);
+      material.alpha=(reduced?1:(target.pulse??1))*cue.curtain*(.48+hit*.38)*(reduced?.65:.76+.24*Math.sin(beat*Math.PI+i*Math.PI)**2);
     });
     B.Color3.LerpToRef(fanInk.emissiveColor,palettes[variant][0],blend,fanInk.emissiveColor);
     fanInk.alpha=cue.fan*(.70+hit*.22);fanSheetInk.alpha=cue.fan*(.065+hit*.035)*(1-.88*centerClearance);
