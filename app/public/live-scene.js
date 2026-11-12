@@ -75,12 +75,6 @@ export function startLiveScene({
   wingBroadcast.renderList=[];wingBroadcast.refreshRate=0;scene.customRenderTargets.push(wingBroadcast);
   const updateBoard = houseScreen(B, scene, broadcast,wingBroadcast);
   let nextWingBroadcast=0,openingCountdown=null;
-  const wingViews=[
-    {label:'중앙 플로어',target:[0,1,0],eye:[5,4.2,8],test:a=>Math.hypot(a.x,a.z)<9},
-    {label:'2층 라운지',target:[-19,4.9,-12.2],eye:[-15.8,6.5,-8],test:a=>a.y>3.5},
-    {label:'1층 테이블',target:[18.6,1.0,7.4],eye:[12.9,3.3,12.2],test:a=>a.x>16&&a.y<1},
-    {label:'1층 바',target:[-13.6,1.2,15.2],eye:[-8.8,3.3,11.5],test:a=>a.x< -8&&a.z>12&&a.y<1},
-  ];
   let nextBroadcast = 0;
 
   const lookPrimary=B.Color3.White(),lookSecondary=B.Color3.White();
@@ -593,14 +587,14 @@ export function startLiveScene({
     const lipGlow = ramp(cueBeat - 1.22, .28) * ramp(2.95 - cueBeat, .75);
     for (const lip of stageLips) illuminate(lip, cue.rgb, lipGlow);
     renderFloor(beats, celebrating, accent, cueBeat, cue.rgb, stageEvents.kind === 'laser' ? 1 : ['phoenix','whale','dragon','jellyfish','butterflies'].includes(stageEvents.kind) ? 2 : 0, roomPulse,look,Boolean(playing),musicEnergy);
-    updateBoard(playing ? playback.track.title : null, beats, !preview && !celebrating, Math.max(accent,startBeat>=0&&startBeat<.78?(1-startBeat/.78)*.85:0), gather, calmBeats.matches, phraseBeat, wallRelease, cue.hex, stageEvents.kind && stageEvents.kind !== 'led' ? effects[stageEvents.kind].label : null, strobing, roomPulse,look,openingCountdown?Math.max(0,Math.min(3,Math.ceil((openingCountdown.endsAt-Date.now())/1000))):0,wingViews[Math.floor(Math.max(0,beats)/16)%4].label,audioBands);
+    updateBoard(playing ? playback.track.title : null, beats, !preview && !celebrating, Math.max(accent,startBeat>=0&&startBeat<.78?(1-startBeat/.78)*.85:0), gather, calmBeats.matches, phraseBeat, wallRelease, cue.hex, stageEvents.kind && stageEvents.kind !== 'led' ? effects[stageEvents.kind].label : null, strobing, roomPulse,look,openingCountdown?Math.max(0,Math.min(3,Math.ceil((openingCountdown.endsAt-Date.now())/1000))):0,'DJ · 음악 그래픽',audioBands);
     const phase = beats * Math.PI * 2,
       beatWave = Math.sin(phase);
     washes.forEach(({ light, base }, i) => {
       light.diffuse.copyFrom(i%2?lookSecondary:lookPrimary);
       light.intensity = base * (strobing ? .20 : .70+look.opening*.45+roomPulse*1.25) * (dancers ? 1 + 0.38 * Math.sin(phase / 4 + (i * Math.PI) / 2) : 1);
     });
-    const djOnAir=Boolean(playing)&&boardSegment===1&&!preview&&!celebrating;
+    const djOnAir=Boolean(playing)&&[0,1,3].includes(boardSegment)&&!preview&&!celebrating;
     djLightLevel+=((djOnAir?1:0)-djLightLevel)*(1-Math.exp(-Math.min(dt,100)/220));
     djFocusLights.forEach(({light,base,tint,origin,beam,material,position,color,excluded,included},i)=>{
       if(i===0||djLightLevel>.015){
@@ -752,17 +746,12 @@ export function startLiveScene({
       broadcast.resetRefreshCounter();
       nextBroadcast = now + 1000/12;
     }
-    if(playing&&!preview&&!celebrating&&now>=nextWingBroadcast){
-      const shot=wingViews[Math.floor(Math.max(0,beats)/16)%wingViews.length];
-      const guests=[...models.values()].filter(m=>shot.test(m.actor)).slice(0,5);
-      wingCamera.position.copyFrom(B.Vector3.FromArray(shot.eye));
-      wingCamera.setTarget(B.Vector3.FromArray(shot.target));wingCamera.fov=.85;
-      if(guests.length){
-        const center=guests.reduce((v,m)=>v.add(m.root.position),B.Vector3.Zero()).scale(1/guests.length);center.y+=.95;
-        const offset=B.Vector3.FromArray(shot.eye).subtract(B.Vector3.FromArray(shot.target));
-        wingCamera.position.copyFrom(center).addInPlace(offset);wingCamera.setTarget(center);
-      }
-      wingBroadcast.renderList=[...venueMeshes,...guests.flatMap(m=>[...m.near.getChildMeshes(),m.far]),...bartender.near.getChildMeshes()];
+    // Side screens alternate a close DJ shot with graphics; no vacant room broadcasts.
+    if(playing&&[0,3].includes(segment)&&!preview&&!celebrating&&now>=nextWingBroadcast){
+      const side=segment===0?1:-1;
+      wingCamera.position.set(edmStage.dj.x+side*.72,3.18,edmStage.dj.z+3.15);
+      wingCamera.setTarget(new B.Vector3(edmStage.dj.x,2.80,edmStage.dj.z));wingCamera.fov=.55;
+      wingBroadcast.renderList=dj.near.getChildMeshes();
       wingBroadcast.resetRefreshCounter();nextWingBroadcast=now+1000/10;
     }
     if (own && now - lastSent > 100 && activeSeat === null && !riding) {

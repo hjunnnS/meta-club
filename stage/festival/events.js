@@ -143,19 +143,23 @@ export function houseScreen(B, scene, broadcast,wingBroadcast=null) {
   const wingTexture=new B.DynamicTexture('EDM shared wing artwork',{width:1024,height:384},scene,false);
   const wingCtx=wingTexture.getContext();
   const wingInk=new B.StandardMaterial('EDM wing artwork',scene);
-  wingInk.disableLighting=true;wingInk.emissiveTexture=wingTexture;
+  wingInk.disableLighting=true;wingInk.diffuseColor=B.Color3.Black();wingInk.emissiveTexture=wingTexture;
   wingInk.emissiveColor=new B.Color3(.88,.88,.88);wingInk.backFaceCulling=false;
-  let wingProgram=null;
-  if(wingBroadcast){
-    wingProgram=new B.ShaderMaterial('EDM independent guest wings',scene,{
+  const wingPrograms=[];
+  function wingProgram(side){
+    if(!wingBroadcast)return wingInk;
+    const material=new B.ShaderMaterial('EDM side DJ and graphic '+side,scene,{
       vertexSource:'precision highp float;attribute vec3 position;attribute vec2 uv;uniform mat4 worldViewProjection;varying vec2 vUV;void main(){vUV=uv;gl_Position=worldViewProjection*vec4(position,1.);}',
-      fragmentSource:'precision highp float;varying vec2 vUV;uniform sampler2D artwork;uniform sampler2D guests;uniform float live;void main(){vec4 bg=texture2D(artwork,vUV);vec4 feed=texture2D(guests,vUV);float edge=smoothstep(.03,.08,vUV.x)*(1.-smoothstep(.92,.97,vUV.x))*smoothstep(.15,.23,vUV.y)*(1.-smoothstep(.90,.97,vUV.y));gl_FragColor=vec4(mix(bg.rgb,feed.rgb,edge*live*feed.a),1.);}'
-    },{attributes:['position','uv'],uniforms:['worldViewProjection','live'],samplers:['artwork','guests']});
-    wingProgram.setTexture('artwork',wingTexture);wingProgram.setTexture('guests',wingBroadcast);wingProgram.setFloat('live',0);wingProgram.backFaceCulling=false;
+      fragmentSource:'precision highp float;varying vec2 vUV;uniform sampler2D artwork;uniform sampler2D guests;uniform float live;uniform float mirror;void main(){vec2 artUV=vec2(mix(vUV.x,1.-vUV.x,mirror),vUV.y);vec4 bg=texture2D(artwork,artUV);vec4 feed=texture2D(guests,vUV);float edge=smoothstep(.03,.08,vUV.x)*(1.-smoothstep(.92,.97,vUV.x))*smoothstep(.08,.15,vUV.y)*(1.-smoothstep(.92,.98,vUV.y));gl_FragColor=vec4(mix(bg.rgb,feed.rgb,edge*live*feed.a),1.);}'
+    },{attributes:['position','uv'],uniforms:['worldViewProjection','live','mirror'],samplers:['artwork','guests']});
+    material.setTexture('artwork',wingTexture);material.setTexture('guests',wingBroadcast);
+    material.setFloat('live',0);material.setFloat('mirror',side>0?1:0);material.backFaceCulling=false;
+    wingPrograms.push({material,side,level:0});return material;
   }
   const casingInk=paint(B,scene,'EDM wing graphite','#10101b',.12);
   const equalizerTexture=new B.DynamicTexture('EDM wing equalizer pixels',{width:384,height:512},scene,false);
   const equalizerCtx=equalizerTexture.getContext(),equalizerLevels=Array(2).fill(0);
+  const equalizerHistory=Array.from({length:2},()=>({mean:0,peak:.12,previous:0}));
   const equalizerInk=new B.ShaderMaterial('EDM wing equalizer ink',scene,{
     vertexSource:'precision highp float;attribute vec3 position;attribute vec2 uv;uniform mat4 worldViewProjection;varying vec2 vUV;void main(){vUV=uv;gl_Position=worldViewProjection*vec4(position,1.);}',
     fragmentSource:'precision highp float;varying vec2 vUV;uniform sampler2D pixels;void main(){gl_FragColor=vec4(texture2D(pixels,vUV).rgb*.85,1.);}'
@@ -167,10 +171,18 @@ export function houseScreen(B, scene, broadcast,wingBroadcast=null) {
     const dt=Math.min(.2,Math.max(0,(now-equalizerAt)/1000));equalizerAt=now;
     equalizerCtx.fillStyle='#090b16';equalizerCtx.fillRect(0,0,384,512);
     for(let column=0;column<2;column++){
-      const measured=Array.from({length:6},(_,i)=>Math.max(0,Math.min(1,Number(bands[column*6+i])||0)));
-      const sample=track&&!calm?measured.reduce((sum,value)=>sum+value,0)/6:0;
-      const target=track?Math.min(1,Math.sqrt(sample)*1.45):0;
-      const blend=1-Math.exp(-dt/(target>equalizerLevels[column]?.04:.20));
+      // Low bins follow the kick; upper bins follow hats, vocals and bright transients.
+      const indices=column===0?[0,1,2]:[5,6,7,8,9,10,11];
+      const sample=track&&!calm?indices.reduce((sum,i)=>sum+Math.max(0,Math.min(1,Number(bands[i])||0)),0)/indices.length:0;
+      const state=equalizerHistory[column];
+      state.mean+=(sample-state.mean)*(1-Math.exp(-dt/.9));
+      state.peak+=(sample-state.peak)*(1-Math.exp(-dt/(sample>state.peak?.035:1.5)));
+      const relative=sample/Math.max(.12,state.peak),range=Math.max(.10,state.peak-.72*state.mean);
+      const transient=Math.max(0,sample-state.mean)/range,rise=Math.max(0,sample-state.previous);
+      // Sustained loud passages settle around mid-height; only transients reach the top.
+      const target=sample>.015?Math.min(.98,.10+.36*relative+.8*transient+2.3*rise):0;
+      state.previous=sample;
+      const blend=1-Math.exp(-dt/(target>equalizerLevels[column]?.025:.10));
       equalizerLevels[column]+=(target-equalizerLevels[column])*blend;
       const count=track&&!calm?Math.round(equalizerLevels[column]*32):2;
       for(let row=0;row<32;row++){
@@ -190,7 +202,7 @@ export function houseScreen(B, scene, broadcast,wingBroadcast=null) {
     const casing=B.MeshBuilder.CreateBox('EDM wing screen casing',{width:wingWidth+.14,height:wingHeight+.14,depth:.12},scene);
     casing.parent=root;casing.position.z=-.09;casing.material=casingInk;casing.isPickable=false;casing.checkCollisions=true;
     const wing=B.MeshBuilder.CreatePlane('EDM wing screen '+(side<0?'left':'right'),{width:wingWidth,height:wingHeight,sideOrientation:B.Mesh.DOUBLESIDE},scene);
-    wing.parent=root;wing.material=wingProgram||wingInk;wing.isPickable=false;wing.checkCollisions=true;
+    wing.parent=root;wing.material=wingProgram(side);wing.isPickable=false;wing.checkCollisions=true;
     // Keep the inner edge flush with the center screen; narrow only the equalizer width.
     const panelHeight=y-wingHeight/2-.02,panelY=-wingHeight/2-panelHeight/2;
     const panelWidth=wingWidth/4,panelX=-side*(wingWidth-panelWidth)/2;
@@ -242,6 +254,12 @@ export function houseScreen(B, scene, broadcast,wingBroadcast=null) {
     drawEqualizer(track,audioBands,calm);
     const segment = track && !performanceTitle ? Math.floor(Math.max(0, phraseBeat) % 32 / 8) : -1;
     if (broadcast) screen.material.setFloat('live', segment === 1 || segment === 2 ? 1 : 0);
+    const swap=Math.floor(Math.max(0,phraseBeat)/32)%2;
+    for(const program of wingPrograms){
+      const slot=(program.side<0)!==Boolean(swap)?0:3;
+      const target=track&&countdown===0&&segment===slot?1:0;
+      program.level+=(target-program.level)*.18;program.material.setFloat('live',program.level);
+    }
     const frame = Math.floor(beats * 12);
     if (title !== track || lastSegment !== segment || lastPerformance !== performanceTitle || lastDim !== dimBackground||lastCountdown!==countdown) {
       lastCountdown=countdown;
@@ -252,7 +270,6 @@ export function houseScreen(B, scene, broadcast,wingBroadcast=null) {
       overlay = performanceTitle ? lettering(performanceTitle) : segment === 1 || segment === 2 ? null : track ? lettering(track, 'EDM CLUB') : lettering('EDM CLUB');
     } else if (lastFrame === frame) return;
     lastFrame = frame;
-    wingProgram?.setFloat('live',track&&countdown===0?1:0);
     if(countdown>0){
       ctx.fillStyle='#090819';ctx.fillRect(0,0,1024,384);
       ctx.textAlign='center';ctx.font='bold 260px system-ui';ctx.fillStyle=look?.secondary||'#9deaff';ctx.fillText(String(countdown),512,286);
@@ -261,6 +278,17 @@ export function houseScreen(B, scene, broadcast,wingBroadcast=null) {
     }
     if(track)playWall(wingCtx,calm?0:Math.max(0,phraseBeat),look);
     else mediaWall(wingCtx,calm?0:beats*.36);
+    if(track&&!calm){
+      const bass=audioBands.slice(0,3).reduce((sum,value)=>sum+value,0)/3||0;
+      wingCtx.save();wingCtx.strokeStyle=look?.secondary||'#9deaff';wingCtx.lineWidth=3+bass*7;
+      wingCtx.beginPath();
+      for(let i=0;i<=64;i++){
+        const band=audioBands[Math.min(11,Math.floor(i*12/65))]||0;
+        const x=i*16,y=192+Math.sin(i*.42+beats*1.6)*(18+band*95);
+        if(i)wingCtx.lineTo(x,y);else wingCtx.moveTo(x,y);
+      }
+      wingCtx.stroke();wingCtx.restore();
+    }
     if(dimBackground){wingCtx.fillStyle='rgba(0,0,0,.80)';wingCtx.fillRect(0,0,1024,384);}
     wingTexture.update();
     const portrait=segment===1||segment===2;
