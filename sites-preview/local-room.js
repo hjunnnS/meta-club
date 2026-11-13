@@ -35,7 +35,8 @@ export class PersonalRoom {
  ai(){
   const time=(Date.now()-this.epoch)/1000;
   for(const a of this.reactive)if(a.until&&Date.now()>a.until){a.action='groove';delete a.until;}
-  return [...Array.from({length:3},(_,i)=>background(i,time)),...this.reactive,...this.extra];
+  // A route loop changes the pose, not the identity selected in the action menu.
+  return [...Array.from({length:3},(_,i)=>({...background(i,time),id:'ai-background-'+i})),...this.reactive,...this.extra];
  }
  snapshot(){
   const now=Date.now(),show=this.musicStarted?performanceStatus(this.epoch,now,this.tracks):{active:null,next:null};

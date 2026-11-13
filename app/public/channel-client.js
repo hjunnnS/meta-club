@@ -86,10 +86,11 @@ function display(data) {
   el('wand').textContent = self?.wand ? '무드봉 내리기' : '무드봉 들기';
   el('wand').setAttribute('aria-pressed', String(Boolean(self?.wand)));
   const riding = self?.trainSlot != null;
+  el('train-hint').hidden = Boolean(data.personalTrial);
   el('train-join').hidden = !data.trainLeader || riding;
   el('train-leave').hidden = !riding;
   el('train-leave').textContent = data.trainLeader === self?.id ? '기차 종료' : '기차 내리기';
-  const trainHint = !data.trainLeader ? '아직 운행 전입니다.'
+  const trainHint = data.personalTrial ? '' : !data.trainLeader ? '아직 운행 전입니다.'
     : !riding ? (self?.seat != null ? '자리에서 일어나면 합류할 수 있습니다.' : '운행 중입니다. 합류하면 선두를 따라갑니다.')
     : data.trainLeader === self?.id ? '선두입니다. 플로어 밖으로 나가려면 기차 종료를 누르세요.' : '탑승 중입니다. 원할 때 내릴 수 있습니다.';
   if (el('train-hint').textContent !== trainHint) el('train-hint').textContent = trainHint;

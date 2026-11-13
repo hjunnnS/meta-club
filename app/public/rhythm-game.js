@@ -109,7 +109,7 @@ export function rhythmGame({music,startMusic,canPlay,lock}){
    notes.sort((a,b)=>a.beat-b.beat||a.lane-b.lane);
    round={running:true,trackId:now.track.id,start,end,notes,totalUnits:notes.reduce((total,n)=>total+(n.endBeat?2:1),0),credit:0,judged:0,combo:0,maxCombo:0,lastBeat:now.beat,inputOffset};
    settings.hidden=true;speedButton.disabled=true;offsetInput.disabled=true;$('[data-settings]').disabled=true;
-   pressed.clear();flashes.fill(0);hitBursts.fill(null);judgement='';timingText='';meters();canvas.focus();
+   pressed.clear();flashes.fill(0);hitBursts.fill(null);judgement='';timingText='';meters();canvas.focus({preventScroll:true});
   }catch(error){setStatus(error.message);startButton.disabled=false;}
   finally{opening=false;if(!round?.running)startButton.disabled=false;}
  }
@@ -225,7 +225,7 @@ export function rhythmGame({music,startMusic,canPlay,lock}){
  speedButton.onclick=()=>{speed=speed===1?2:1;speedButton.textContent='속도 · '+(speed===1?'보통':'빠르게');};
  $('[data-settings]').onclick=()=>{settings.hidden=!settings.hidden;};
  return {
-  open(){if(dialog.open)return;lock(true);dialog.showModal();cancelAnimationFrame(frame);draw();startButton.focus();},
+  open(){if(dialog.open)return;lock(true);dialog.showModal();dialog.scrollTop=0;cancelAnimationFrame(frame);draw();startButton.focus({preventScroll:true});},
   interrupt(reason){if(round?.running)finish(reason);pressed.clear();},
   get active(){return dialog.open;}
  };

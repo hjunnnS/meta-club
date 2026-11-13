@@ -365,11 +365,19 @@ export function addedFloorWallLights(B,scene){
     const stamp=meshes.map(mesh=>mesh.uniqueId).join(',');if(stamp===actorStamp)return;actorStamp=stamp;
     audience=meshes;
     for(const mesh of audience){
-      const original=mesh.material;
+      // Babylon instances inherit their source material; per-instance assignment is ignored.
+      // These block templates belong to the audience, separate from the staff meshes.
+      const materialMesh=mesh.sourceMesh||mesh;
+      const original=materialMesh.material;
       if(!original||owned.has(original)||original.disableLighting||original.getClassName?.()!=='StandardMaterial')continue;
       let copy=copies.get(original);
-      if(!copy){copy=original.clone('Added wash audience '+original.name);copy.maxSimultaneousLights=Math.max(6,original.maxSimultaneousLights||4);copies.set(original,copy);owned.add(copy);}
-      mesh.material=copy;
+      if(!copy){
+        copy=original.clone('Added wash audience '+original.name);
+        // Keep the rendered light budget of block instances unchanged.
+        copy.maxSimultaneousLights=materialMesh===mesh?Math.max(6,original.maxSimultaneousLights||4):original.maxSimultaneousLights;
+        copies.set(original,copy);owned.add(copy);
+      }
+      materialMesh.material=copy;
     }
     lights.forEach(light=>light.includedOnlyMeshes=audience);
   }
