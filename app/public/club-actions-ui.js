@@ -25,7 +25,7 @@ export function clubActionsUI({root,dialog,shoutRoot,vipRoot,alertButton,send,fr
     vipPreviewNote.hidden=!personal;
     vipPreview.disabled=parading;
     vipRoot.querySelector('[data-vip-start]').disabled=parading||vip>0||gate>0||performing||imminent||activityStatus.shoutActive;
-    vipRoot.querySelector('[data-vip-state]').textContent=parading?(activityStatus.paradePreview?'시험 퍼레이드 진행 중':'병 불꽃 퍼레이드 진행 중'):vip>0?'내 재사용까지 '+vip+'초':gate>0?'클럽 준비까지 '+gate+'초':personal&&opening>0?'정식 시작 가능 구간까지 '+Math.floor(opening/60)+':'+String(opening%60).padStart(2,'0')+' · 바로 보기로 먼저 확인할 수 있습니다.':performing?'정기 공연 종료 후 이용해 주세요.':imminent?'완주하려면 다음 공연까지 '+Math.ceil((activityStatus.paradeClearance||50000)/1000)+'초 이상 필요합니다.':activityStatus.shoutActive?'외치기 표시가 끝난 뒤 이용해 주세요.':'성인 여성 NPC 5명 · 약 '+(activityStatus.paradeSeconds||45)+'초 한 바퀴 · 개인 2분 / 클럽 종료 후 1분 간격';
+    vipRoot.querySelector('[data-vip-state]').textContent=parading?(activityStatus.paradePreview?'시험 퍼레이드 진행 중':'병 불꽃 퍼레이드 진행 중'):vip>0?'내 재사용까지 '+vip+'초':gate>0?'클럽 준비까지 '+gate+'초':personal&&opening>0?'정식 시작 가능 구간까지 '+Math.floor(opening/60)+':'+String(opening%60).padStart(2,'0')+' · 공연 사이의 여유 구간에 시작할 수 있습니다.':performing?'정기 공연 종료 후 이용해 주세요.':imminent?'완주하려면 다음 공연까지 '+Math.ceil((activityStatus.paradeClearance||50000)/1000)+'초 이상 필요합니다.':activityStatus.shoutActive?'외치기 표시가 끝난 뒤 이용해 주세요.':'성인 여성 NPC 5명 · 약 '+(activityStatus.paradeSeconds||45)+'초 한 바퀴 · 개인 2분 / 클럽 종료 후 1분 간격';
   }
   function renderConversation(){
     const actor=target(peer);dialog.querySelector('[data-whisper-title]').textContent=(actor?.nickname||'상대')+' · 귓속말';
