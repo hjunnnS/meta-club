@@ -1,3 +1,4 @@
+import {validWandStyle,normalizeWandStyle} from './wand-customization.js';
 import {requestPodium,validPodiumArrival,beginPodium,clearPodium} from './podium-activity.js';
 import {playlistPosition,trackBeat} from './music.js';
 import {background,extraGuestPlaces} from './visitors.js';
@@ -75,6 +76,10 @@ export class PersonalRoom {
    this.poleAnchor={x:a.x,y:a.y,z:a.z};a.action=data;this.publish();return;
   }
   if(type==='action'&&a.seat===null&&(['idle','wave','dance'].includes(data)||dances.has(data))){clearPodium(a);this.podiumClaims.delete(a.id);a.action=data;this.publish();return;}
+  if(type==='wand-style'){
+   if(!validWandStyle(data))return;
+   a.wandStyle=normalizeWandStyle(data);this.publish();return;
+  }
   if(type==='wand'&&typeof data==='boolean'){
    if(data&&!a.wand)for(const ai of this.reactive)if(Math.hypot(ai.x-a.x,ai.z-a.z)<4){ai.action='disco-point';ai.until=Date.now()+2400;}
    a.wand=data;this.publish();return;

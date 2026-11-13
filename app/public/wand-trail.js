@@ -24,6 +24,10 @@ export function createWandTrail(B,scene,glow,featured=false){
   };
   return {
     reset,
+    setPalette(core,edge){
+      materials[0].emissiveColor=B.Color3.FromHexString(edge);
+      materials[1].emissiveColor=B.Color3.FromHexString(core);reset();
+    },
     update(point,now,level,reduced,speed){
       if(reduced){reset();return;}
       const last=history.at(-1);

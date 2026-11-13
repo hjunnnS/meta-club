@@ -1,3 +1,4 @@
+import {wandCustomization} from './wand-customization.js';
 import {rhythmGame} from './rhythm-game.js';
 import { nearbyEdmSeats, edmSeats, nearbyEdmPole } from './edm-layout.js';
 import { dances, danceButtons } from './free-dance.js';
@@ -45,6 +46,7 @@ function firstVisitFailure(reason) {
 }
 const frame = (kind, data) => map.contentWindow?.postMessage({ kind, data }, location.origin);
 const shop = initShop(frame);
+const wandStyles=wandCustomization(el('wand-customization'),(kind,data)=>room?.send(kind,data),frame);
 let guideOpened = false;
 function showGuide(open) {
   el('guide').hidden = !open;
@@ -77,6 +79,7 @@ function display(data) {
       '사이드존 ' + labels[data.zones[0]] + ' · 발코니 ' + labels[data.zones[1]];
   }
   const self = data.actors.find((a) => a.id === room.sessionId);
+  wandStyles.update(self,ready&&memberId?.startsWith('local-test:'));
   el('wand').textContent = self?.wand ? '무드봉 내리기' : '무드봉 들기';
   el('wand').setAttribute('aria-pressed', String(Boolean(self?.wand)));
   const riding = self?.trainSlot != null;
@@ -131,6 +134,7 @@ function disconnected(message, reconnect) {
   ready = false;
   showMusic(null);
   // Keep the last rendered club visible during a temporary channel outage.
+  wandStyles.update(null,false);
   frame('connection-state', false);
   frame('audible-track', null);
   if (!sceneLoaded) map.hidden = true;
@@ -287,7 +291,7 @@ window.addEventListener('message', (event) => {
     if (snapshot) display(snapshot);
     frame('fast-flash', el('fast-flash').checked);
     frame('quality', el('quality').value);
-    frame('other-wands', el('other-wands').checked);
+    frame('other-wands', el('other-wands').checked);wandStyles.resume();
   }
   if(['podium-request','podium-start','podium-cancel'].includes(kind)&&ready)room.send(kind,data);
   if(kind==='pole-grip'&&ready)room.send('pole-grip',data);

@@ -133,6 +133,12 @@
     .extras > summary { margin: .35rem clamp(.6rem, 2vw, 1.6rem); cursor: pointer; color: #d3bfdc; }
     #notice:not(:empty) { padding: .3rem 1rem; }
   button[data-dance][aria-pressed="true"]{font-weight:700;box-shadow:inset 0 -3px currentColor}
+  .wand-style-panel{padding:1rem;line-height:1.5}
+  .wand-style-panel p{margin:.4rem 0 .8rem;color:#d3bfdc}
+  .wand-style-panel label{display:flex;align-items:center;gap:.6rem}
+  .wand-style-panel select{flex:1;min-width:0}
+  .wand-style-actions{display:flex;flex-wrap:wrap;gap:.5rem;margin:.8rem 0}
+  .wand-style-panel output{display:block;font-size:.85rem;color:#d3bfdc}
 </style>
   <header>
     <h1>EDM 클럽</h1>
@@ -180,6 +186,19 @@
       </div>
     </div>
   </nav>
+  <details id="wand-customization" class="extras" hidden>
+    <summary>무드봉 꾸미기</summary>
+    <div class="extra-panel wand-style-panel">
+      <strong>무드봉 컬러 체험</strong>
+      <p>결제 없이 골라 보세요. 선택은 이번 접속에만 적용됩니다.</p>
+      <label>컬러 테마 <select aria-label="무드봉 컬러 테마"></select></label>
+      <div class="wand-style-actions">
+        <button data-wand-preview>내 화면 미리보기</button><button data-wand-apply>적용하고 들기</button>
+        <button data-wand-cancel>미리보기 취소</button><button data-wand-reset>기본색 복귀</button>
+      </div>
+      <output aria-live="polite">기본 하늘색 · 라벤더 · 로즈 핑크 · 웜 골드</output>
+    </div>
+  </details>
   <details class="extras"><summary>더 보기</summary><div class="extra-panel"><nav aria-label="추가 활동">
     <output id="zones"></output><button id="shop-open" hidden>EDM 상품</button>
     <button id="shop-stop" hidden>미리보기 종료</button>

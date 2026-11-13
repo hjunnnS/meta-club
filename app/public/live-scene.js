@@ -1,3 +1,4 @@
+import {normalizeWandStyle,validWandStyle} from './wand-customization.js';
 import {tableSeatTarget,animateSeatArrival} from './seat-presentation.js';
 import {podiumSlots,podiumDanceAt} from './podium-activity.js';
 import {animatePoleDance,releasePoleGrip} from './pole-dance.js';
@@ -126,6 +127,8 @@ export function startLiveScene({
     glow.isEnabled = !low;
     engine.setHardwareScalingLevel(low ? 1.5 : 1);
   }
+  let wandPreview=null;
+  const wandVisible=a=>Boolean((a.wand||a.id===own&&wandPreview)&&(a.id===own||otherWands));
   let states = ['CLOSED', 'CLOSED'],
     dancers = 0;
   const washes = scene.lights
@@ -198,6 +201,7 @@ export function startLiveScene({
         else if(a.action!==previous.action&&dances.has(a.action))feedback.start(a.id,'dance');
       }
       model.actor = {...a};
+      model.setWandStyle(a.id===self&&wandPreview?wandPreview:a.wandStyle);
       if (a.id === self) {
         // Authoritative snapshots also release the walker if a placement message
         // was missed; rendering a standing avatar alone does not unlock walking.
@@ -335,6 +339,10 @@ export function startLiveScene({
     if (kind === 'music-spectrum' && Array.isArray(data) && data.length === 12) {
       spectrum = data.map(value => Number.isFinite(value) ? Math.max(0,Math.min(1,value)) : 0);
       spectrumAt = performance.now();
+    }
+    if(kind==='wand-preview'){
+      wandPreview=validWandStyle(data)?normalizeWandStyle(data):null;
+      const model=models.get(own);model?.setWandStyle(wandPreview||model.actor.wandStyle);
     }
     if (kind === 'other-wands') otherWands = data;
     if (kind === 'fast-flash') fastFlash = data === true;
@@ -714,7 +722,7 @@ export function startLiveScene({
         m.root.rotation.y = a.yaw;
       }
       if(!['pole-dance','podium-dance'].includes(a.action))releasePoleGrip(m);
-      if(animateSeatArrival(B,m,a,Date.now()+offset,calmBeats.matches)){m.showWand(Boolean(a.wand),true);detailed++;continue;}
+      if(animateSeatArrival(B,m,a,Date.now()+offset,calmBeats.matches)){m.showWand(wandVisible(a),true);detailed++;continue;}
       if(a.action==='podium-dance'&&podiumSlots[a.podiumSlot]){
         const anchor=podiumSlots[a.podiumSlot],nearPole=Boolean(nearbyEdmPole(a,.95));
         const absoluteBeat=beats+(playback?.cycle||0)*(playback?.track.duration||0)*(playback?.track.bpm||132)/60;
@@ -724,7 +732,7 @@ export function startLiveScene({
           m.showWand(false,true);animatePoleDance(B,m,anchor.pole,playing?beats:0,musicEnergy,calmBeats.matches);
         }else{
           releasePoleGrip(m);animateDance(m,motion,calmBeats.matches?0:beats,undefined,musicEnergy,dynamics.level);
-          const visibleWand=Boolean(a.wand&&(a.id===own||otherWands));
+          const visibleWand=wandVisible(a);
           const wandMotion=visibleWand?animateWandDance(m,motion,beats,musicEnergy,calmBeats.matches):null;
           m.showWand(visibleWand,true,wandMotion);
         }
@@ -747,7 +755,7 @@ export function startLiveScene({
       const articulated = close || (a.ai && showSteps) || (a.id === wandGuest && otherWands);
       m.near.setEnabled(articulated);
       m.far.setEnabled(!articulated);
-      const visibleWand=Boolean(a.wand && (a.id === own || otherWands));
+      const visibleWand=wandVisible(a);
       if(!dances.has(dance))m.showWand(visibleWand,articulated);
       if (a.ai) {
         ai++;

@@ -1,3 +1,4 @@
+import {wandTheme} from './wand-customization.js';
 import {createWandTrail} from './wand-trail.js';
 import {edmStage,edmSeats} from './edm-layout.js';
 const colors = { indigo: '#8973F2', teal: '#49C8B1', rose: '#F28BAB', gold: '#FFCC55' };
@@ -146,11 +147,23 @@ export function avatarFactory(B, scene, glow) {
     root.position.set(actor.x, actor.y, actor.z);
     root.rotation.y = actor.yaw;
     let wand, tip, trail, smoothTrail, orbit, previousTip, previousTime = 0;
+    let theme=wandTheme(),ownWandMaterial,ownTrailMaterial;
+    function setWandStyle(style){
+      const next=wandTheme(style);if(theme.id===next.id)return;
+      theme=next;
+      if(ownWandMaterial)ownWandMaterial.emissiveColor=B.Color3.FromHexString(theme.rod);
+      if(ownTrailMaterial)ownTrailMaterial.emissiveColor=B.Color3.FromHexString(theme.rod);
+      smoothTrail?.setPalette(theme.core,theme.edge);
+    }
     function showWand(visible, detailed, motion=null) {
       if (!visible && !wand) return;
       if (!wand) {
         wand = B.MeshBuilder.CreateCylinder('mood wand', { height: featuredWand ? 0.83 : 0.54, diameter: featuredWand ? 0.105 : 0.065, tessellation: 8 }, scene);
-        wand.material = wandMaterial;
+        ownWandMaterial=wandMaterial.clone('light stick '+actor.id);
+        ownTrailMaterial=trailMaterial.clone('afterglow '+actor.id);
+        ownWandMaterial.emissiveColor=B.Color3.FromHexString(theme.rod);
+        ownTrailMaterial.emissiveColor=B.Color3.FromHexString(theme.rod);
+        wand.material = ownWandMaterial;
         wand.isPickable = false;
         tip = new B.TransformNode('wand tip', scene);
         tip.parent = wand;
@@ -175,19 +188,19 @@ export function avatarFactory(B, scene, glow) {
         const sweep=Math.min(1,speed/3.5);
         if(motion){
           if(trail)trail.visibility=0;
-          if(!smoothTrail)smoothTrail=createWandTrail(B,scene,glow,featuredWand);
+          if(!smoothTrail){smoothTrail=createWandTrail(B,scene,glow,featuredWand);smoothTrail.setPalette(theme.core,theme.edge);}
           smoothTrail.update(point,now,(.65+.35*sweep)*motion.sweep,motion.reduced,speed);
         }else{
           smoothTrail?.reset();
           if(!trail){
             trail=new B.TrailMesh('wand sweep',tip,scene,{diameter:featuredWand?.14:.055,length:featuredWand?9:5,sections:3});
-            trail.material=trailMaterial;trail.isPickable=false;
+            trail.material=ownTrailMaterial;trail.isPickable=false;
           }
           trail.diameter=.035+sweep*(featuredWand?.20:.13);trail.visibility=1;
         }
         if(!orbit){
           orbit=B.MeshBuilder.CreateTorus('wand body orbit',{diameter:1.12,thickness:.018,tessellation:32},scene);
-          orbit.parent=root;orbit.position.y=1.03;orbit.material=trailMaterial;orbit.isPickable=false;
+          orbit.parent=root;orbit.position.y=1.03;orbit.material=ownTrailMaterial;orbit.isPickable=false;
         }
         orbit.setEnabled(sweep>.15&&(!motion||!motion.reduced&&motion.large>.55));
         orbit.rotation.z=.16*Math.sin(now/420);orbit.visibility=sweep*.55*(motion?motion.sweep:1);
@@ -199,6 +212,7 @@ export function avatarFactory(B, scene, glow) {
     }
     return {
       showWand,
+      setWandStyle,
       root,
       near,
       far,
@@ -210,6 +224,7 @@ export function avatarFactory(B, scene, glow) {
         glow?.removeExcludedMesh(label);
         smoothTrail?.dispose();trail?.dispose();
         root.dispose();
+        ownWandMaterial?.dispose();ownTrailMaterial?.dispose();
         mat.dispose();
         tex.dispose();
       },

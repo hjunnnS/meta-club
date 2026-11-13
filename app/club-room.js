@@ -1,3 +1,4 @@
+import {validWandStyle,normalizeWandStyle} from './public/wand-customization.js';
 import {requestPodium,validPodiumArrival,beginPodium,clearPodium} from './podium-activity.js';
 import { DanceTrain, onTrainFloor } from './dance-train.js';
 import { effects } from '../stage/festival/events.js';
@@ -61,6 +62,11 @@ export class EdmRoom extends Room {
     this.dirty = false;
     if (localTest) {
       this.eventSequence = 0;
+      this.onMessage('wand-style',(client,input)=>{
+        const actor=this.member(client);
+        if(!actor||!client.userData.identity.startsWith('local-test:')||!validWandStyle(input))return;
+        actor.wandStyle=normalizeWandStyle(input);this.dirty=true;
+      });
       this.onMessage('preview-event', (client, input) => {
         const actor = this.member(client);
         if (!actor || !client.userData.identity.startsWith('local-test:')) return;
