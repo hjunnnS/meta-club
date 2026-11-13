@@ -8,12 +8,14 @@ def put(relative,content):
  p=dist/relative;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(content)
 def copy(source,relative):
  p=dist/relative;p.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(ROOT/source,p)
-modules=['social-effects.js','wand-ornament.js','birthday-ui.js','wand-customization.js','wand-trail.js','seat-presentation.js','pole-dance.js','live-scene.js','music.js','free-dance.js','avatar.js','ceiling-lights.js','ambience.js','rhythm-floor.js','click-walk.js','scene-look.js','activity-feedback.js','rhythm-game.js','neon-horizon-chart.json']
+modules=['social-effects.js','wand-ornament.js','club-actions-ui.js','club-event-renderer.js','wand-customization.js','wand-trail.js','seat-presentation.js','pole-dance.js','live-scene.js','music.js','free-dance.js','avatar.js','ceiling-lights.js','ambience.js','rhythm-floor.js','click-walk.js','scene-look.js','activity-feedback.js','rhythm-game.js','neon-horizon-chart.json']
 for name in modules:copy('app/public/'+name,'clubs/edm/'+name)
+for retired in ['birthday-ui.js','birthday-requests.js']:
+ (dist/'clubs/edm'/retired).unlink(missing_ok=True)
 # The Node server exposes live-scene.js at scene.js; preserve that public URL.
 copy('app/public/live-scene.js','clubs/edm/scene.js')
 copy('app/social-trial.js','clubs/edm/social-trial.js')
-copy('app/birthday-requests.js','clubs/edm/birthday-requests.js')
+copy('app/club-activities.js','clubs/edm/club-activities.js')
 copy('app/podium-activity.js','clubs/edm/podium-activity.js')
 copy('app/edm-layout.js','clubs/edm/edm-layout.js');copy('app/visitors.js','clubs/edm/visitors.js')
 put('clubs/edm/local-room.js',(ROOT/'sites-preview/local-room.js').read_text())
@@ -69,7 +71,9 @@ async function enter(){
   next.onMessage('snapshot',m=>{if(room===next)display(m);});
   next.onMessage('place',m=>{if(ready)frame('place',m);});
   next.onMessage('podium-place',m=>{if(ready)frame('podium-place',m);});
-  next.onMessage('birthday-state',m=>{if(room===next)birthdays.state(m);});
+  next.onMessage('activities-state',m=>{if(room===next)activities.state(m);});
+  next.onMessage('activities-result',m=>{if(room===next){activities.result(m);if(m.ok)note('');}});
+  next.onMessage('whisper-notification',m=>{if(room===next)activities.notification(m);});
   next.onMessage('notice',note);
   next.onMessage('occupancy',()=>el('population').textContent='개인 체험 · AI 손님 20명');
   next.onMessage('clock',m=>{music.clock(m);if(ready)frame('clock',{offset:0,epoch:m.epoch,tracks:m.tracks});});

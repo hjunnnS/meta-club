@@ -139,13 +139,20 @@
   .wand-style-panel select{flex:1;min-width:0}
   .wand-style-actions{display:flex;flex-wrap:wrap;gap:.5rem;margin:.8rem 0}
   .wand-style-panel output{display:block;font-size:.85rem;color:#d3bfdc}
-  .birthday-panel{padding:1rem;line-height:1.5;max-width:min(30rem,95vw)}
-  .birthday-panel p{margin:.5rem 0;color:#d3bfdc}
-  .birthday-panel label{display:flex;align-items:center;gap:.4rem;margin:.7rem 0}
-  .birthday-panel select{min-width:0;flex:1}
-  .birthday-panel output{display:block;margin:.7rem 0;font-size:.85rem}
-  .birthday-panel section{border-top:1px solid #60566f;margin-top:.8rem;padding-top:.8rem}
-  .birthday-panel button[aria-pressed="true"]{background:#695080}
+  .activity-panel{padding:1rem;line-height:1.5;width:min(30rem,95vw)}
+  .activity-panel p{margin:.55rem 0;color:#d3bfdc}
+  .activity-panel label{display:flex;align-items:center;gap:.5rem;margin:.65rem 0}
+  .activity-panel select,.activity-panel input{min-width:0;flex:1}
+  .activity-buttons{display:flex;flex-wrap:wrap;gap:.5rem}
+  .activity-panel output{display:block;margin-top:.65rem;font-size:.85rem}
+  #whisper-alert{position:fixed;right:1rem;top:3.5rem;z-index:6;background:#533c70}
+  #whisper-dialog{width:min(28rem,92vw);border:1px solid #706080;border-radius:.6rem;background:#21192b;color:#f4edff;padding:1rem}
+  #whisper-dialog::backdrop{background:#09071055}
+  #whisper-dialog header{padding:0;justify-content:space-between}
+  #whisper-dialog p{font-size:.85rem;color:#d3bfdc}
+  #whisper-dialog [data-whisper-log]{height:12rem;overflow:auto;border:1px solid #514360;padding:.5rem;margin:.7rem 0;overflow-wrap:anywhere}
+  #whisper-dialog form{display:flex;gap:.4rem}#whisper-dialog input{min-width:0;flex:1}
+  #whisper-dialog output{display:block;font-size:.85rem;margin-top:.6rem}
 </style>
   <header>
     <h1>EDM 클럽</h1>
@@ -193,37 +200,31 @@
       </div>
     </div>
   </nav>
-  <details id="birthday-events" class="extras" hidden>
-    <summary>축하·선물</summary>
-    <div class="extra-panel birthday-panel">
-      <strong>생일 축하 제안</strong>
-      <p>대상을 고르고 축하를 제안하세요. 상대가 수락하면 전광판에 축하 문구가 표시됩니다.</p>
-      <button data-birthday-pick aria-pressed="false">캐릭터로 선택</button>
-      <label>사용자 목록 <select aria-label="생일 축하 대상 사용자"></select></label>
-      <p data-birthday-target>대상을 선택해 주세요.</p>
-      <button data-birthday-propose disabled>생일 축하 제안하기</button>
-      <button data-birthday-cancel hidden>제안 취소</button>
-      <output data-birthday-status aria-live="polite">생일 축하는 수락 후 실행하고, 작은 선물은 내 화면에서만 미리 봅니다.</output>
-      <button data-birthday-receive-demo hidden>받는 사람으로 생일 축하 체험</button>
-      <button data-birthday-demo hidden>받는 사람 화면 체험</button>
-      <section data-birthday-demo-panel hidden aria-label="받는 사람 화면 체험">
-        <strong>체험 손님 응답 · 실제 사용자 아님</strong><p></p>
-        <button data-birthday-demo-reply="accept">수락 체험</button><button data-birthday-demo-reply="decline">거절 체험</button>
-      </section>
-      <section data-birthday-incoming hidden aria-label="받은 생일 축하 제안">
-        <strong>생일 축하 제안이 도착했습니다</strong><p></p>
-        <button data-birthday-reply="accept">수락</button><button data-birthday-reply="decline">거절</button>
-      </section>
-      <section aria-label="시각적 선물 미리보기">
-        <strong>시각적 선물 · 내 화면 미리보기</strong>
-        <p>실제 전송·결제 없이 효과만 봅니다. 선택한 상대의 화면에는 전달되지 않습니다.</p>
-        <label><input type="checkbox" data-social-self checked>내 캐릭터로 체험</label>
-        <button data-social-preview="heart">하트 선물 체험 · 4초</button>
-        <button data-social-preview="bouquet">꽃다발 체험 · 8초</button>
-        <button data-social-preview="cake">케이크 체험 · 10초</button>
-        <button data-social-stop>새 체험 효과 종료</button>
-        <output data-social-status aria-live="polite">기존 공연과 별도로 표시됩니다.</output>
-      </section>
+  <button id="whisper-alert" hidden aria-live="polite"></button>
+  <details id="character-actions" class="extras" hidden>
+    <summary>캐릭터 행동</summary>
+    <div class="extra-panel activity-panel">
+      <strong>선택한 캐릭터와 함께</strong>
+      <button data-action-pick aria-pressed="false">캐릭터로 선택</button>
+      <label>사용자 목록 <select aria-label="행동 대상 사용자"><option value="">사용자 목록에서 선택</option></select></label>
+      <p data-action-target>캐릭터 또는 목록에서 대상을 선택하세요.</p>
+      <div class="activity-buttons">
+        <button data-gift="heart" disabled>하트 선물 보내기</button><button data-gift="bouquet" disabled>꽃다발 보내기</button>
+        <button data-gift="cake" disabled>케이크 보내기</button><button data-open-whisper disabled>귓속말 보내기</button>
+      </div>
+      <output aria-live="polite">결제 없이 즐기는 클럽 활동 체험입니다.</output>
+    </div>
+  </details>
+  <details id="shout-actions" class="extras" hidden>
+    <summary>외치기</summary><div class="extra-panel activity-panel">
+      <strong>전광판에 외치기</strong><form><label>문구 <input aria-label="외치기 문구" maxlength="20" required placeholder="20자 이내"></label><button type="submit">전광판에 표시</button></form>
+      <p>체험 기준 3초 · 기존 전광판 문구 필터 적용</p><output aria-live="polite"></output>
+    </div>
+  </details>
+  <details id="vip-actions" class="extras" hidden>
+    <summary>VIP 이벤트</summary><div class="extra-panel activity-panel">
+      <strong>병 불꽃 퍼레이드</strong><p>이벤트 전용 NPC가 병 불꽃을 들고 행진합니다. 사용자와 기존 손님은 움직이지 않습니다.</p>
+      <button data-vip-start>퍼레이드 시작</button><button data-vip-stop>내 체험 이벤트 종료</button><output aria-live="polite"></output>
     </div>
   </details>
   <details id="wand-customization" class="extras" hidden>
@@ -233,6 +234,7 @@
       <p>결제 없이 골라 보세요. 선택은 이번 접속에만 적용됩니다.</p>
       <label>컬러 테마 <select aria-label="무드봉 컬러 테마"></select></label>
       <label>봉 끝 장식 <select data-wand-decoration aria-label="무드봉 끝 장식"></select></label>
+      <label>무드봉 크기 <select data-wand-size aria-label="무드봉 크기"></select></label>
       <label>잔상 테마 <select data-wand-trail aria-label="무드봉 잔상 테마"></select></label>
       <div class="wand-style-actions">
         <button data-wand-preview>내 화면 미리보기</button><button data-wand-apply>적용하고 들기</button>
@@ -271,6 +273,13 @@
 
   </aside>
   </div></details></footer>
+  <dialog id="whisper-dialog" aria-label="귓속말 대화">
+    <header><strong data-whisper-title>귓속말</strong><button data-whisper-close>닫기</button></header>
+    <p data-whisper-mode></p><div data-whisper-log role="log" aria-live="polite"></div>
+    <form><input aria-label="귓속말 내용" maxlength="200" required autocomplete="off"><button type="submit" data-whisper-send>보내기</button></form>
+    <button data-whisper-block>이 상대 귓속말 차단</button><button data-whisper-demo hidden>귓속말 도착 알림 체험</button>
+    <p>체험 대화·차단은 현재 클럽의 임시 상태입니다.</p><output aria-live="polite"></output>
+  </dialog>
   <output id="notice" aria-live="polite"></output>
   <dialog id="shop-dialog" aria-labelledby="shop-title">
     <h2 id="shop-title">EDM 상품</h2>

@@ -1,5 +1,4 @@
-import {socialTrial} from './social-trial.js';
-import {birthdayRequests} from './birthday-requests.js';
+import {clubActivities,activityCommands} from './club-activities.js';
 import {validWandStyle,normalizeWandStyle} from './public/wand-customization.js';
 import {requestPodium,validPodiumArrival,beginPodium,clearPodium} from './podium-activity.js';
 import { DanceTrain, onTrainFloor } from './dance-train.js';
@@ -64,32 +63,18 @@ export class EdmRoom extends Room {
     this.dirty = false;
     if (localTest) {
       this.eventSequence = 0;
-      this.social=socialTrial(()=>[...this.members.values()]);
-      this.birthdays=birthdayRequests(()=>[...this.members.values()],(request,sender,target)=>{
-        if(blockedMessage(target.nickname)||blockedMessage(sender.nickname)||/[\p{Cc}\p{Cf}]/u.test(target.nickname+sender.nickname))return '닉네임 문구를 확인해 주세요.';
-        if(this.stageEvent&&Date.now()<this.stageEvent.start+effects[this.stageEvent.kind].seconds*1000)return '다른 연출이 진행 중입니다. 종료 후 다시 제안해 주세요.';
-        this.stageEvent={id:request.id,kind:'led',start:Date.now(),bpm:playlistPosition(playlist(),this.epoch,Date.now())?.track.bpm||132,
-          message:target.nickname+'님 생일 축하합니다!',nickname:sender.nickname,socialBirthday:true,birthdayFrom:sender.id,birthdayTo:target.id};
-        this.social.add('birthday',sender.id,target.id);this.dirty=true;return null;
-      });
-      this.onMessage('social-stop',client=>{
+      this.activities=clubActivities({actors:()=>[...this.members.values()],blockedMessage,
+        identity:id=>this.clients.find(c=>c.sessionId===id)?.userData?.identity||id});
+      this.activitiesState=()=>{for(const c of this.clients)if(c.userData?.identity?.startsWith('local-test:'))c.send('activities-state',this.activities.view(c.sessionId));};
+      this.onMessage('activities-state',client=>{if(this.member(client)&&client.userData.identity.startsWith('local-test:'))client.send('activities-state',this.activities.view(client.sessionId));});
+      for(const kind of activityCommands)this.onMessage(kind,(client,input)=>{
         if(!this.member(client)||!client.userData.identity.startsWith('local-test:'))return;
-        this.social.stop(client.sessionId);
-        if(this.stageEvent?.socialBirthday&&[this.stageEvent.birthdayFrom,this.stageEvent.birthdayTo].includes(client.sessionId))this.stageEvent=null;
-        this.dirty=true;
-      });
-      const birthdayState=()=>{for(const c of this.clients)if(c.userData?.identity?.startsWith('local-test:'))c.send('birthday-state',this.birthdays.state(c.sessionId));};
-      this.birthdayState=birthdayState;
-      for(const kind of ['birthday-state','birthday-propose','birthday-reply','birthday-cancel'])this.onMessage(kind,(client,input)=>{
-        if(!this.member(client)||!client.userData.identity.startsWith('local-test:'))return;
-        let result;
-        if(kind==='birthday-propose'){
-          if(!this.clients.some(c=>c.sessionId===input?.targetId&&c.userData?.identity?.startsWith('local-test:')))return this.notice(client,'같은 클럽의 시험 회원을 선택해 주세요.');
-          result=this.birthdays.propose(client.sessionId,input.targetId);
-        }else if(kind==='birthday-reply')result=this.birthdays.answer(client.sessionId,input?.id,input?.accept);
-        else if(kind==='birthday-cancel')result=this.birthdays.cancel(client.sessionId,input?.id);
-        if(result?.error)this.notice(client,result.error);
-        birthdayState();
+        if(input?.to&&!this.clients.some(c=>c.sessionId===input.to&&c.userData?.identity?.startsWith('local-test:')))return this.notice(client,'같은 클럽의 시험 회원을 선택해 주세요.');
+        const result=this.activities.command(client.sessionId,kind,{...input,simulated:false});
+        if(result.error)this.notice(client,result.error);
+        client.send('activities-result',{kind,...result});
+        if(result.notification)this.clients.find(c=>c.sessionId===result.notification.to)?.send('whisper-notification',result.notification);
+        this.activitiesState();this.dirty=true;
       });
       this.onMessage('wand-style',(client,input)=>{
         const actor=this.member(client);
@@ -343,7 +328,7 @@ export class EdmRoom extends Room {
     if (event && Date.now() >= event.start + effects[event.kind].seconds * 1000) this.stageEvent = null;
     const performances = performanceStatus(this.epoch, Date.now(), playlist());
     return {
-      socialEvents:this.social?.snapshot()||[],
+      ...(this.activities?.snapshot()||{socialEvents:[],shout:null,parade:null}),
       stageEvent: this.stageEvent ?? performances.active,
       nextPerformance: performances.next,
       performanceNow: Date.now(),
@@ -451,9 +436,9 @@ export class EdmRoom extends Room {
       null,
     );
     this.podiumClaims.delete(client.sessionId);
-    this.birthdays?.leave(client.sessionId);
+    this.activities?.leave(client.sessionId);
     this.members.delete(client.sessionId);
-    this.birthdayState?.();
+    this.activitiesState?.();
     if (connected.get(identity)?.client === client) connected.delete(identity);
     if (remember) {
       const { x, y, z, yaw } = m;

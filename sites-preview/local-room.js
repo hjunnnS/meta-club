@@ -1,5 +1,4 @@
-import {socialTrial} from './social-trial.js';
-import {birthdayRequests} from './birthday-requests.js';
+import {clubActivities,activityCommands} from './club-activities.js';
 import {validWandStyle,normalizeWandStyle} from './wand-customization.js';
 import {requestPodium,validPodiumArrival,beginPodium,clearPodium} from './podium-activity.js';
 import {playlistPosition,trackBeat} from './music.js';
@@ -17,14 +16,7 @@ export class PersonalRoom {
   this.self={id:this.sessionId,ai:false,nickname:'체험자',avatar:'indigo',x:-1.8,y:.018,z:6.4,yaw:-.08,action:'idle',seat:null,table:null,wand:false};
   this.reactive=[-1,1].map((side,i)=>({id:'ai-'+(i+3),ai:true,nickname:'AI 손님 '+(i+4),avatar:i?'rose':'teal',x:side*4,y:.018,z:1,yaw:side*.2,action:'groove',wand:true}));
   this.extra=extraGuestPlaces.map((p,i)=>({id:'floor-dancer-'+i,ai:true,nickname:'AI 손님 '+(i+6),avatar:['teal','rose','gold','indigo'][i%4],...p}));
-  this.social=socialTrial(()=>[this.self,...this.ai()]);
-  this.birthdays=birthdayRequests(()=>[this.self,...this.ai()],(request,sender,target)=>{
-   if(blockedMessage(target.nickname)||blockedMessage(sender.nickname))return '닉네임 문구를 확인해 주세요.';
-   if(this.preview&&Date.now()<this.preview.start+effects[this.preview.kind].seconds*1000)return '다른 시험 연출이 진행 중입니다. 종료 후 다시 제안해 주세요.';
-   this.preview={id:request.id,kind:'led',start:Date.now(),bpm:this.tracks[0]?.bpm||132,
-     message:target.nickname+'님 생일 축하합니다!',nickname:sender.nickname,socialBirthday:true};
-   this.social.add('birthday',sender.id,target.id);return null;
-  });
+  this.activities=clubActivities({actors:()=>[this.self,...this.ai()],blockedMessage});
   this.timer=setInterval(()=>this.publish(),100);this.sequence=0;this.lastMove=0;this.preview=null;
  }
  startMusic(epoch){
@@ -44,7 +36,7 @@ export class PersonalRoom {
   const now=Date.now(),show=this.musicStarted?performanceStatus(this.epoch,now,this.tracks):{active:null,next:null};
   if(this.preview&&now>=this.preview.start+effects[this.preview.kind].seconds*1000)this.preview=null;
   return {actors:[{...this.self},...this.ai().map(a=>({...a}))],zones:['OPEN','OPEN'],
-   socialEvents:this.social.snapshot(),personalTrial:true,waitingForMusic:!this.musicStarted,trainLeader:null,stageEvent:this.preview||show.active,nextPerformance:show.next,performanceNow:now};
+   ...this.activities.snapshot(),personalTrial:true,waitingForMusic:!this.musicStarted,trainLeader:null,stageEvent:this.preview||show.active,nextPerformance:show.next,performanceNow:now};
  }
  publish(){
   if(this.self.action==='walk'&&Date.now()-this.lastMove>300)this.self.action='idle';
@@ -54,27 +46,22 @@ export class PersonalRoom {
   const a=this.self;
   if(type==='clock'){const now=Date.now();this.emit('clock',{sent:Number.isFinite(data)?data:now,now,epoch:this.epoch,tracks:this.tracks});return;}
   if(type==='occupancy'){this.emit('occupancy',{channelId:'personal',people:1,capacity:1});return;}
-  if(type==='social-stop'){this.social.stop(a.id);if(this.preview?.socialBirthday)this.preview=null;this.publish();return;}
-  if(type==='birthday-incoming-demo'){
-   const sender=this.ai().find(actor=>actor.id===data?.from)||this.ai()[0];
-   const result=this.birthdays.propose(sender.id,a.id);if(result?.error)this.emit('notice',result.error);
-   this.emit('birthday-state',{...this.birthdays.state(a.id),demo:true});return;
+  if(type==='activities-state'){this.emit('activities-state',{...this.activities.view(a.id),personalTrial:true});return;}
+  if(activityCommands.includes(type)){
+   const result=this.activities.command(a.id,type,data);
+   if(result.error)this.emit('notice',result.error);
+   this.emit('activities-result',{kind:type,...result});
+   if(result.notification?.to===a.id)this.emit('whisper-notification',result.notification);
+   this.emit('activities-state',{...this.activities.view(a.id),personalTrial:true});this.publish();return;
   }
-  if(type==='birthday-state'){this.emit('birthday-state',{...this.birthdays.state(a.id),demo:true});return;}
-  if(['birthday-propose','birthday-reply','birthday-demo-reply','birthday-cancel'].includes(type)){
-   let result;
-   if(type==='birthday-propose')result=this.birthdays.propose(a.id,data?.targetId);
-   else if(type==='birthday-cancel')result=this.birthdays.cancel(a.id,data?.id);
-   else if(type==='birthday-demo-reply'){
-    const request=this.birthdays.state(a.id).requests.find(r=>r.id===data?.id&&r.from===a.id);
-    const target=request&&this.ai().find(actor=>actor.id===request.to);
-    if(!target)return;
-    result=this.birthdays.answer(target.id,request.id,data?.accept);
-   }else result=this.birthdays.answer(a.id,data?.id,data?.accept);
-   if(result?.error)this.emit('notice',result.error);
-   this.emit('birthday-state',{...this.birthdays.state(a.id),demo:true});this.publish();return;
+  if(type==='whisper-demo-incoming'){
+   const sender=this.ai().find(actor=>actor.id===data?.from);if(!sender)return;
+   const result=this.activities.command(sender.id,'whisper-send',{to:a.id,text:'같이 춤출까요?',requestId:crypto.randomUUID(),simulated:true});
+   if(result.error)this.emit('notice',result.error);
+   if(result.notification)this.emit('whisper-notification',result.notification);
+   this.emit('activities-state',{...this.activities.view(a.id),personalTrial:true});return;
   }
-  if(type==='snapshot'){this.publish();this.emit('birthday-state',{...this.birthdays.state(a.id),demo:true});return;}
+  if(type==='snapshot'){this.publish();this.emit('activities-state',{...this.activities.view(a.id),personalTrial:true});return;}
   if(type==='move'){
    if(a.seat!==null||!data||!['x','y','z','yaw'].every(k=>Number.isFinite(data[k])))return;
    const anchor=['pole-dance','podium-dance'].includes(a.action)?this.poleAnchor:null;
@@ -140,5 +127,5 @@ export class PersonalRoom {
    this.publish();return;
   }
  }
- leave(){this.birthdays.leave(this.sessionId);clearInterval(this.timer);}
+ leave(){this.activities.leave(this.sessionId);clearInterval(this.timer);}
 }

@@ -1,5 +1,5 @@
 // Presentation lifetimes, not sale/ownership policies. No charges or consumption.
-export const socialDurations=Object.freeze({birthday:15,heart:4,bouquet:8,cake:10});
+export const socialDurations=Object.freeze({heart:5,bouquet:8,cake:8});
 export function socialTrial(actors,now=()=>Date.now()){
   let sequence=0;const events=new Map();
   const actor=id=>actors().find(a=>a.id===id);

@@ -180,7 +180,9 @@ export async function startChannels(app, { origin, secret, port }) {
   app.get('/clubs/edm/social-effects.js', serveFile('./public/social-effects.js'));
   app.get('/clubs/edm/social-trial.js', serveFile('./social-trial.js'));
   app.get('/clubs/edm/wand-ornament.js', serveFile('./public/wand-ornament.js'));
-  app.get('/clubs/edm/birthday-ui.js', serveFile('./public/birthday-ui.js'));
+  app.get('/clubs/edm/club-actions-ui.js', serveFile('./public/club-actions-ui.js'));
+  app.get('/clubs/edm/club-event-renderer.js', serveFile('./public/club-event-renderer.js'));
+  app.get('/clubs/edm/club-activities.js', serveFile('./club-activities.js'));
   app.get('/clubs/edm/wand-customization.js', serveFile('./public/wand-customization.js'));
   app.get('/clubs/edm/wand-trail.js', serveFile('./public/wand-trail.js'));
   app.get('/clubs/edm/pole-dance.js', serveFile('./public/pole-dance.js'));

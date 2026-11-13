@@ -156,7 +156,7 @@ export function avatarFactory(B, scene, glow) {
       if(tip){ornament?.dispose();ornament=wandOrnament(B,scene,tip,styleState.decoration,ownWandMaterial);}
       if(ownWandMaterial)ownWandMaterial.emissiveColor=B.Color3.FromHexString(theme.rod);
       if(ownTrailMaterial)ownTrailMaterial.emissiveColor=B.Color3.FromHexString(theme.rod);
-      smoothTrail?.setPalette(theme.core,theme.edge);smoothTrail?.setVariant(styleState.trail);
+      smoothTrail?.setPalette(theme.core,theme.edge);smoothTrail?.setVariant(styleState.trail);smoothTrail?.setScale(styleState.size==='large'?1.5:1);
     }
     function showWand(visible, detailed, motion=null) {
       if (!visible && !wand) return;
@@ -173,13 +173,14 @@ export function avatarFactory(B, scene, glow) {
         tip.position.y = featuredWand ? -0.415 : -0.27;
         ornament=wandOrnament(B,scene,tip,styleState.decoration,ownWandMaterial);
       }
+      const wandScale=styleState.size==='large'?1.5:1;wand.scaling.setAll(wandScale);
       wand.parent = detailed ? limbs[2] : root;
       wand.position.set(detailed ? -0.117 : 0.38, detailed ? (featuredWand ? -0.88 : -0.753) : 1.28, detailed ? 0 : 0.12);
       wand.rotation.set(0,0,detailed ? -0.45 : -0.85);
-      if(detailed&&motion){
-        wand.rotation.set(motion.pitch,0,motion.roll);
-        const axis=B.Vector3.TransformNormal(B.Axis.Y,B.Matrix.RotationYawPitchRoll(0,motion.pitch,motion.roll));
-        const grip=(featuredWand?.83:.54)/2-.025;
+      if(detailed){
+        if(motion)wand.rotation.set(motion.pitch,0,motion.roll);
+        const axis=B.Vector3.TransformNormal(B.Axis.Y,B.Matrix.RotationYawPitchRoll(0,wand.rotation.x,wand.rotation.z));
+        const grip=(featuredWand?.83:.54)*wandScale/2-.025;
         wand.position.set(0,-.525,0);wand.position.subtractInPlace(axis.scale(grip));
       }
       wand.setEnabled(visible);
@@ -192,7 +193,7 @@ export function avatarFactory(B, scene, glow) {
         const sweep=Math.min(1,speed/3.5);
         if(motion){
           if(trail)trail.visibility=0;
-          if(!smoothTrail){smoothTrail=createWandTrail(B,scene,glow,featuredWand);smoothTrail.setPalette(theme.core,theme.edge);smoothTrail.setVariant(styleState.trail);}
+          if(!smoothTrail){smoothTrail=createWandTrail(B,scene,glow,featuredWand);smoothTrail.setPalette(theme.core,theme.edge);smoothTrail.setVariant(styleState.trail);smoothTrail.setScale(wandScale);}
           smoothTrail.update(point,now,(.65+.35*sweep)*motion.sweep,motion.reduced,speed);
         }else{
           smoothTrail?.reset();

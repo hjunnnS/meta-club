@@ -1,7 +1,7 @@
 // A time-based, rounded centreline trail rather than a broad polygon fan.
 export function createWandTrail(B,scene,glow,featured=false){
   const rings=25,sides=8,history=[],meshes=[],materials=[],sparks=[];
-  let variant='default',coreColor='#2bd8ff',edgeColor='#102340',sparkInk;
+  let variant='default',coreColor='#2bd8ff',edgeColor='#102340',sparkInk,scale=1;
   const indices=[];
   for(let i=0;i<rings-1;i++)for(let j=0;j<sides;j++){
     const a=i*sides+j,b=i*sides+(j+1)%sides,c=a+sides,d=b+sides;
@@ -31,13 +31,14 @@ export function createWandTrail(B,scene,glow,featured=false){
       for(const {mesh,edge:isEdge}of meshes)mesh.material.emissiveColor=B.Color3.FromHexString(isEdge?edge:core);
       if(sparkInk)sparkInk.emissiveColor=B.Color3.FromHexString(core);reset();
     },
+    setScale(value){scale=value===1.5?1.5:1;},
     setVariant(next){
       next=['double','sparkles'].includes(next)?next:'default';if(next===variant)return;
       variant=next;reset();
       if(next==='double'&&!meshes.some(m=>m.echo)){tube('edge',edgeColor,.92,1,true);tube('core',coreColor,.94,2,true);}
       if(next==='sparkles'&&!sparks.length){
         sparkInk=new B.StandardMaterial('wand star dust ink',scene);sparkInk.disableLighting=true;sparkInk.emissiveColor=B.Color3.FromHexString(coreColor);materials.push(sparkInk);
-        for(let i=0;i<10;i++){const mesh=B.MeshBuilder.CreateSphere('wand star dust',{diameter:.045,segments:4},scene);mesh.material=sparkInk;mesh.isPickable=false;mesh.setEnabled(false);glow?.addExcludedMesh(mesh);sparks.push(mesh);}
+        for(let i=0;i<14;i++){const mesh=B.MeshBuilder.CreateSphere('wand star dust',{diameter:.055,segments:4},scene);mesh.material=sparkInk;mesh.isPickable=false;mesh.setEnabled(false);glow?.addExcludedMesh(mesh);sparks.push(mesh);}
       }
     },
     update(point,now,level,reduced,speed){
@@ -46,7 +47,7 @@ export function createWandTrail(B,scene,glow,featured=false){
       // Never connect old geometry across a hidden period or a pose discontinuity.
       if(last&&(now-last.time>160||B.Vector3.Distance(last.point,point)>.85))reset();
       history.push({time:now,point:point.clone()});
-      while(history.length>2&&history[1].time<now-190)history.shift();
+      while(history.length>2&&history[1].time<now-(180+140*Math.max(0,Math.min(1,level))))history.shift();
       const travel=history.reduce((sum,p,i)=>sum+(i?B.Vector3.Distance(p.point,history[i-1].point):0),0);
       if(history.length<3||travel<.018){for(const {mesh}of meshes)mesh.visibility=0;return;}
       const first=history[0].time,span=Math.max(1,now-first),path=[];
@@ -56,7 +57,7 @@ export function createWandTrail(B,scene,glow,featured=false){
         const u=Math.max(0,Math.min(1,(at-history[j].time)/Math.max(1,history[j+1].time-history[j].time)));
         path.push(cat(history[Math.max(0,j-1)].point,history[j].point,history[j+1].point,history[Math.min(history.length-1,j+2)].point,u));
       }
-      const radius=(featured?.042:.030)+(featured?.022:.018)*Math.min(1,speed/3.5);
+      const radius=((featured?.047:.035)+(featured?.026:.023)*Math.min(1,speed/3.5))*scale;
       for(const record of meshes){
         const {mesh,positions,normals,colors,edge,echo}=record;
         if(echo&&variant!=='double'){mesh.visibility=0;continue;}
@@ -66,8 +67,8 @@ export function createWandTrail(B,scene,glow,featured=false){
           const across=B.Vector3.Cross(tangent,axis).normalize(),up=B.Vector3.Cross(tangent,across).normalize();
           // Both ends close smoothly; the older end also fades in opacity.
           const taper=Math.pow(u,.65)*Math.min(1,(1-u)*6);
-          const width=radius*taper*(edge?1.60:1)*(variant==='double'?.62:1),opacity=Math.pow(u,.72);
-          const shift=variant==='double'?(echo?-1:1)*.055:0;
+          const width=radius*taper*(edge?1.60:1)*(variant==='double'?.62:1),opacity=Math.pow(u,.48);
+          const shift=variant==='double'?(echo?-1:1)*.09*scale:0;
           for(let j=0;j<sides;j++){
             const angle=j*Math.PI*2/sides,n=across.scale(Math.cos(angle)).add(up.scale(Math.sin(angle))),v=i*sides+j;
             positions.set([centre.x+across.x*shift+n.x*width,centre.y+across.y*shift+n.y*width,centre.z+across.z*shift+n.z*width],v*3);
@@ -79,7 +80,7 @@ export function createWandTrail(B,scene,glow,featured=false){
         mesh.updateVerticesData(B.VertexBuffer.ColorKind,colors);
         mesh.visibility=Math.min(1,level)*(edge?.92:1);
       }
-      for(let i=0;i<sparks.length;i++){const mesh=sparks[i];mesh.setEnabled(variant==='sparkles'&&level>.05);if(variant!=='sparkles')continue;const point=path[Math.floor(i*(rings-1)/sparks.length)],phase=(now/350+i*.23)%1;mesh.position.copyFrom(point);mesh.position.y+=phase*.16;mesh.position.x+=Math.sin(i*2.4)*.045;mesh.scaling.setAll(.25+.85*Math.pow(Math.sin(phase*Math.PI),2));mesh.visibility=level*(1-phase);}
+      for(let i=0;i<sparks.length;i++){const mesh=sparks[i];mesh.setEnabled(variant==='sparkles'&&level>.05);if(variant!=='sparkles')continue;const point=path[Math.floor(i*(rings-1)/sparks.length)],phase=(now/350+i*.23)%1;mesh.position.copyFrom(point);mesh.position.y+=phase*.16;mesh.position.x+=Math.sin(i*2.4)*.045;mesh.scaling.setAll(scale*(.35+1.0*Math.pow(Math.sin(phase*Math.PI),2)));mesh.visibility=level*(1-phase);}
     },
     dispose(){for(const mesh of sparks){glow?.removeExcludedMesh(mesh);mesh.dispose();}for(const {mesh}of meshes){glow?.removeExcludedMesh(mesh);mesh.dispose();}for(const m of materials)m.dispose();history.length=0;},
   };

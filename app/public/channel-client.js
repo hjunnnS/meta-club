@@ -1,4 +1,4 @@
-import {birthdayUI} from './birthday-ui.js';
+import {clubActionsUI} from './club-actions-ui.js';
 import {wandCustomization} from './wand-customization.js';
 import {rhythmGame} from './rhythm-game.js';
 import { nearbyEdmSeats, edmSeats, nearbyEdmPole } from './edm-layout.js';
@@ -47,7 +47,7 @@ function firstVisitFailure(reason) {
 }
 const frame = (kind, data) => map.contentWindow?.postMessage({ kind, data }, location.origin);
 const shop = initShop(frame);
-const birthdays=birthdayUI(el('birthday-events'),(kind,data)=>room?.send(kind,data),frame);
+const activities=clubActionsUI({root:el('character-actions'),dialog:el('whisper-dialog'),shoutRoot:el('shout-actions'),vipRoot:el('vip-actions'),alertButton:el('whisper-alert'),send:(kind,data)=>room?.send(kind,data),frame});
 const wandStyles=wandCustomization(el('wand-customization'),(kind,data)=>room?.send(kind,data),frame);
 let guideOpened = false;
 function showGuide(open) {
@@ -81,7 +81,7 @@ function display(data) {
       '사이드존 ' + labels[data.zones[0]] + ' · 발코니 ' + labels[data.zones[1]];
   }
   const self = data.actors.find((a) => a.id === room.sessionId);
-  birthdays.update({...data,self:room.sessionId},ready&&memberId?.startsWith('local-test:'));
+  activities.update({...data,self:room.sessionId},ready&&memberId?.startsWith('local-test:'));
   wandStyles.update(self,ready&&memberId?.startsWith('local-test:'));
   el('wand').textContent = self?.wand ? '무드봉 내리기' : '무드봉 들기';
   el('wand').setAttribute('aria-pressed', String(Boolean(self?.wand)));
@@ -137,7 +137,7 @@ function disconnected(message, reconnect) {
   ready = false;
   showMusic(null);
   // Keep the last rendered club visible during a temporary channel outage.
-  birthdays.update(null,false);
+  activities.update(null,false);
   wandStyles.update(null,false);
   frame('connection-state', false);
   frame('audible-track', null);
@@ -227,7 +227,9 @@ async function enter(channelId) {
       if (room === next && ready) frame('place', m);
     });
     next.onMessage('podium-place',m=>{if(room===next&&ready)frame('podium-place',m);});
-    next.onMessage('birthday-state',m=>{if(room===next)birthdays.state(m);});
+    next.onMessage('activities-state',m=>{if(room===next)activities.state(m);});
+    next.onMessage('activities-result',m=>{if(room===next){activities.result(m);if(m.ok)note('');}});
+    next.onMessage('whisper-notification',m=>{if(room===next)activities.notification(m);});
     next.onMessage('notice', note);
     next.onMessage('clock', (m) => {
       if (room === next) {
@@ -269,8 +271,7 @@ window.addEventListener('message', (event) => {
   if (!room || event.source !== map.contentWindow || event.origin !== location.origin) return;
   const { kind, data } = event.data || {};
   if (kind === 'gate-notice') note(data);
-  if(kind==='social-feedback')birthdays.feedback(data);
-  if(kind==='birthday-target'&&ready)birthdays.select(data);
+  if(kind==='action-target'&&ready)activities.select(data);
   if (kind === 'seat-request' && ready && Number.isInteger(data)) room.send('seat',data);
   if (kind === 'scene-error') {
     sceneLoaded = false;
@@ -298,7 +299,7 @@ window.addEventListener('message', (event) => {
     if (snapshot) display(snapshot);
     frame('fast-flash', el('fast-flash').checked);
     frame('quality', el('quality').value);
-    frame('other-wands', el('other-wands').checked);wandStyles.resume();birthdays.resume();room.send('birthday-state');
+    frame('other-wands', el('other-wands').checked);wandStyles.resume();activities.resume();room.send('activities-state');
   }
   if(['podium-request','podium-start','podium-cancel'].includes(kind)&&ready)room.send(kind,data);
   if(kind==='pole-grip'&&ready)room.send('pole-grip',data);
