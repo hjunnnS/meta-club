@@ -13,3 +13,15 @@ export function paradePose(age,index,seconds=paradePlan.seconds){
  const nextYaw=Math.atan2(next[0]-b[0],next[1]-b[1]),delta=Math.atan2(Math.sin(nextYaw-yaw),Math.cos(nextYaw-yaw));
  return {x:a[0]+(b[0]-a[0])*t,y:.018,z:a[1]+(b[1]-a[1])*t,yaw:yaw+delta*turn};
 }
+
+// Find the next regular-show gap without reserving or changing any show.
+export function nextParadeOpening(now,statusAt,clearance=(paradePlan.seconds+5)*1000){
+ let at=now;
+ for(let i=0;i<12;i++){
+  const {active,next}=statusAt(at);
+  if(active){const end=active.start+active.seconds*1000;if(end<=at)return null;at=end;continue;}
+  if(next&&next.start-at<clearance){if(next.start<=at)return null;at=next.start;continue;}
+  return at;
+ }
+ return null;
+}

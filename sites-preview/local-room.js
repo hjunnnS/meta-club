@@ -1,4 +1,5 @@
-import {clubActivities,activityCommands,activityUsage} from './club-activities.js';
+import {nextParadeOpening} from './parade-plan.js';
+import {clubActivities,activityCommands,activityUsage,activityTrialRules} from './club-activities.js';
 import {validWandStyle,normalizeWandStyle} from './wand-customization.js';
 import {requestPodium,validPodiumArrival,beginPodium,clearPodium} from './podium-activity.js';
 import {playlistPosition,trackBeat} from './music.js';
@@ -21,7 +22,7 @@ export class PersonalRoom {
   this.activities=clubActivities({actors:()=>[this.self,...this.ai()],blockedMessage,
    identity:id=>id===this.sessionId?trialIdentity:id,usage:activityUsage({storage:trialStorage}),
    performances:()=>{const scheduled=this.musicStarted?performanceStatus(this.epoch,Date.now(),this.tracks):{active:null,next:null};return {...scheduled,active:scheduled.active||(this.preview?{...this.preview,seconds:effects[this.preview.kind]?.seconds}:null)};}});
-  this.timer=setInterval(()=>this.publish(),100);this.sequence=0;this.lastMove=0;this.preview=null;
+  this.timer=setInterval(()=>this.publish(),100);this.sequence=0;this.lastMove=0;this.preview=null;this.paradePreview=null;
  }
  startMusic(epoch){
   if(this.musicStarted||!Number.isFinite(epoch))return;
@@ -39,8 +40,11 @@ export class PersonalRoom {
  snapshot(){
   const now=Date.now(),show=this.musicStarted?performanceStatus(this.epoch,now,this.tracks):{active:null,next:null};
   if(this.preview&&now>=this.preview.start+effects[this.preview.kind].seconds*1000)this.preview=null;
+  if(this.paradePreview&&now>=this.paradePreview.start+this.paradePreview.seconds*1000)this.paradePreview=null;
+  const activity=this.activities.snapshot(),parade=activity.parade||this.paradePreview;
+  const paradeOpeningAt=nextParadeOpening(now,at=>this.musicStarted?performanceStatus(this.epoch,at,this.tracks):{active:null,next:null});
   return {actors:[{...this.self},...this.ai().map(a=>({...a}))],zones:['OPEN','OPEN'],
-   ...this.activities.snapshot(),personalTrial:true,waitingForMusic:!this.musicStarted,trainLeader:null,stageEvent:this.preview||show.active,nextPerformance:show.next,performanceNow:now};
+   ...activity,parade,activityStatus:{...activity.activityStatus,paradeOpeningAt,paradePreview:Boolean(this.paradePreview),...(this.paradePreview?{paradeActiveUntil:this.paradePreview.start+this.paradePreview.seconds*1000}:{})},personalTrial:true,waitingForMusic:!this.musicStarted,trainLeader:null,stageEvent:this.preview||show.active,nextPerformance:show.next,performanceNow:now};
  }
  publish(){
   if(this.self.action==='walk'&&Date.now()-this.lastMove>300)this.self.action='idle';
@@ -51,6 +55,13 @@ export class PersonalRoom {
   if(type==='clock'){const now=Date.now();this.emit('clock',{sent:Number.isFinite(data)?data:now,now,epoch:this.epoch,tracks:this.tracks});return;}
   if(type==='occupancy'){this.emit('occupancy',{channelId:'personal',people:1,capacity:1});return;}
   if(type==='activities-state'){this.emit('activities-state',{...this.activities.view(a.id),personalTrial:true});return;}
+  if(type==='vip-preview'){
+   if(this.activities.snapshot().parade||this.paradePreview){this.emit('activities-result',{kind:type,error:'퍼레이드가 진행 중입니다. 종료한 뒤 다시 확인해 주세요.'});return;}
+   this.paradePreview={id:'personal-parade-preview-'+crypto.randomUUID(),from:a.id,start:Date.now(),seconds:activityTrialRules.paradeSeconds,count:activityTrialRules.paradeCount,preview:true};
+   this.emit('activities-result',{kind:type,ok:true});this.publish();return;
+  }
+  if(type==='vip-start'&&this.paradePreview){this.emit('activities-result',{kind:type,error:'시험 퍼레이드가 끝난 뒤 정식 퍼레이드를 시작해 주세요.'});return;}
+  if(type==='activities-stop')this.paradePreview=null;
   if(activityCommands.includes(type)){
    const result=this.activities.command(a.id,type,data);
    if(result.error)this.emit('notice',result.error);

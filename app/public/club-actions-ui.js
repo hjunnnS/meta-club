@@ -12,14 +12,18 @@ export function clubActionsUI({root,dialog,shoutRoot,vipRoot,alertButton,send,fr
     const whisper=seconds('whisperUntil'),shout=seconds('shoutUntil'),vip=seconds('paradeUntil');
     const gate=Math.max(0,Math.ceil(((activityStatus.paradeNextAt||0)-clock())/1000));
     const imminent=activityStatus.nextShowAt!=null&&activityStatus.nextShowAt-clock()<(activityStatus.paradeClearance||50000);
+    const opening=Math.max(0,Math.ceil(((activityStatus.paradeOpeningAt||0)-clock())/1000));
     const performing=activityStatus.showActive,parading=activityStatus.paradeActiveUntil>clock();
     const whisperHint=dialog.querySelector('[data-whisper-cooldown]');
     whisperHint.textContent=whisper?'다음 귓속말까지 '+whisper+'초':'귓속말은 2초에 한 번 보낼 수 있습니다.';
     dialog.querySelector('[data-whisper-send]').disabled=input.disabled||whisper>0;
     shoutRoot.querySelector('button[type="submit"]').disabled=shout>0;
     shoutRoot.querySelector('[data-shout-state]').textContent=(shout?'다음 외치기까지 '+shout+'초 · ':'')+(performing||parading?'공연 종료 후 순서대로 표시 · ':'')+'대기 '+(activityStatus.shoutWaiting||0)+'/3';
-    vipRoot.querySelector('[data-vip-start]').disabled=vip>0||gate>0||performing||imminent||activityStatus.shoutActive;
-    vipRoot.querySelector('[data-vip-state]').textContent=parading?'병 불꽃 퍼레이드 진행 중':vip>0?'내 재사용까지 '+vip+'초':gate>0?'클럽 준비까지 '+gate+'초':performing?'정기 공연 종료 후 이용해 주세요.':imminent?'완주하려면 다음 공연까지 '+Math.ceil((activityStatus.paradeClearance||50000)/1000)+'초 이상 필요합니다.':activityStatus.shoutActive?'외치기 표시가 끝난 뒤 이용해 주세요.':'성인 여성 NPC 5명 · 약 '+(activityStatus.paradeSeconds||45)+'초 한 바퀴 · 개인 2분 / 클럽 종료 후 1분 간격';
+    vipRoot.querySelector('[data-vip-preview]').hidden=!personal;
+    vipRoot.querySelector('[data-vip-preview-note]').hidden=!personal;
+    vipRoot.querySelector('[data-vip-preview]').disabled=parading;
+    vipRoot.querySelector('[data-vip-start]').disabled=parading||vip>0||gate>0||performing||imminent||activityStatus.shoutActive;
+    vipRoot.querySelector('[data-vip-state]').textContent=parading?(activityStatus.paradePreview?'시험 퍼레이드 진행 중':'병 불꽃 퍼레이드 진행 중'):vip>0?'내 재사용까지 '+vip+'초':gate>0?'클럽 준비까지 '+gate+'초':personal&&opening>0?'정식 시작 가능 구간까지 '+Math.floor(opening/60)+':'+String(opening%60).padStart(2,'0')+' · 바로 보기로 먼저 확인할 수 있습니다.':performing?'정기 공연 종료 후 이용해 주세요.':imminent?'완주하려면 다음 공연까지 '+Math.ceil((activityStatus.paradeClearance||50000)/1000)+'초 이상 필요합니다.':activityStatus.shoutActive?'외치기 표시가 끝난 뒤 이용해 주세요.':'성인 여성 NPC 5명 · 약 '+(activityStatus.paradeSeconds||45)+'초 한 바퀴 · 개인 2분 / 클럽 종료 후 1분 간격';
   }
   function renderConversation(){
     const actor=target(peer);dialog.querySelector('[data-whisper-title]').textContent=(actor?.nickname||'상대')+' · 귓속말';
@@ -63,6 +67,7 @@ export function clubActionsUI({root,dialog,shoutRoot,vipRoot,alertButton,send,fr
   dialog.querySelector('[data-whisper-demo]').onclick=()=>send('whisper-demo-incoming',{from:peer});
   alertButton.onclick=()=>{if(lastNotice)openWhisper(lastNotice.from);};
   shoutRoot.querySelector('form').onsubmit=event=>{event.preventDefault();const text=shoutRoot.querySelector('input').value;request('shout-send',{text});};
+  vipRoot.querySelector('[data-vip-preview]').onclick=()=>request('vip-preview');
   vipRoot.querySelector('[data-vip-start]').onclick=()=>request('vip-start');
   vipRoot.querySelector('[data-vip-stop]').onclick=()=>send('activities-stop');
   return {
@@ -84,11 +89,11 @@ export function clubActionsUI({root,dialog,shoutRoot,vipRoot,alertButton,send,fr
       lastNotice=value;alertButton.textContent=value.sender+'님에게 귓속말이 왔습니다'+(value.simulated?' · 체험':'');alertButton.hidden=false;
     },
     result(value){
-      const text=value.error||({ 'gift-send':'선물을 보냈습니다. 받는 사람을 확인하세요.','shout-send':value.queued?'외치기를 접수했습니다. 공연·앞선 표시가 끝나면 양옆에 5초 표시됩니다.':'양옆 전광판에 5초 표시합니다.','vip-start':'병 불꽃 퍼레이드를 시작했습니다.','activities-stop':'내 체험 이벤트를 종료했습니다.','whisper-block':'이 상대의 귓속말을 차단했습니다.','whisper-unblock':'귓속말 차단을 해제했습니다.','whisper-send':'귓속말을 보냈습니다.'})[value.kind]||'';
+      const text=value.error||({ 'gift-send':'선물을 보냈습니다. 받는 사람을 확인하세요.','shout-send':value.queued?'외치기를 접수했습니다. 공연·앞선 표시가 끝나면 양옆에 5초 표시됩니다.':'양옆 전광판에 5초 표시합니다.','vip-preview':'개인 화면에서 퍼레이드 시험을 시작했습니다.','vip-start':'병 불꽃 퍼레이드를 시작했습니다.','activities-stop':'내 체험 이벤트를 종료했습니다.','whisper-block':'이 상대의 귓속말을 차단했습니다.','whisper-unblock':'귓속말 차단을 해제했습니다.','whisper-send':'귓속말을 보냈습니다.'})[value.kind]||'';
       if(value.kind==='whisper-send'&&value.ok){input.value='';frame('whisper-sent',{to:value.notification?.to,personal});}
       if(value.kind?.startsWith('whisper'))resultText(dialog.querySelector('output'),text);
       else if(value.kind==='shout-send')resultText(shoutRoot.querySelector('output'),text);
-      else if(value.kind==='vip-start'||value.kind==='activities-stop')resultText(vipRoot.querySelector('output'),text);
+      else if(value.kind==='vip-start'||value.kind==='vip-preview'||value.kind==='activities-stop')resultText(vipRoot.querySelector('output'),text);
       else resultText(status,text);
     },
     select:choose,
