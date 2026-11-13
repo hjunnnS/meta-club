@@ -1,3 +1,4 @@
+import {vipPersonalUI} from './vip-personal-ui.js';
 import {characterCustomization} from './character-customization.js';
 import {clubActionsUI} from './club-actions-ui.js';
 import {wandCustomization} from './wand-customization.js';
@@ -51,6 +52,7 @@ const shop = initShop(frame);
 const activities=clubActionsUI({root:el('character-actions'),dialog:el('whisper-dialog'),shoutRoot:el('shout-actions'),vipRoot:el('vip-actions'),alertButton:el('whisper-alert'),send:(kind,data)=>room?.send(kind,data),frame});
 const wandStyles=wandCustomization(el('wand-customization'),(kind,data)=>room?.send(kind,data),frame);
 const characterStyles=characterCustomization(el('character-customization'),(kind,data)=>room?.send(kind,data),frame);
+const vipPersonal=vipPersonalUI(el('vip-personal-controls'),(kind,data)=>room?.send(kind,data));
 let guideOpened = false;
 function showGuide(open) {
   el('guide').hidden = !open;
@@ -84,6 +86,7 @@ function display(data) {
   }
   const self = data.actors.find((a) => a.id === room.sessionId);
   activities.update({...data,self:room.sessionId},ready&&memberId?.startsWith('local-test:'));
+  vipPersonal.update(self,ready&&memberId?.startsWith('local-test:'));
   characterStyles.update(self,ready&&memberId?.startsWith('local-test:'));
   wandStyles.update(self,ready&&memberId?.startsWith('local-test:'));
   el('wand').textContent = self?.wand ? '무드봉 내리기' : '무드봉 들기';
@@ -142,7 +145,7 @@ function disconnected(message, reconnect) {
   showMusic(null);
   // Keep the last rendered club visible during a temporary channel outage.
   activities.update(null,false);
-  wandStyles.update(null,false);characterStyles.update(null,false);
+  wandStyles.update(null,false);characterStyles.update(null,false);vipPersonal.update(null,false);
   frame('connection-state', false);
   frame('audible-track', null);
   if (!sceneLoaded) map.hidden = true;

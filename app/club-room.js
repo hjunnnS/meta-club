@@ -1,3 +1,4 @@
+import {vipCommands,vipPersonalCommand} from './public/vip-personal.js';
 import {validAppearance,normalizeAppearance} from './public/character-appearance.js';
 import {clubActivities,activityCommands,activityUsage} from './club-activities.js';
 import {validWandStyle,normalizeWandStyle} from './public/wand-customization.js';
@@ -79,6 +80,11 @@ export class EdmRoom extends Room {
         if(result.notification)this.clients.find(c=>c.sessionId===result.notification.to)?.send('whisper-notification',result.notification);
         this.activitiesState();this.dirty=true;
       });
+      for(const kind of vipCommands)this.onMessage(kind,(client,input)=>{
+        const actor=this.member(client);if(!actor||!client.userData.identity.startsWith('local-test:')||!this.allowActivity(client))return;
+        const result=vipPersonalCommand([...this.members.values()],actor,kind,input);
+        if(result.error)this.notice(client,result.error);else this.notice(client,'');this.dirty=true;
+      });
       this.onMessage('character-style',(client,input)=>{
         const actor=this.member(client);
         if(!actor||!client.userData.identity.startsWith('local-test:')||(input!==null&&!validAppearance(input)))return;
@@ -137,6 +143,7 @@ export class EdmRoom extends Room {
       if (actor && typeof enabled === 'boolean' && this.allowActivity(client)) {
         if(enabled&&!actor.wand)this.react(actor,'disco-point',true);
         actor.wand = enabled;
+        if(enabled)actor.danceProp=null;
         this.dirty = true;
       }
     });
@@ -208,7 +215,7 @@ export class EdmRoom extends Room {
         clearPodium(m);this.poleAnchors.delete(m);this.podiumClaims.delete(m.id);
         Object.assign(m, pose, { seat: idx, table: pose.table ?? null, action: 'sit' });
       }
-      this.dirty = true;
+      delete m.vipTowerSeat;this.dirty = true;
       c.send('place', m);
     };
     this.onMessage('seat', (c, requested)=>seatActivity(c,requested));

@@ -1,3 +1,4 @@
+import {animateVipSolo,vipPersonalProps} from './vip-personal.js';
 import {characterAppearance,validAppearance,normalizeAppearance} from './character-appearance.js';
 import {privateWhisperFeedback} from './private-whisper-feedback.js';
 import {clubEventRenderer} from './club-event-renderer.js';
@@ -136,7 +137,7 @@ export function startLiveScene({
   }
   let actionPicking=false,actionTrial=false,chatActive=false;
   let wandPreview=null,characterPreview=null;
-  const wandVisible=a=>Boolean((a.wand||a.id===own&&wandPreview)&&(a.id===own||otherWands));
+  const wandVisible=a=>Boolean(a.danceProp!=='fan'&&(a.wand||a.id===own&&wandPreview)&&(a.id===own||otherWands));
   let states = ['CLOSED', 'CLOSED'],
     dancers = 0;
   const washes = scene.lights
@@ -205,8 +206,8 @@ export function startLiveScene({
       if (!model) {
         model = make(a, a.id === wandGuest);
         if(!a.ai){
-          model.appearance=characterAppearance(B,scene,model);
-          const dispose=model.dispose.bind(model);model.dispose=()=>{model.appearance.dispose();dispose();};
+          model.appearance=characterAppearance(B,scene,model);model.vipProps=vipPersonalProps(B,scene,model);
+          const dispose=model.dispose.bind(model);model.dispose=()=>{model.vipProps.dispose();model.appearance.dispose();dispose();};
         }
         models.set(a.id, model);
       }
@@ -765,6 +766,7 @@ export function startLiveScene({
         m.root.rotation.y = a.yaw;
       }
       if(!['pole-dance','podium-dance'].includes(a.action))releasePoleGrip(m);
+      m.vipProps?.render(a,beats,calmBeats.matches);
       if(animateSeatArrival(B,m,a,Date.now()+offset,calmBeats.matches)){m.showWand(wandVisible(a),true);detailed++;continue;}
       if(a.action==='podium-dance'&&podiumSlots[a.podiumSlot]){
         const anchor=podiumSlots[a.podiumSlot],nearPole=Boolean(nearbyEdmPole(a,.95));
@@ -788,6 +790,11 @@ export function startLiveScene({
         detailed++;continue;
       }
       if(a.action==='pole-dance')releasePoleGrip(m);
+      if(a.action==='vip-solo'){
+        m.near.setEnabled(true);m.far.setEnabled(false);
+        animateVipSolo(m,beats,calmBeats.matches);m.showWand(wandVisible(a),true);
+        m.vipProps?.render(a,beats,calmBeats.matches,true);detailed++;continue;
+      }
       const adjacentRider = ownSlot != null && a.trainSlot != null && Math.abs(a.trainSlot - ownSlot) <= 1;
       const detailRadius = low ? (adjacentRider ? 12 : 8) : 21;
       const close = a.id === own || B.Vector3.DistanceSquared(scene.activeCamera.position, target) < detailRadius ** 2;
@@ -816,6 +823,7 @@ export function startLiveScene({
             arm.rotation.x += (-.16 - arm.rotation.x) * reach;
           }
           m.showWand(visibleWand,true,wandMotion);
+          m.vipProps?.render(a,beats,calmBeats.matches,true);
           detailed++;
         } else {
           m.showWand(visibleWand,false);

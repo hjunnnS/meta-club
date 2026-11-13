@@ -187,6 +187,8 @@ export async function startChannels(app, { origin, secret, port }) {
   app.get('/clubs/edm/parade-woman.js', serveFile('./public/parade-woman.js'));
   app.get('/clubs/edm/private-whisper-feedback.js', serveFile('./public/private-whisper-feedback.js'));
   app.get('/clubs/edm/club-activities.js', serveFile('./club-activities.js'));
+  app.get('/clubs/edm/vip-personal.js', serveFile('./public/vip-personal.js'));
+  app.get('/clubs/edm/vip-personal-ui.js', serveFile('./public/vip-personal-ui.js'));
   app.get('/clubs/edm/character-appearance.js', serveFile('./public/character-appearance.js'));
   app.get('/clubs/edm/character-customization.js', serveFile('./public/character-customization.js'));
   app.get('/clubs/edm/wand-customization.js', serveFile('./public/wand-customization.js'));

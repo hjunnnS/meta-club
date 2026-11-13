@@ -1,3 +1,4 @@
+import {vipCommands,vipPersonalCommand} from './vip-personal.js';
 import {validAppearance,normalizeAppearance} from './character-appearance.js';
 import {nextParadeOpening} from './parade-plan.js';
 import {clubActivities,activityCommands,activityUsage,activityTrialRules} from './club-activities.js';
@@ -54,6 +55,9 @@ export class PersonalRoom {
  }
  send(type,data){
   const a=this.self;
+  if(vipCommands.includes(type)){
+   const result=vipPersonalCommand([a,...this.ai()],a,type,data);if(result.error)this.emit('notice',result.error);else this.emit('notice','');this.publish();return;
+  }
   if(type==='clock'){const now=Date.now();this.emit('clock',{sent:Number.isFinite(data)?data:now,now,epoch:this.epoch,tracks:this.tracks});return;}
   if(type==='occupancy'){this.emit('occupancy',{channelId:'personal',people:1,capacity:1});return;}
   if(type==='activities-state'){this.emit('activities-state',{...this.activities.view(a.id),personalTrial:true});return;}
@@ -120,6 +124,7 @@ export class PersonalRoom {
   }
   if(type==='wand'&&typeof data==='boolean'){
    if(data&&!a.wand)for(const ai of this.reactive)if(Math.hypot(ai.x-a.x,ai.z-a.z)<4){ai.action='disco-point';ai.until=Date.now()+2400;}
+   if(data)a.danceProp=null;
    a.wand=data;this.publish();return;
   }
   if(type==='seat'||type==='stand'){
@@ -137,7 +142,7 @@ export class PersonalRoom {
     clearPodium(a);this.podiumClaims.delete(a.id);this.poleAnchor=null;
     const {exit,label,balcony,area,...pose}=found.seat;Object.assign(a,pose,{seat:found.index,table:pose.table??null,action:'sit'});
    }
-   this.emit('place',{...a});this.publish();return;
+   delete a.vipTowerSeat;this.emit('place',{...a});this.publish();return;
   }
   if(type==='preview-event'){
    if(data?.kind==='stop'){this.preview=null;this.publish();return;}
