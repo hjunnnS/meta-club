@@ -1,3 +1,4 @@
+import {clubInterface} from './club-interface.js';
 import {vipPersonalUI} from './vip-personal-ui.js';
 import {characterCustomization} from './character-customization.js';
 import {clubActionsUI} from './club-actions-ui.js';
@@ -9,7 +10,7 @@ import { initShop } from './shop.js';
 import { musicPlayer } from './music.js';
 const el = (id) => document.getElementById(id),
   map = document.querySelector('iframe');
-let rhythm;
+let rhythm,interfaceUI;
 let audibleTrack = null;
 let loginRequired = false;
 function showMusic(id) {
@@ -119,6 +120,7 @@ function display(data) {
   el('pole-dance').textContent=poleActive?'단상 춤 멈추기':'단상에서 춤추기';
   el('pole-dance').setAttribute('aria-pressed',String(poleActive));
   selectDance(self?.action, self?.seat != null || riding);
+  interfaceUI?.update(self,ready&&memberId?.startsWith('local-test:'));
   if (self?.action === 'dance' || dances.has(self?.action)) guide('dance');
   if (ready) {
     frame('actors', { ...data, self: room.sessionId });
@@ -149,7 +151,7 @@ function disconnected(message, reconnect) {
   frame('connection-state', false);
   frame('audible-track', null);
   if (!sceneLoaded) map.hidden = true;
-  el('seat').hidden = true;
+  el('seat').hidden = true;interfaceUI?.update(null,false);
   for (const id of ['train-join', 'train-leave']) el(id).hidden = true;
   el('train-hint').textContent = '채널 연결을 기다리는 중입니다.';
   el('performance').textContent = '';
@@ -433,4 +435,5 @@ setInterval(() => { if (ready && !document.hidden) {
   const status=music.status();
   frame('music-output-clock',{playing:status.playing,id:status.track?.id,time:status.time,sentAt:Date.now()});
 } }, 50);
+interfaceUI=clubInterface();
 enter(new URLSearchParams(location.search).get('channel') || undefined);

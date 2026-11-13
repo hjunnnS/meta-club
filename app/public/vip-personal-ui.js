@@ -9,6 +9,6 @@ export function vipPersonalUI(root,send){
   fan.textContent=hasFan?'LED 부채 내리기':'LED 부채 들기';fan.setAttribute('aria-pressed',String(hasFan));
   const on=actor.vipTowerSeat===actor.seat&&actor.seat!=null;
   tower.textContent=on?'샴페인 타워 치우기':'미니 샴페인 타워 켜기';tower.setAttribute('aria-pressed',String(on));
-  status.textContent=busy?(vipTableAnchor(actor)?'샴페인 타워는 앉은 테이블 위에 표시되고 일어나면 종료됩니다.':'자리·단상에서 나온 뒤 춤과 부채를 사용할 수 있습니다.'):'VIP 춤은 이동·다른 춤·멈춤으로 종료합니다. LED 부채와 무드봉은 교체해서 듭니다.';
+  status.textContent=vipTableAnchor(actor)?'샴페인 타워는 앉은 테이블 위에 표시되고 일어나면 종료됩니다.':'테이블에 앉으면 샴페인 타워를 사용할 수 있습니다.';
  }};
 }

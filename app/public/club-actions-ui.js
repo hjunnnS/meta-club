@@ -1,4 +1,6 @@
 export function clubActionsUI({root,dialog,shoutRoot,vipRoot,alertButton,send,frame}){
+  const legacyPanels=[...root.parentElement.querySelectorAll('details.extras')];
+  const vipPreview=vipRoot.querySelector('[data-vip-preview]'),vipPreviewNote=vipRoot.querySelector('[data-vip-preview-note]'),whisperDemo=dialog.querySelector('[data-whisper-demo]');
   const list=root.querySelector('select'),targetLabel=root.querySelector('[data-action-target]'),status=root.querySelector('output');
   const pick=root.querySelector('[data-action-pick]'),conversation=dialog.querySelector('[data-whisper-log]'),input=dialog.querySelector('input');
   let roster=[],self,selected='',privateState={messages:[],blockedIds:[]},enabled=false,personal=false,picking=false,key='',peer='',lastNotice=null,stateAt=performance.now(),activityStatus={};
@@ -19,9 +21,9 @@ export function clubActionsUI({root,dialog,shoutRoot,vipRoot,alertButton,send,fr
     dialog.querySelector('[data-whisper-send]').disabled=input.disabled||whisper>0;
     shoutRoot.querySelector('button[type="submit"]').disabled=shout>0;
     shoutRoot.querySelector('[data-shout-state]').textContent=(shout?'다음 외치기까지 '+shout+'초 · ':'')+(performing||parading?'공연 종료 후 순서대로 표시 · ':'')+'대기 '+(activityStatus.shoutWaiting||0)+'/3';
-    vipRoot.querySelector('[data-vip-preview]').hidden=!personal;
-    vipRoot.querySelector('[data-vip-preview-note]').hidden=!personal;
-    vipRoot.querySelector('[data-vip-preview]').disabled=parading;
+    vipPreview.hidden=!personal;
+    vipPreviewNote.hidden=!personal;
+    vipPreview.disabled=parading;
     vipRoot.querySelector('[data-vip-start]').disabled=parading||vip>0||gate>0||performing||imminent||activityStatus.shoutActive;
     vipRoot.querySelector('[data-vip-state]').textContent=parading?(activityStatus.paradePreview?'시험 퍼레이드 진행 중':'병 불꽃 퍼레이드 진행 중'):vip>0?'내 재사용까지 '+vip+'초':gate>0?'클럽 준비까지 '+gate+'초':personal&&opening>0?'정식 시작 가능 구간까지 '+Math.floor(opening/60)+':'+String(opening%60).padStart(2,'0')+' · 바로 보기로 먼저 확인할 수 있습니다.':performing?'정기 공연 종료 후 이용해 주세요.':imminent?'완주하려면 다음 공연까지 '+Math.ceil((activityStatus.paradeClearance||50000)/1000)+'초 이상 필요합니다.':activityStatus.shoutActive?'외치기 표시가 끝난 뒤 이용해 주세요.':'성인 여성 NPC 5명 · 약 '+(activityStatus.paradeSeconds||45)+'초 한 바퀴 · 개인 2분 / 클럽 종료 후 1분 간격';
   }
@@ -40,7 +42,7 @@ export function clubActionsUI({root,dialog,shoutRoot,vipRoot,alertButton,send,fr
     dialog.querySelector('[data-whisper-block]').textContent=blocked?'귓속말 차단 해제':'이 상대 귓속말 차단';
     input.disabled=!enabled||!actor||blocked;dialog.querySelector('[data-whisper-send]').disabled=input.disabled;
     dialog.querySelector('[data-whisper-block]').disabled=!enabled||!actor;
-    dialog.querySelector('[data-whisper-demo]').hidden=!personal;renderLimits();
+    whisperDemo.hidden=!personal;renderLimits();
   }
   function choose(id){
     if(!enabled||!target(id))return;selected=id;list.value=id;resetPick();root.open=true;
@@ -53,8 +55,8 @@ export function clubActionsUI({root,dialog,shoutRoot,vipRoot,alertButton,send,fr
     if(lastNotice?.from===id){lastNotice=null;alertButton.hidden=true;}
   }
   // These panels share one fixed screen area: opening one must not cover another.
-  for(const panel of root.parentElement.querySelectorAll('details.extras'))panel.addEventListener('toggle',()=>{
-    if(panel.open)for(const other of root.parentElement.querySelectorAll('details.extras'))if(other!==panel)other.open=false;
+  for(const panel of legacyPanels)panel.addEventListener('toggle',()=>{
+    if(panel.open)for(const other of legacyPanels)if(other!==panel)other.open=false;
   });
   list.onchange=()=>choose(list.value);
   pick.onclick=()=>{picking=!picking;pick.setAttribute('aria-pressed',String(picking));frame('action-picking',picking);if(picking)root.open=false;};
@@ -64,10 +66,10 @@ export function clubActionsUI({root,dialog,shoutRoot,vipRoot,alertButton,send,fr
   dialog.querySelector('[data-whisper-close]').onclick=()=>dialog.close();
   dialog.addEventListener('close',()=>frame('chat-active',false));
   dialog.querySelector('[data-whisper-block]').onclick=()=>send(privateState.blockedIds.includes(peer)?'whisper-unblock':'whisper-block',{to:peer});
-  dialog.querySelector('[data-whisper-demo]').onclick=()=>send('whisper-demo-incoming',{from:peer});
+  whisperDemo.onclick=()=>send('whisper-demo-incoming',{from:peer});
   alertButton.onclick=()=>{if(lastNotice)openWhisper(lastNotice.from);};
   shoutRoot.querySelector('form').onsubmit=event=>{event.preventDefault();const text=shoutRoot.querySelector('input').value;request('shout-send',{text});};
-  vipRoot.querySelector('[data-vip-preview]').onclick=()=>request('vip-preview');
+  vipPreview.onclick=()=>request('vip-preview');
   vipRoot.querySelector('[data-vip-start]').onclick=()=>request('vip-start');
   vipRoot.querySelector('[data-vip-stop]').onclick=()=>send('activities-stop');
   return {

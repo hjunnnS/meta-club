@@ -174,6 +174,8 @@ export async function startChannels(app, { origin, secret, port }) {
       res.status(409).json({ error: 'channel_unavailable' });
     }
   });
+  app.get('/clubs/edm/club-interface.js', serveFile('./public/club-interface.js'));
+  app.get('/clubs/edm/club-interface.css', serveFile('./public/club-interface.css'));
   app.get('/clubs/edm/client.js', serveFile('./public/channel-client.js'));
   app.get('/clubs/edm/podium-activity.js', serveFile('./podium-activity.js'));
   app.get('/clubs/edm/seat-presentation.js', serveFile('./public/seat-presentation.js'));
