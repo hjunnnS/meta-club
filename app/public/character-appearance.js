@@ -3,17 +3,28 @@ export const appearanceOptions={
  body:[['male','남성형'],['female','여성형']],
  hair:[['short','짧은 머리'],['bob','단발'],['long','긴 머리'],['ponytail','포니테일'],['parted','가르마'],['bald','대머리']],
  top:[['tee','티셔츠'],['tank','나시'],['jacket','재킷']],
- bottom:[['trousers','긴바지'],['shorts','반바지']],
+ bottom:[['trousers','긴바지'],['shorts','반바지'],['miniskirt','미니스커트'],['hotpants','핫팬츠']],
  glasses:[['none','착용 안 함'],['sunglasses','선글라스'],['round','둥근 안경'],['square','사각 안경']],
 };
 export const appearanceColors=[['black','블랙','#222332'],['brown','브라운','#684335'],['blond','금발·골드','#e7bd66'],['white','화이트','#e9eaf2'],['violet','라벤더','#9c83df'],['pink','로즈 핑크','#e778aa'],['blue','블루','#4f9ac5'],['teal','민트','#54bda9']];
 export const defaultAppearance=Object.freeze({body:'male',hair:'short',top:'tee',bottom:'trousers',glasses:'none',hairColor:'brown',topColor:'violet',bottomColor:'black',glassesColor:'black'});
 const keys=Object.keys(defaultAppearance);
-export const bodyHairRecommendations={male:['short','parted','bald'],female:['bob','long','ponytail']};
+export const bodyAppearanceOptions={
+ male:{hair:['short','parted','bald'],bottom:['trousers','shorts']},
+ female:{hair:['bob','long','ponytail'],bottom:['miniskirt','hotpants']},
+};
+export function appearanceChoices(body,key){const allowed=bodyAppearanceOptions[body]?.[key];return allowed?appearanceOptions[key].filter(([id])=>allowed.includes(id)):appearanceOptions[key]||appearanceColors;}
 export function validAppearance(value){
  return Boolean(value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).every(key=>keys.includes(key))&&keys.every(key=>key==='body'&&!Object.hasOwn(value,key)||Object.hasOwn(value,key)&&(appearanceOptions[key]?appearanceOptions[key].some(([id])=>id===value[key]):appearanceColors.some(([id])=>id===value[key]))));
 }
-export function normalizeAppearance(value){return Object.fromEntries(keys.map(key=>[key,(appearanceOptions[key]||appearanceColors).some(([id])=>id===value?.[key])?value[key]:defaultAppearance[key]]));}
+export function normalizeAppearance(value){
+ const normalized=Object.fromEntries(keys.map(key=>[key,(appearanceOptions[key]||appearanceColors).some(([id])=>id===value?.[key])?value[key]:defaultAppearance[key]]));
+ for(const key of ['hair','bottom']){
+  const allowed=bodyAppearanceOptions[normalized.body][key];
+  if(!allowed.includes(normalized[key]))normalized[key]=allowed[0];
+ }
+ return normalized;
+}
 export function characterAppearance(B,scene,model){
  let signature='',parts=[],inks=[],originals=new Map();
  const torsoVisible=model.torso.isVisible;
@@ -46,9 +57,16 @@ export function characterAppearance(B,scene,model){
    }
    for(const i of [1,3])for(const mesh of model.limbs[i].getChildMeshes()){
     if(mesh.name!=='leg')continue;paint(mesh,style.bottom==='trousers'?bottom:skin||mesh.material);
-    if(style.bottom==='shorts')tube('shorts leg',.105,.36,[0,-.15,0],bottom,model.limbs[i]);
+    if(['shorts','hotpants','miniskirt'].includes(style.bottom)){
+     const short=style.bottom!=='shorts';
+     tube(short?'fitted shorts leg':'shorts leg',.105,short?.23:.36,[0,short?-.085:-.15,0],bottom,model.limbs[i]);
+    }
    }
-   if(style.bottom==='shorts')ball('shorts waist',.45,.22,.34,[0,.80,0],bottom);
+   if(['shorts','hotpants'].includes(style.bottom))ball('shorts waist',female?.49:.45,.18,.34,[0,.80,0],bottom);
+   if(style.bottom==='miniskirt'){
+    const skirt=piece('mini skirt','CreateCylinder',{height:.28,diameterTop:.48,diameterBottom:.65,tessellation:24,cap:B.Mesh.CAP_ALL},[0,.74,0],bottom);
+    skirt.scaling.z=.76;
+   }
    if(style.top==='tank'){
     for(const side of [-1,1])box('tank strap',female?.043:.07,.17,.08,[side*(female?.13:.16),.31,.08],top,model.torso);
    }else if(style.top==='jacket'){
