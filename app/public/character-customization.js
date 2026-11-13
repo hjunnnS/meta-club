@@ -1,15 +1,21 @@
-import {appearanceOptions,appearanceColors,defaultAppearance,normalizeAppearance} from './character-appearance.js';
+import {appearanceOptions,appearanceColors,defaultAppearance,normalizeAppearance,bodyHairRecommendations} from './character-appearance.js';
 export function characterCustomization(root,send,frame){
  const fields=root.querySelector('[data-character-fields]'),status=root.querySelector('output');
- const names={hair:'헤어',top:'상의',bottom:'하의',glasses:'안경',hairColor:'머리 색상',topColor:'상의 색상',bottomColor:'하의 색상',glassesColor:'안경 색상'};
+ const names={body:'기본 외형',hair:'헤어',top:'상의',bottom:'하의',glasses:'안경',hairColor:'머리 색상',topColor:'상의 색상',bottomColor:'하의 색상',glassesColor:'안경 색상'};
  const selects={};let applied=null,draft={...defaultAppearance},preview=false,dirty=false,enabled=false;
  for(const key of Object.keys(names)){
   const label=document.createElement('label');label.append(names[key]+' ');const select=document.createElement('select');select.setAttribute('aria-label','캐릭터 '+names[key]);
   for(const [id,text]of appearanceOptions[key]||appearanceColors)select.append(new Option(text,id));
   label.append(select);fields.append(label);selects[key]=select;
-  select.onchange=()=>{draft=normalizeAppearance(Object.fromEntries(Object.entries(selects).map(([k,s])=>[k,s.value])));dirty=true;if(preview)frame('character-preview',draft);status.textContent='선택한 모습으로 미리보기 또는 적용할 수 있습니다.';};
+  select.onchange=()=>{
+   if(key==='body'&&selects.hair){
+    // Recommendations are hints, never restrictions or automatic outfit replacement.
+    const recommended=bodyHairRecommendations[select.value];
+    for(const option of selects.hair.options){const entry=appearanceOptions.hair.find(([id])=>id===option.value);option.textContent=entry[1]+(recommended.includes(option.value)?' · 추천':'');}
+   }
+   draft=normalizeAppearance(Object.fromEntries(Object.entries(selects).map(([k,s])=>[k,s.value])));dirty=true;if(preview)frame('character-preview',draft);status.textContent='선택한 모습으로 미리보기 또는 적용할 수 있습니다.';};
  }
- const sync=()=>{for(const [key,select]of Object.entries(selects))select.value=draft[key];};sync();
+ const sync=()=>{for(const [key,select]of Object.entries(selects))select.value=draft[key];for(const option of selects.hair.options){const entry=appearanceOptions.hair.find(([id])=>id===option.value);option.textContent=entry[1]+(bodyHairRecommendations[draft.body].includes(option.value)?' · 추천':'');}};sync();
  const cancel=()=>{preview=false;frame('character-preview',null);};
  root.querySelector('[data-character-preview]').onclick=()=>{if(!enabled)return;preview=true;frame('character-preview',draft);status.textContent='내 캐릭터에 미리보기 중 · 적용 전 모습은 공유되지 않습니다.';};
  root.querySelector('[data-character-apply]').onclick=()=>{if(!enabled)return;send('character-style',{...draft});dirty=false;cancel();status.textContent='선택한 꾸미기를 적용했습니다. 이번 접속에서 유지됩니다.';};
