@@ -11,7 +11,7 @@ export function clubActionsUI({root,dialog,shoutRoot,vipRoot,alertButton,send,fr
   function renderLimits(){
     const whisper=seconds('whisperUntil'),shout=seconds('shoutUntil'),vip=seconds('paradeUntil');
     const gate=Math.max(0,Math.ceil(((activityStatus.paradeNextAt||0)-clock())/1000));
-    const imminent=activityStatus.nextShowAt!=null&&activityStatus.nextShowAt-clock()<15000;
+    const imminent=activityStatus.nextShowAt!=null&&activityStatus.nextShowAt-clock()<(activityStatus.paradeClearance||50000);
     const performing=activityStatus.showActive,parading=activityStatus.paradeActiveUntil>clock();
     const whisperHint=dialog.querySelector('[data-whisper-cooldown]');
     whisperHint.textContent=whisper?'다음 귓속말까지 '+whisper+'초':'귓속말은 2초에 한 번 보낼 수 있습니다.';
@@ -19,7 +19,7 @@ export function clubActionsUI({root,dialog,shoutRoot,vipRoot,alertButton,send,fr
     shoutRoot.querySelector('button[type="submit"]').disabled=shout>0;
     shoutRoot.querySelector('[data-shout-state]').textContent=(shout?'다음 외치기까지 '+shout+'초 · ':'')+(performing||parading?'공연 종료 후 순서대로 표시 · ':'')+'대기 '+(activityStatus.shoutWaiting||0)+'/3';
     vipRoot.querySelector('[data-vip-start]').disabled=vip>0||gate>0||performing||imminent||activityStatus.shoutActive;
-    vipRoot.querySelector('[data-vip-state]').textContent=parading?'병 불꽃 퍼레이드 진행 중':vip>0?'내 재사용까지 '+vip+'초':gate>0?'클럽 준비까지 '+gate+'초':performing||imminent?'정기 공연 종료 후 이용해 주세요.':activityStatus.shoutActive?'외치기 표시가 끝난 뒤 이용해 주세요.':'NPC 5명 · 10초 · 개인 2분 / 클럽 종료 후 1분 간격';
+    vipRoot.querySelector('[data-vip-state]').textContent=parading?'병 불꽃 퍼레이드 진행 중':vip>0?'내 재사용까지 '+vip+'초':gate>0?'클럽 준비까지 '+gate+'초':performing?'정기 공연 종료 후 이용해 주세요.':imminent?'완주하려면 다음 공연까지 '+Math.ceil((activityStatus.paradeClearance||50000)/1000)+'초 이상 필요합니다.':activityStatus.shoutActive?'외치기 표시가 끝난 뒤 이용해 주세요.':'성인 여성 NPC 5명 · 약 '+(activityStatus.paradeSeconds||45)+'초 한 바퀴 · 개인 2분 / 클럽 종료 후 1분 간격';
   }
   function renderConversation(){
     const actor=target(peer);dialog.querySelector('[data-whisper-title]').textContent=(actor?.nickname||'상대')+' · 귓속말';

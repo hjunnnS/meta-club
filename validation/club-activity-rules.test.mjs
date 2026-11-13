@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {clubActivities,activityUsage} from '../app/club-activities.js';
+import {clubActivities,activityUsage,activityTrialRules} from '../app/club-activities.js';
 import {execFileSync} from 'node:child_process';
+const D=activityTrialRules.paradeSeconds*1000,C=activityTrialRules.paradeClearance;
 let seq=0;const request=data=>({requestId:'test-'+ ++seq,...data});
 function fixture({usage=activityUsage(),performances}={}){
  let time=1000,actors=Array.from({length:7},(_,i)=>({id:String(i),identity:'user-'+i,nickname:'손님'+i})),schedule={active:null,next:null};
@@ -38,7 +39,7 @@ test('main show priority holds shouts without changing its clock; queued shouts 
  assert(a.command('1','vip-start',request()).error);assert(!a.view('1').cooldowns.paradeUntil);
  f.at(17000);assert.equal(a.snapshot().shout.text,'공연 후');assert(a.command('1','vip-start',request()).error);
  f.at(22000);assert(a.command('1','vip-start',request()).ok);assert(a.command('2','shout-send',request({text:'퍼레이드 후'})).queued);assert.equal(a.snapshot().shout,null);
- f.at(32000);assert.equal(a.snapshot().parade,null);assert.equal(a.snapshot().shout.text,'퍼레이드 후');
+ f.at(22000+D);assert.equal(a.snapshot().parade,null);assert.equal(a.snapshot().shout.text,'퍼레이드 후');
 });
 test('no shout begins without 5s clearance and preview interruption preserves the unused display duration',()=>{
  const f=fixture(),{a}=f;f.shows({active:null,next:{start:3000}});a.command('0','shout-send',request({text:'대기'}));assert.equal(a.snapshot().shout,null);
@@ -47,13 +48,13 @@ test('no shout begins without 5s clearance and preview interruption preserves th
  f.at(18000);f.shows({active:{kind:'laser',start:18000,seconds:16},next:{start:90000}});assert.equal(a.snapshot().shout,null);
  f.at(34000);const resumed=a.snapshot().shout;assert.equal(resumed.seconds,4);assert.equal(resumed.start,34000);f.at(38000);assert.equal(a.snapshot().shout,null);
 });
-test('parade 15s start clearance, 10s lifetime, personal 120s and club 60s from natural end',()=>{
- const f=fixture(),{a}=f;f.shows({active:null,next:{start:15999}});assert(a.command('0','vip-start',request()).error);assert(!a.view('0').cooldowns.paradeUntil);
- f.shows({active:null,next:{start:16000}});assert(a.command('0','vip-start',request()).ok);assert.equal(a.snapshot().parade.count,5);assert.equal(a.snapshot().parade.seconds,10);
- assert(a.command('1','vip-start',request()).error);f.at(11000);assert.equal(a.snapshot().parade,null);
- f.shows({active:null,next:null});f.at(70999);assert.equal(a.command('1','vip-start',request()).retryAfterMs,1);f.at(71000);assert(a.command('1','vip-start',request()).ok);
+test('parade full-lap clearance and lifetime, personal 120s and club 60s from natural end',()=>{
+ const f=fixture(),{a}=f;f.shows({active:null,next:{start:1000+C-1}});assert(a.command('0','vip-start',request()).error);assert(!a.view('0').cooldowns.paradeUntil);
+ f.shows({active:null,next:{start:1000+C}});assert(a.command('0','vip-start',request()).ok);assert.equal(a.snapshot().parade.count,5);assert.equal(a.snapshot().parade.seconds,activityTrialRules.paradeSeconds);
+ assert(a.command('1','vip-start',request()).error);f.at(1000+D);assert.equal(a.snapshot().parade,null);
+ f.shows({active:null,next:null});f.at(1000+D+60000-1);assert.equal(a.command('1','vip-start',request()).retryAfterMs,1);f.at(1000+D+60000);assert(a.command('1','vip-start',request()).ok);
  assert(a.command('0','vip-start',request()).error);f.at(121000);assert(!a.view('0').cooldowns.paradeUntil||a.view('0').cooldowns.paradeUntil<=121000);assert(a.command('0','vip-start',request()).error);
- f.at(141000);assert(a.command('0','vip-start',request()).ok);
+ f.at(121000+2*D);assert(a.command('0','vip-start',request()).ok);
 });
 test('early stop/leave starts club cooldown at actual end; cross-room lease cannot be overwritten by an old room',()=>{
  const shared=activityUsage(),f=fixture({usage:shared});assert(f.a.command('0','vip-start',request()).ok);f.at(3000);f.a.command('0','activities-stop');assert.equal(f.a.snapshot().activityStatus.paradeNextAt,63000);
@@ -61,7 +62,7 @@ test('early stop/leave starts club cooldown at actual end; cross-room lease cann
  f.at(63001);assert(f.a.command('2','vip-start',request()).error);
  other.at(65000);other.a.leave('1');assert.equal(other.a.snapshot().activityStatus.paradeNextAt,125000);
  const stale=fixture({usage:shared});stale.at(125000);assert(stale.a.command('2','vip-start',request()).ok);
- other.at(125001);other.a.snapshot();assert.equal(shared.gate().activeUntil,135000);
+ other.at(125001);other.a.snapshot();assert.equal(shared.gate().activeUntil,125000+D);
 });
 test('two live browser usage adapters observe the same cooldown deadlines without storing messages',()=>{
  const values=new Map(),storage={getItem:k=>values.get(k)||null,setItem:(k,v)=>values.set(k,v)},a=fixture({usage:activityUsage({storage})}),b=fixture({usage:activityUsage({storage})});

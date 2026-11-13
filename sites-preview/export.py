@@ -8,7 +8,7 @@ def put(relative,content):
  p=dist/relative;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(content)
 def copy(source,relative):
  p=dist/relative;p.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(ROOT/source,p)
-modules=['shout-screen.js','private-whisper-feedback.js','social-effects.js','wand-ornament.js','club-actions-ui.js','club-event-renderer.js','wand-customization.js','wand-trail.js','seat-presentation.js','pole-dance.js','live-scene.js','music.js','free-dance.js','avatar.js','ceiling-lights.js','ambience.js','rhythm-floor.js','click-walk.js','scene-look.js','activity-feedback.js','rhythm-game.js','neon-horizon-chart.json']
+modules=['parade-woman.js','shout-screen.js','private-whisper-feedback.js','social-effects.js','wand-ornament.js','club-actions-ui.js','club-event-renderer.js','wand-customization.js','wand-trail.js','seat-presentation.js','pole-dance.js','live-scene.js','music.js','free-dance.js','avatar.js','ceiling-lights.js','ambience.js','rhythm-floor.js','click-walk.js','scene-look.js','activity-feedback.js','rhythm-game.js','neon-horizon-chart.json']
 for name in modules:copy('app/public/'+name,'clubs/edm/'+name)
 for retired in ['birthday-ui.js','birthday-requests.js']:
  (dist/'clubs/edm'/retired).unlink(missing_ok=True)
@@ -16,6 +16,7 @@ for retired in ['birthday-ui.js','birthday-requests.js']:
 copy('app/public/live-scene.js','clubs/edm/scene.js')
 copy('app/social-trial.js','clubs/edm/social-trial.js')
 copy('app/club-activities.js','clubs/edm/club-activities.js')
+copy('app/parade-plan.js','clubs/edm/parade-plan.js')
 copy('app/podium-activity.js','clubs/edm/podium-activity.js')
 copy('app/edm-layout.js','clubs/edm/edm-layout.js');copy('app/visitors.js','clubs/edm/visitors.js')
 put('clubs/edm/local-room.js',(ROOT/'sites-preview/local-room.js').read_text())

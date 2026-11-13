@@ -183,6 +183,8 @@ export async function startChannels(app, { origin, secret, port }) {
   app.get('/clubs/edm/club-actions-ui.js', serveFile('./public/club-actions-ui.js'));
   app.get('/clubs/edm/club-event-renderer.js', serveFile('./public/club-event-renderer.js'));
   app.get('/clubs/edm/shout-screen.js', serveFile('./public/shout-screen.js'));
+  app.get('/clubs/edm/parade-plan.js', serveFile('./parade-plan.js'));
+  app.get('/clubs/edm/parade-woman.js', serveFile('./public/parade-woman.js'));
   app.get('/clubs/edm/private-whisper-feedback.js', serveFile('./public/private-whisper-feedback.js'));
   app.get('/clubs/edm/club-activities.js', serveFile('./club-activities.js'));
   app.get('/clubs/edm/wand-customization.js', serveFile('./public/wand-customization.js'));

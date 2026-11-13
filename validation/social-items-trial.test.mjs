@@ -5,7 +5,7 @@ import {mkdtempSync,readFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {execFileSync} from 'node:child_process';
-import {clubActivities} from '../app/club-activities.js';
+import {activityTrialRules,clubActivities} from '../app/club-activities.js';
 import {socialDurations} from '../app/social-trial.js';
 import {wandThemes,wandDecorations,wandTrails,wandSizes,validWandStyle,normalizeWandStyle} from '../app/public/wand-customization.js';
 import {wandOrnament} from '../app/public/wand-ornament.js';
@@ -13,6 +13,7 @@ import {createWandTrail} from '../app/public/wand-trail.js';
 const B=createRequire(import.meta.url)('../dance/node_modules/babylonjs/babylon.js');
 registerHooks({resolve(specifier,context,next){
  if(specifier==='/clubs/edm/edm-layout.js'||specifier==='./edm-layout.js'&&context.parentURL?.includes('/app/public/'))return {url:new URL('../app/edm-layout.js',import.meta.url).href,shortCircuit:true};
+ if(specifier==='./parade-plan.js'&&context.parentURL?.includes('/app/public/'))return {url:new URL('../app/parade-plan.js',import.meta.url).href,shortCircuit:true};
  if(specifier==='./social-trial.js'&&context.parentURL?.includes('/app/public/'))return {url:new URL('../app/social-trial.js',import.meta.url).href,shortCircuit:true};
  if(specifier==='/stage/festival/events.js')return {url:new URL('../stage/festival/events.js',import.meta.url).href,shortCircuit:true};
  return next(specifier,context);
@@ -20,6 +21,7 @@ registerHooks({resolve(specifier,context,next){
 const {socialEffects}=await import('../app/public/social-effects.js');
 const {edmStage,edmFloor}=await import('../app/edm-layout.js');
 const {clubEventRenderer,paradePose}=await import('../app/public/club-event-renderer.js');
+const P=activityTrialRules.paradeSeconds;
 const roster=()=>['a','b','c'].map(id=>({id,nickname:id,identity:id}));
 let sequence=0;const request=extra=>({requestId:String(++sequence),...extra});
 test('private whisper isolation, notifications, filtering, duplicates, blocking and reconnect identity',()=>{
@@ -37,15 +39,15 @@ test('private whisper isolation, notifications, filtering, duplicates, blocking 
  activity.command('b','whisper-unblock',{to:'a-new'});now+=2000;assert(activity.command('a-new','whisper-send',request({to:'b',text:'hello'})).ok);
  for(const input of [null,[],2,'bad'])assert(activity.command('b','vip-start',input).error);
 });
-test('gifts, FIFO five-second shouts, ten-second five-NPC parade, cancellation and actor departure',()=>{
+test('gifts, FIFO five-second shouts, full-lap five-NPC parade, cancellation and actor departure',()=>{
  let now=1000,actors=roster();const a=clubActivities({actors:()=>actors,now:()=>now,blockedMessage:t=>t.includes('금지')});
  for(const kind of Object.keys(socialDurations))assert(a.command('a','gift-send',request({to:'b',kind})).ok);
  assert.equal(a.snapshot().socialEvents.length,3);assert(a.command('a','gift-send',request({to:'b',kind:'birthday'})).error);
  assert(a.command('a','shout-send',request({text:'금지'})).error);a.command('a','shout-send',request({text:'첫 외치기'}));a.command('b','shout-send',request({text:'두 번째'}));
  assert.equal(a.snapshot().shout.text,'첫 외치기');now=6000;assert.equal(a.snapshot().shout.text,'두 번째');now=11000;assert.equal(a.snapshot().shout,null);
- assert(a.command('a','vip-start',request()).ok);const parade=a.snapshot().parade;assert.equal(parade.count,5);assert.equal(parade.seconds,10);
+ assert(a.command('a','vip-start',request()).ok);const parade=a.snapshot().parade;assert.equal(parade.count,5);assert.equal(parade.seconds,P);
  assert(a.command('b','vip-start',request()).error);a.command('c','activities-stop');assert(a.snapshot().parade);
- now+=10000;assert.equal(a.snapshot().parade,null);assert.equal(a.snapshot().socialEvents.length,0);
+ now+=P*1000;assert.equal(a.snapshot().parade,null);assert.equal(a.snapshot().socialEvents.length,0);
  a.command('a','vip-start',request());a.command('a','activities-stop');assert.equal(a.snapshot().parade,null);
  a.command('a','gift-send',request({to:'b',kind:'cake'}));actors=actors.filter(x=>x.id!=='b');assert.equal(a.snapshot().socialEvents.length,0);
 });
@@ -75,17 +77,17 @@ test('head-level hearts, held bouquet/cake, seat following, pose/wand restore an
  }assert.equal(scene.lights.length,1);assert.equal(house.intensity,.52);assert(!scene.meshes.some(m=>m.name.startsWith('social ')));
  }finally{scene.dispose();engine.dispose();}
 });
-test('shout overlay expires independently; five parade staff leave after ten seconds without touching house scene',()=>{
+test('shout overlay expires independently; five parade staff leave after the complete lap without touching house scene',()=>{
  const engine=new B.NullEngine(),scene=new B.Scene(engine),house=B.MeshBuilder.CreateBox('house',{},scene);
  const renderer=clubEventRenderer(B,scene,null,a=>model(scene,a.id),{messageScreen:()=>{const mesh=B.MeshBuilder.CreatePlane('shout overlay',{},scene);mesh.material=new B.StandardMaterial('shout',scene);return mesh;}});
- try{renderer.set({shout:{id:1,text:'hello',nickname:'A',start:1000,seconds:5},parade:{id:1,start:1000,seconds:10,count:5}});renderer.render(1500);assert(renderer.hasScreen());const wings=scene.meshes.filter(m=>m.name.startsWith('shout wing '));assert.equal(wings.length,2);assert(wings[0].position.x<0&&wings[1].position.x>0);assert(wings.every(m=>Math.abs(m.position.y-edmStage.wingScreens.y)<.001));assert.equal(renderer.count(),5);assert.equal(scene.meshes.filter(m=>m.name==='VIP bottle spark').length,90);
-  for(let t=0;t<=10;t+=.1)for(let i=0;i<5;i++){const p=paradePose(t,i);assert(Object.values(p).every(Number.isFinite));assert(Math.abs(p.x)<=edmFloor.width/2+1);assert(p.z>=edmFloor.minZ&&p.z<=edmFloor.maxZ+1);}
-  renderer.render(6000);assert(!renderer.hasScreen());assert.equal(renderer.count(),5);renderer.render(11000);assert.equal(renderer.count(),0);assert.equal(scene.meshes.length,1);assert(!house.isDisposed());
+ try{renderer.set({shout:{id:1,text:'hello',nickname:'A',start:1000,seconds:5},parade:{id:1,start:1000,seconds:P,count:5}});renderer.render(1500);assert(renderer.hasScreen());const wings=scene.meshes.filter(m=>m.name.startsWith('shout wing '));assert.equal(wings.length,2);assert(wings[0].position.x<0&&wings[1].position.x>0);assert(wings.every(m=>Math.abs(m.position.y-edmStage.wingScreens.y)<.001));assert.equal(renderer.count(),5);assert.equal(scene.meshes.filter(m=>m.name==='VIP bottle spark').length,90);
+  for(let t=0;t<=P;t+=.1)for(let i=0;i<5;i++){const p=paradePose(t,i);assert(Object.values(p).every(Number.isFinite));assert(Math.abs(p.x)<=edmFloor.width/2+1);assert(p.z>=edmFloor.minZ&&p.z<=edmFloor.maxZ+1);}
+  renderer.render(6000);assert(!renderer.hasScreen());assert.equal(renderer.count(),5);renderer.render(1000+P*1000);assert.equal(renderer.count(),0);assert.equal(scene.meshes.length,1);assert(!house.isDisposed());
  }finally{scene.dispose();engine.dispose();}
 });
 test('Colyseus handler applies customization and gifts, keeps whispers private, rejects AI targets and forged simulation',async()=>{
  process.env.CLUB_LOCAL_TEST='1';process.env.AUTH_URL='https://localhost:18801';process.env.CLUB_DB=join(mkdtempSync(join(tmpdir(),'club-activities-')),'club.sqlite');
- const {EdmRoom,rooms,connected}=await import('../app/club-room.js');const room=new EdmRoom(),handlers=new Map();room.roomId='club-activities-check';room.onMessage=(k,h)=>handlers.set(k,h);room.setSimulationInterval=room.broadcast=()=>{};room.onCreate();
+ const {EdmRoom,rooms,connected}=await import('../app/club-room.js');const room=new EdmRoom(),handlers=new Map();room.roomId='club-activities-check';room.onMessage=(k,h)=>handlers.set(k,h);room.setSimulationInterval=room.broadcast=()=>{};room.onCreate();room.epoch-=110000;
  const clients=['sender','recipient','outsider'].map(sessionId=>({sessionId,messages:[],send(kind,data){this.messages.push({kind,data:structuredClone(data)});}}));
  try{for(const c of clients){room.clients.push(c);room.onJoin(c,{identity:'local-test:'+c.sessionId});}const [a,b,c]=clients;
   assert(!handlers.has('birthday-propose'));const style={color:'rose',decoration:'cloud',trail:'double',size:'default'};handlers.get('wand-style')(a,style);assert.deepEqual(room.member(a).wandStyle,style);
@@ -118,7 +120,7 @@ test('new shout artwork pulses within its own plane; parcel gifts and both parad
  try{
   fx.set([{id:'wrap',kind:'bouquet',from:'a',to:'b',start:1000,seconds:8}]);fx.render(2000,models);assert(scene.getMeshByName('social bouquet wrap'));assert.equal(scene.meshes.filter(m=>m.name==='social flower centre').length,11);assert.equal(models.get('b').wandVisible,false);
   fx.set([{id:'cake',kind:'cake',from:'a',to:'b',start:2000,seconds:8}]);fx.render(3000,models);assert.equal(scene.meshes.filter(m=>m.name==='social cake berry').length,6);assert(scene.getMeshByName('social cake top icing'));fx.stop();assert.equal(models.get('b').wandVisible,true);
-  render.set({parade:{id:'hands',start:1000,seconds:10,count:5}});render.render(3000);const bottles=scene.transformNodes.filter(n=>n.name==='VIP bottle holder');assert.equal(bottles.length,10);assert(B.Vector3.Distance(bottles[0].position,bottles[1].position)>.5);
+  render.set({parade:{id:'hands',start:1000,seconds:P,count:5}});render.render(3000);const bottles=scene.transformNodes.filter(n=>n.name==='VIP bottle holder');assert.equal(bottles.length,10);assert(B.Vector3.Distance(bottles[0].position,bottles[1].position)>.5);
   render.stop();assert(!scene.getMeshByName('VIP beer bottle'));
  }finally{scene.dispose();engine.dispose();}
 });
@@ -127,5 +129,22 @@ test('private whisper receipt tracks only its local target and is removed after 
  let personalValue;const feedback=privateWhisperFeedback(B,scene,null,{balloonFactory:personal=>{personalValue=personal;return B.MeshBuilder.CreatePlane('test private receipt',{},scene);}});
  try{feedback.show('recipient',true,1000);feedback.render(1200,models);assert.equal(personalValue,true);const balloon=scene.getMeshByName('test private receipt');assert.equal(balloon.position.x,3);assert(balloon.position.y>2);
   models.get('recipient').root.position.set(5,4,2);feedback.render(1300,models);assert.equal(balloon.position.x,5);assert(balloon.position.y>6);feedback.render(3800,models);assert(!feedback.active());assert(!scene.getMeshByName('test private receipt'));
+ }finally{scene.dispose();engine.dispose();}
+});
+
+test('all five adult women complete one slow lap with clothed bra tops and two held bottles, then clean up',async()=>{
+ const {paradePlan,paradeRoute}=await import('../app/parade-plan.js');
+ assert.equal(P,paradePlan.seconds);assert(P>35&&P<60);
+ for(let i=0;i<5;i++){
+  const start=paradePose(0,i),end=paradePose(P,i);assert(Math.hypot(start.x-end.x,start.z-end.z)<1e-6);
+  let distance=0,last=start;const nearest=[Infinity,Infinity,Infinity,Infinity];
+  for(let t=.1;t<=P;t+=.1){const pose=paradePose(t,i),d=Math.hypot(pose.x-last.x,pose.z-last.z);assert(d<=.19);distance+=d;last=pose;paradeRoute.forEach((p,j)=>nearest[j]=Math.min(nearest[j],Math.hypot(pose.x-p[0],pose.z-p[1])));}
+  assert(Math.abs(distance-paradePlan.perimeter)<.7);assert(nearest.every(d=>d<.2));
+ }
+ const engine=new B.NullEngine(),scene=new B.Scene(engine);const renderer=clubEventRenderer(B,scene,null,a=>model(scene,a.id));
+ try{renderer.set({parade:{id:'women',start:1000,seconds:P,count:5}});renderer.render(3000);
+  const women=scene.transformNodes.filter(n=>n.metadata?.role==='parade');assert.equal(women.length,5);assert(women.every(w=>w.metadata.ageGroup==='adult'&&w.metadata.gender==='woman'));
+  const tops=scene.meshes.filter(m=>m.name==='parade woman clothed bust');assert.equal(tops.length,10);assert(tops.every(m=>m.material.alpha===1));assert.equal(scene.meshes.filter(m=>m.name==='VIP beer bottle').length,10);
+  renderer.render(1000+P*1000);assert.equal(renderer.count(),0);assert(!scene.meshes.some(m=>m.name.startsWith('parade woman ')));
  }finally{scene.dispose();engine.dispose();}
 });

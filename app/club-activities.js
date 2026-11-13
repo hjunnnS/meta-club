@@ -1,6 +1,7 @@
+import {paradePlan} from './parade-plan.js';
 import {socialTrial} from './social-trial.js';
 // Approved activity rules; prices, ownership and permanent message storage remain outside scope.
-export const activityTrialRules=Object.freeze({shoutSeconds:5,shoutMaxLength:20,shoutCooldown:30000,shoutQueue:3,whisperMaxLength:200,whisperCooldown:2000,paradeSeconds:10,paradeCount:5,paradeCooldown:120000,paradeClubCooldown:60000,paradeClearance:15000});
+export const activityTrialRules=Object.freeze({shoutSeconds:5,shoutMaxLength:20,shoutCooldown:30000,shoutQueue:3,whisperMaxLength:200,whisperCooldown:2000,paradeSeconds:paradePlan.seconds,paradeCount:5,paradeCooldown:120000,paradeClubCooldown:60000,paradeClearance:(paradePlan.seconds+5)*1000});
 export const activityCommands=['gift-send','whisper-send','whisper-block','whisper-unblock','shout-send','vip-start','activities-stop'];
 const mainShows=new Set(['laser','phoenix','whale','dragon','jellyfish','butterflies']);
 // Server instances share this store within the running service. The independent Sites adapter
@@ -42,7 +43,7 @@ export function clubActivities({actors,blockedMessage=()=>false,identity=id=>id,
   if(shout?.paused&&!busy&&free>=shout.remainingMs){shout={...shout,start:time,seconds:shout.remainingMs/1000,paused:false};}
   while(!shout&&!busy&&free>=rules.shoutSeconds*1000&&queue.length){const next=queue.shift();if(actor(next.from))shout={...next,start:time,paused:false};}
  }
- function publicStatus(){const show=showState(),gate=usage.gate();return {showActive:Boolean(show.active),nextShowAt:show.next?.start??null,paradeActiveUntil:gate.activeUntil,paradeNextAt:gate.nextAt,shoutWaiting:queue.length,shoutActive:Boolean(shout&&!shout.paused)};}
+ function publicStatus(){const show=showState(),gate=usage.gate();return {showActive:Boolean(show.active),nextShowAt:show.next?.start??null,paradeSeconds:rules.paradeSeconds,paradeClearance:rules.paradeClearance,paradeActiveUntil:gate.activeUntil,paradeNextAt:gate.nextAt,shoutWaiting:queue.length,shoutActive:Boolean(shout&&!shout.paused)};}
  function command(who,type,input={}){
   if(!input||typeof input!=='object'||Array.isArray(input))return {error:'요청 형식을 확인해 주세요.'};
   const sender=actor(who);if(!sender)return {error:'클럽에 다시 입장해 주세요.'};

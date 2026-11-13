@@ -1,19 +1,9 @@
-import {edmFloor,edmStage} from './edm-layout.js';
+import {paradePose} from './parade-plan.js';
+export {paradePose,paradeRoute} from './parade-plan.js';
+import {paradeWoman} from './parade-woman.js';
+import {edmStage} from './edm-layout.js';
 import {shoutScreen} from './shout-screen.js';
 
-// Follow the rectangular floor edge at walking pace, turning the front-left corner.
-// The rear edge stays in front of the DJ platform; podiums, tables and stairs are untouched.
-const routeX=edmFloor.width/2+.9,routeFront=edmFloor.maxZ+.9,routeRear=edmFloor.minZ+1;
-export const paradeRoute=[[routeX,routeFront],[-routeX,routeFront],[-routeX,routeRear],[routeX,routeRear]];
-export function paradePose(age,index){
- const path=paradeRoute,lengths=path.map((p,i)=>Math.hypot(path[(i+1)%path.length][0]-p[0],path[(i+1)%path.length][1]-p[1])),total=lengths.reduce((a,b)=>a+b,0);
- let distance=((age*2.7-index*1.1)%total+total)%total,i=0;
- while(distance>lengths[i]&&i<lengths.length-1){distance-=lengths[i];i++;}
- const a=path[i],b=path[(i+1)%path.length],t=distance/lengths[i],next=path[(i+2)%path.length];
- const yaw=Math.atan2(a[0]-b[0],a[1]-b[1]),turn=Math.min(1,Math.max(0,(distance-lengths[i]+.75)/.75));
- const nextYaw=Math.atan2(b[0]-next[0],b[1]-next[1]),delta=Math.atan2(Math.sin(nextYaw-yaw),Math.cos(nextYaw-yaw));
- return {x:a[0]+(b[0]-a[0])*t,y:.018,z:a[1]+(b[1]-a[1])*t,yaw:yaw+delta*turn};
-}
 export function clubEventRenderer(B,scene,glow,make,{messageScreen=(text,name)=>shoutScreen(B,scene,text,name)}={}){
  let nextShout=null,nextParade=null,screens=[],screenId=null,staff=[],paradeId=null,bottleInk,creamInk;
  function clearScreen(){for(const screen of screens){glow?.removeExcludedMesh(screen);const ink=screen.material,texture=ink?.emissiveTexture;screen.dispose();ink?.dispose();texture?.dispose();}screens=[];screenId=null;}
@@ -33,7 +23,7 @@ export function clubEventRenderer(B,scene,glow,make,{messageScreen=(text,name)=>
   bottleInk=new B.StandardMaterial('VIP green bottles',scene);bottleInk.diffuseColor=B.Color3.FromHexString('#145a39');bottleInk.specularColor=new B.Color3(.45,.45,.45);
   creamInk=new B.StandardMaterial('VIP bottle labels',scene);creamInk.diffuseColor=B.Color3.FromHexString('#ffe2a0');
   for(let i=0;i<event.count;i++){
-   const pose=paradePose(0,i),model=make({id:event.id+'-staff-'+i,ai:true,nickname:'VIP 스태프 '+(i+1),avatar:['gold','teal','rose','indigo','gold'][i],...pose,action:'walk'});
+   const pose=paradePose(0,i),model=paradeWoman(B,scene,make({id:event.id+'-staff-'+i,ai:false,nickname:'VIP 스태프 '+(i+1),avatar:['gold','teal','rose','indigo','gold'][i],...pose,action:'walk'}),i);
    model.near.setEnabled(true);model.far.setEnabled(false);
    const bottles=[];for(const arm of [0,2]){
    const bottle=new B.TransformNode('VIP bottle holder',scene);
@@ -56,7 +46,7 @@ export function clubEventRenderer(B,scene,glow,make,{messageScreen=(text,name)=>
   if(paradeId!==nextParade.id)startParade(nextParade);
   const fade=Math.max(0,Math.min(1,age/.35,(nextParade.seconds-age)/.45));
   for(const entry of staff){
-   const {model,bottles,index}=entry,pose=paradePose(age,index),step=Math.sin(age*8-index*.7);
+   const {model,bottles,index}=entry,pose=paradePose(age,index,nextParade.seconds),step=Math.sin(age*5.2-index*.7);
    model.root.position.set(pose.x,pose.y,pose.z);model.root.rotation.y=pose.yaw;model.near.position.y=Math.abs(step)*.035;
    model.limbs.forEach((joint,i)=>{joint.rotationQuaternion=null;joint.rotation.x=i%2===0?-1.20+step*.07:.50*step*(i<2?1:-1);joint.rotation.z=i%2===0?(i===0?-.14:.14):0;});
    model.root.getChildMeshes().forEach(mesh=>mesh.visibility=fade);
