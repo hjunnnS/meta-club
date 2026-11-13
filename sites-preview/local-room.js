@@ -1,4 +1,4 @@
-import {vipCommands,vipPersonalCommand} from './vip-personal.js';
+import {vipCommands,vipPersonalCommand} from './vip-personal-state.js';
 import {validAppearance,normalizeAppearance} from './character-appearance.js';
 import {nextParadeOpening} from './parade-plan.js';
 import {clubActivities,activityCommands,activityUsage,activityTrialRules} from './club-activities.js';

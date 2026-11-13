@@ -1,4 +1,4 @@
-import {vipCommands,vipPersonalCommand} from './public/vip-personal.js';
+import {vipCommands,vipPersonalCommand} from './vip-personal-state.js';
 import {validAppearance,normalizeAppearance} from './public/character-appearance.js';
 import {clubActivities,activityCommands,activityUsage} from './club-activities.js';
 import {validWandStyle,normalizeWandStyle} from './public/wand-customization.js';
