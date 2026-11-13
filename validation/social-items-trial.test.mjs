@@ -18,11 +18,12 @@ registerHooks({resolve(specifier,context,next){
  return next(specifier,context);
 }});
 const {socialEffects}=await import('../app/public/social-effects.js');
+const {edmStage}=await import('../app/edm-layout.js');
 const {clubEventRenderer,paradePose}=await import('../app/public/club-event-renderer.js');
 const roster=()=>['a','b','c'].map(id=>({id,nickname:id,identity:id}));
 let sequence=0;const request=extra=>({requestId:String(++sequence),...extra});
 test('private whisper isolation, notifications, filtering, duplicates, blocking and reconnect identity',()=>{
- let actors=roster();const activity=clubActivities({actors:()=>actors,identity:id=>actors.find(a=>a.id===id)?.identity,blockedMessage:t=>t.includes('금지')});
+ let now=1000,actors=roster();const activity=clubActivities({now:()=>now,actors:()=>actors,identity:id=>actors.find(a=>a.id===id)?.identity,blockedMessage:t=>t.includes('금지')});
  const input=request({to:'b',text:'안녕하세요',from:'c'}),reply=activity.command('a','whisper-send',input);
  assert.equal(reply.notification.to,'b');assert.equal(reply.notification.from,'a');assert.equal(activity.command('a','whisper-send',input).duplicate,true);
  assert.equal(activity.view('a').messages.length,1);assert.equal(activity.view('b').messages.length,1);assert.equal(activity.view('c').messages.length,0);
@@ -33,7 +34,7 @@ test('private whisper isolation, notifications, filtering, duplicates, blocking 
  assert(activity.command('b','whisper-send',request({to:'a',text:'hello'})).error);
  actors[0]={id:'a-new',identity:'a',nickname:'A'};assert.deepEqual(activity.view('b').blockedIds,['a-new']);
  assert(activity.command('a-new','whisper-send',request({to:'b',text:'hello'})).error);
- activity.command('b','whisper-unblock',{to:'a-new'});assert(activity.command('a-new','whisper-send',request({to:'b',text:'hello'})).ok);
+ activity.command('b','whisper-unblock',{to:'a-new'});now+=2000;assert(activity.command('a-new','whisper-send',request({to:'b',text:'hello'})).ok);
  for(const input of [null,[],2,'bad'])assert(activity.command('b','vip-start',input).error);
 });
 test('gifts, FIFO three-second shouts, ten-second five-NPC parade, cancellation and actor departure',()=>{
@@ -77,7 +78,7 @@ test('head-level hearts, held bouquet/cake, seat following, pose/wand restore an
 test('shout overlay expires independently; five parade staff leave after ten seconds without touching house scene',()=>{
  const engine=new B.NullEngine(),scene=new B.Scene(engine),house=B.MeshBuilder.CreateBox('house',{},scene);
  const renderer=clubEventRenderer(B,scene,null,a=>model(scene,a.id),{messageScreen:()=>{const mesh=B.MeshBuilder.CreatePlane('shout overlay',{},scene);mesh.material=new B.StandardMaterial('shout',scene);return mesh;}});
- try{renderer.set({shout:{id:1,text:'hello',nickname:'A',start:1000,seconds:3},parade:{id:1,start:1000,seconds:10,count:5}});renderer.render(1500);assert(renderer.hasScreen());assert.equal(renderer.count(),5);assert.equal(scene.meshes.filter(m=>m.name==='VIP bottle spark').length,45);
+ try{renderer.set({shout:{id:1,text:'hello',nickname:'A',start:1000,seconds:3},parade:{id:1,start:1000,seconds:10,count:5}});renderer.render(1500);assert(renderer.hasScreen());const wings=scene.meshes.filter(m=>m.name.startsWith('shout wing '));assert.equal(wings.length,2);assert(wings[0].position.x<0&&wings[1].position.x>0);assert(wings.every(m=>Math.abs(m.position.y-edmStage.wingScreens.y)<.001));assert.equal(renderer.count(),5);assert.equal(scene.meshes.filter(m=>m.name==='VIP bottle spark').length,45);
   for(let t=0;t<=10;t+=.1)for(let i=0;i<5;i++){const p=paradePose(t,i);assert(Object.values(p).every(Number.isFinite));assert(p.x< -10&&p.x> -14);}
   renderer.render(4000);assert(!renderer.hasScreen());assert.equal(renderer.count(),5);renderer.render(11000);assert.equal(renderer.count(),0);assert.equal(scene.meshes.length,1);assert(!house.isDisposed());
  }finally{scene.dispose();engine.dispose();}
@@ -95,8 +96,12 @@ test('Colyseus handler applies customization and gifts, keeps whispers private, 
   assert(b.messages.some(m=>m.kind==='whisper-notification'));assert(!c.messages.some(m=>m.kind==='whisper-notification'));
   handlers.get('whisper-block')(b,{to:a.sessionId});handlers.get('whisper-send')(a,request({to:b.sessionId,text:'차단됨'}));assert.equal(last(b).messages.length,1);
   handlers.get('gift-send')(a,request({kind:'heart',to:'ai-0'}));assert.equal(room.snapshot().socialEvents.length,1);
-  handlers.get('shout-send')(a,request({text:'즐겨요'}));handlers.get('vip-start')(a,request());assert.equal(room.stageEvent,original);assert.equal(room.snapshot().parade.count,5);
+  handlers.get('vip-start')(a,request());handlers.get('shout-send')(a,request({text:'즐겨요'}));assert.equal(room.stageEvent,original);assert.equal(room.snapshot().parade.count,5);
   handlers.get('activities-stop')(a,{});assert.equal(room.snapshot().socialEvents.length,0);assert.equal(room.snapshot().shout,null);assert.equal(room.snapshot().parade,null);
+  handlers.get('whisper-unblock')(b,{to:a.sessionId});room.removeMember(a,false);
+  const rejoined={sessionId:'sender-new-session',messages:[],send(kind,data){this.messages.push({kind,data:structuredClone(data)});}};clients.push(rejoined);room.clients.push(rejoined);room.onJoin(rejoined,{identity:'local-test:sender'});
+  handlers.get('whisper-send')(rejoined,request({to:b.sessionId,text:'재입장 직후'}));assert(rejoined.messages.filter(m=>m.kind==='activities-result').at(-1).data.retryAfterMs>0);
+
  }finally{for(const c of clients){if(room.member(c))room.removeMember(c,false);connected.delete('local-test:'+c.sessionId);}room.clock.clear();rooms.delete(room.roomId);}
 });
 test('birthday UI/modules retired; existing music/map/dances/floor/shows remain unchanged',()=>{

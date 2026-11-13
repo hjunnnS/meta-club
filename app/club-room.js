@@ -1,4 +1,4 @@
-import {clubActivities,activityCommands} from './club-activities.js';
+import {clubActivities,activityCommands,activityUsage} from './club-activities.js';
 import {validWandStyle,normalizeWandStyle} from './public/wand-customization.js';
 import {requestPodium,validPodiumArrival,beginPodium,clearPodium} from './podium-activity.js';
 import { DanceTrain, onTrainFloor } from './dance-train.js';
@@ -14,6 +14,7 @@ import { playlist } from './music.js';
 import { Room } from '@colyseus/core';
 import { profile } from './store.js';
 
+const sharedActivityUsage=activityUsage();
 export const capacity = 60;
 export const seatSeconds = 15;
 export const connected = new Map(),
@@ -63,7 +64,8 @@ export class EdmRoom extends Room {
     this.dirty = false;
     if (localTest) {
       this.eventSequence = 0;
-      this.activities=clubActivities({actors:()=>[...this.members.values()],blockedMessage,
+      this.activities=clubActivities({actors:()=>[...this.members.values()],blockedMessage,usage:sharedActivityUsage,
+        performances:()=>{const scheduled=performanceStatus(this.epoch,Date.now(),playlist());return {...scheduled,active:scheduled.active||(this.stageEvent?{...this.stageEvent,seconds:effects[this.stageEvent.kind]?.seconds}:null)};},
         identity:id=>this.clients.find(c=>c.sessionId===id)?.userData?.identity||id});
       this.activitiesState=()=>{for(const c of this.clients)if(c.userData?.identity?.startsWith('local-test:'))c.send('activities-state',this.activities.view(c.sessionId));};
       this.onMessage('activities-state',client=>{if(this.member(client)&&client.userData.identity.startsWith('local-test:'))client.send('activities-state',this.activities.view(client.sessionId));});

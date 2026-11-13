@@ -1,4 +1,4 @@
-import {clubActivities,activityCommands} from './club-activities.js';
+import {clubActivities,activityCommands,activityUsage} from './club-activities.js';
 import {validWandStyle,normalizeWandStyle} from './wand-customization.js';
 import {requestPodium,validPodiumArrival,beginPodium,clearPodium} from './podium-activity.js';
 import {playlistPosition,trackBeat} from './music.js';
@@ -16,7 +16,11 @@ export class PersonalRoom {
   this.self={id:this.sessionId,ai:false,nickname:'체험자',avatar:'indigo',x:-1.8,y:.018,z:6.4,yaw:-.08,action:'idle',seat:null,table:null,wand:false};
   this.reactive=[-1,1].map((side,i)=>({id:'ai-'+(i+3),ai:true,nickname:'AI 손님 '+(i+4),avatar:i?'rose':'teal',x:side*4,y:.018,z:1,yaw:side*.2,action:'groove',wand:true}));
   this.extra=extraGuestPlaces.map((p,i)=>({id:'floor-dancer-'+i,ai:true,nickname:'AI 손님 '+(i+6),avatar:['teal','rose','gold','indigo'][i%4],...p}));
-  this.activities=clubActivities({actors:()=>[this.self,...this.ai()],blockedMessage});
+  let trialStorage=null,trialIdentity=this.sessionId;
+  try{trialStorage=globalThis.localStorage;trialIdentity=trialStorage.getItem('club-activity-identity-v1')||crypto.randomUUID();trialStorage.setItem('club-activity-identity-v1',trialIdentity);}catch{}
+  this.activities=clubActivities({actors:()=>[this.self,...this.ai()],blockedMessage,
+   identity:id=>id===this.sessionId?trialIdentity:id,usage:activityUsage({storage:trialStorage}),
+   performances:()=>{const scheduled=this.musicStarted?performanceStatus(this.epoch,Date.now(),this.tracks):{active:null,next:null};return {...scheduled,active:scheduled.active||(this.preview?{...this.preview,seconds:effects[this.preview.kind]?.seconds}:null)};}});
   this.timer=setInterval(()=>this.publish(),100);this.sequence=0;this.lastMove=0;this.preview=null;
  }
  startMusic(epoch){

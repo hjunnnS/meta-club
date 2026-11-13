@@ -10,8 +10,18 @@ export function paradePose(age,index){
  return {x:a[0]+(b[0]-a[0])*t,y:.018,z:a[1]+(b[1]-a[1])*t,yaw:Math.atan2(a[0]-b[0],a[1]-b[1])};
 }
 export function clubEventRenderer(B,scene,glow,make,{messageScreen=(text,name)=>ledScreen(B,scene,text,name)}={}){
- let nextShout=null,nextParade=null,screen=null,screenId=null,staff=[],paradeId=null,bottleInk,creamInk;
- function clearScreen(){if(!screen)return;glow?.removeExcludedMesh(screen);const ink=screen.material,texture=ink?.emissiveTexture;screen.dispose();ink?.dispose();texture?.dispose();screen=null;screenId=null;}
+ let nextShout=null,nextParade=null,screens=[],screenId=null,staff=[],paradeId=null,bottleInk,creamInk;
+ function clearScreen(){for(const screen of screens){glow?.removeExcludedMesh(screen);const ink=screen.material,texture=ink?.emissiveTexture;screen.dispose();ink?.dispose();texture?.dispose();}screens=[];screenId=null;}
+ function wingMessage(event,side){
+  const screen=messageScreen(event.text,event.nickname),{widthRatio,heightRatio,angle,gap,y}=edmStage.wingScreens;
+  const width=edmStage.screen.width*widthRatio,height=edmStage.screen.height*heightRatio,half=width/2;
+  screen.name='shout wing '+(side<0?'left':'right');screen.scaling.set(width/12.8,height/5.3,1);
+  const root=scene.getTransformNodeByName('EDM angled wing '+side);
+  if(root){screen.parent=root;screen.position.set(0,0,.035);screen.rotation.set(0,0,0);}
+  else{screen.position.set(edmStage.screen.x+side*(edmStage.screen.width/2+gap+half*Math.cos(angle)),y,edmStage.screen.z+half*Math.sin(angle));screen.rotation.y=-side*angle;screen.position.addInPlace(new B.Vector3(Math.sin(screen.rotation.y),0,Math.cos(screen.rotation.y)).scale(.035));}
+  glow?.addExcludedMesh(screen);return screen;
+ }
+
  function clearParade(){for(const entry of staff){entry.model.dispose();entry.bottle.dispose();entry.lines.forEach(line=>line.dispose());}staff=[];bottleInk?.dispose();creamInk?.dispose();bottleInk=creamInk=null;paradeId=null;}
  function startParade(event){
   clearParade();paradeId=event.id;
@@ -31,8 +41,7 @@ export function clubEventRenderer(B,scene,glow,make,{messageScreen=(text,name)=>
  function render(now){
   if(!nextShout||now>=nextShout.start+nextShout.seconds*1000)clearScreen();
   else if(now>=nextShout.start&&screenId!==nextShout.id){
-   clearScreen();screen=messageScreen(nextShout.text,nextShout.nickname);screenId=nextShout.id;
-   screen.scaling.set(1.42,1.21,1);screen.position.set(edmStage.screen.x,edmStage.screen.y,edmStage.screen.z+.08);glow?.addExcludedMesh(screen);
+   clearScreen();screens=[-1,1].map(side=>wingMessage(nextShout,side));screenId=nextShout.id;
   }
   if(!nextParade||now>=nextParade.start+nextParade.seconds*1000){if(paradeId)clearParade();return;}
   const age=(now-nextParade.start)/1000;if(age<0)return;
@@ -56,5 +65,5 @@ export function clubEventRenderer(B,scene,glow,make,{messageScreen=(text,name)=>
  scene.onDisposeObservable.addOnce(()=>{clearScreen();clearParade();});
  return {set({shout=null,parade=null}={}){nextShout=shout;nextParade=parade;},render,
   stop(){nextShout=nextParade=null;clearScreen();clearParade();},
-  count(){return staff.length;},hasScreen(){return Boolean(screen);}};
+  count(){return staff.length;},hasScreen(){return screens.length===2;}};
 }

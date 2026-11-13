@@ -217,14 +217,14 @@
   </details>
   <details id="shout-actions" class="extras" hidden>
     <summary>외치기</summary><div class="extra-panel activity-panel">
-      <strong>전광판에 외치기</strong><form><label>문구 <input aria-label="외치기 문구" maxlength="20" required placeholder="20자 이내"></label><button type="submit">전광판에 표시</button></form>
-      <p>체험 기준 3초 · 기존 전광판 문구 필터 적용</p><output aria-live="polite"></output>
+      <strong>양옆 전광판에 외치기</strong><form><label>문구 <input aria-label="외치기 문구" maxlength="20" required placeholder="20자 이내"></label><button type="submit">전광판에 표시</button></form>
+      <p>양옆에 3초 · 30초마다 사용 · 대기 최대 3건 · 기존 문구 필터 적용</p><p data-shout-state aria-live="polite"></p><output aria-live="polite"></output>
     </div>
   </details>
   <details id="vip-actions" class="extras" hidden>
     <summary>VIP 이벤트</summary><div class="extra-panel activity-panel">
       <strong>병 불꽃 퍼레이드</strong><p>이벤트 전용 NPC가 병 불꽃을 들고 행진합니다. 사용자와 기존 손님은 움직이지 않습니다.</p>
-      <button data-vip-start>퍼레이드 시작</button><button data-vip-stop>내 체험 이벤트 종료</button><output aria-live="polite"></output>
+      <p data-vip-state aria-live="polite"></p><button data-vip-start>퍼레이드 시작</button><button data-vip-stop>내 체험 이벤트 종료</button><output aria-live="polite"></output>
     </div>
   </details>
   <details id="wand-customization" class="extras" hidden>
@@ -275,7 +275,7 @@
   </div></details></footer>
   <dialog id="whisper-dialog" aria-label="귓속말 대화">
     <header><strong data-whisper-title>귓속말</strong><button data-whisper-close>닫기</button></header>
-    <p data-whisper-mode></p><div data-whisper-log role="log" aria-live="polite"></div>
+    <p data-whisper-mode></p><p data-whisper-cooldown aria-live="polite"></p><div data-whisper-log role="log" aria-live="polite"></div>
     <form><input aria-label="귓속말 내용" maxlength="200" required autocomplete="off"><button type="submit" data-whisper-send>보내기</button></form>
     <button data-whisper-block>이 상대 귓속말 차단</button><button data-whisper-demo hidden>귓속말 도착 알림 체험</button>
     <p>체험 대화·차단은 현재 클럽의 임시 상태입니다.</p><output aria-live="polite"></output>
