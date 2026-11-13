@@ -1,3 +1,4 @@
+import {characterAppearance,validAppearance,normalizeAppearance} from './character-appearance.js';
 import {privateWhisperFeedback} from './private-whisper-feedback.js';
 import {clubEventRenderer} from './club-event-renderer.js';
 import {socialEffects} from './social-effects.js';
@@ -134,7 +135,7 @@ export function startLiveScene({
     engine.setHardwareScalingLevel(low ? 1.5 : 1);
   }
   let actionPicking=false,actionTrial=false,chatActive=false;
-  let wandPreview=null;
+  let wandPreview=null,characterPreview=null;
   const wandVisible=a=>Boolean((a.wand||a.id===own&&wandPreview)&&(a.id===own||otherWands));
   let states = ['CLOSED', 'CLOSED'],
     dancers = 0;
@@ -203,6 +204,10 @@ export function startLiveScene({
       let model = models.get(a.id);
       if (!model) {
         model = make(a, a.id === wandGuest);
+        if(!a.ai){
+          model.appearance=characterAppearance(B,scene,model);
+          const dispose=model.dispose.bind(model);model.dispose=()=>{model.appearance.dispose();dispose();};
+        }
         models.set(a.id, model);
       }
       const previous=model.actor;
@@ -211,6 +216,7 @@ export function startLiveScene({
         else if(a.action!==previous.action&&dances.has(a.action))feedback.start(a.id,'dance');
       }
       model.actor = {...a};
+      model.appearance?.set(a.id===self&&characterPreview?characterPreview:a.appearance);
       model.setWandStyle(a.id===self&&wandPreview?wandPreview:a.wandStyle);
       if (a.id === self) {
         // Authoritative snapshots also release the walker if a placement message
@@ -353,6 +359,10 @@ export function startLiveScene({
     if(kind==='action-picking'){
       actionPicking=data===true&&connected&&!gameActive;cancelWalk();feedback.seat(null);
       if(actionPicking&&poleApproaching){poleApproaching=false;poleApproach=null;send('podium-cancel');}
+    }
+    if(kind==='character-preview'){
+      characterPreview=validAppearance(data)?normalizeAppearance(data):null;
+      const model=models.get(own);model?.appearance?.set(characterPreview||model.actor.appearance);
     }
     if(kind==='wand-preview'){
       wandPreview=validWandStyle(data)?normalizeWandStyle(data):null;

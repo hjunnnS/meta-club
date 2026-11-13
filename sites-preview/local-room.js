@@ -1,3 +1,4 @@
+import {validAppearance,normalizeAppearance} from './character-appearance.js';
 import {nextParadeOpening} from './parade-plan.js';
 import {clubActivities,activityCommands,activityUsage,activityTrialRules} from './club-activities.js';
 import {validWandStyle,normalizeWandStyle} from './wand-customization.js';
@@ -109,6 +110,10 @@ export class PersonalRoom {
    this.poleAnchor={x:a.x,y:a.y,z:a.z};a.action=data;this.publish();return;
   }
   if(type==='action'&&a.seat===null&&(['idle','wave','dance'].includes(data)||dances.has(data))){clearPodium(a);this.podiumClaims.delete(a.id);a.action=data;this.publish();return;}
+  if(type==='character-style'){
+   if(data!==null&&!validAppearance(data))return;
+   a.appearance=data===null?null:normalizeAppearance(data);this.publish();return;
+  }
   if(type==='wand-style'){
    if(!validWandStyle(data))return;
    a.wandStyle=normalizeWandStyle(data);this.publish();return;

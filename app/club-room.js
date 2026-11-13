@@ -1,3 +1,4 @@
+import {validAppearance,normalizeAppearance} from './public/character-appearance.js';
 import {clubActivities,activityCommands,activityUsage} from './club-activities.js';
 import {validWandStyle,normalizeWandStyle} from './public/wand-customization.js';
 import {requestPodium,validPodiumArrival,beginPodium,clearPodium} from './podium-activity.js';
@@ -77,6 +78,11 @@ export class EdmRoom extends Room {
         client.send('activities-result',{kind,...result});
         if(result.notification)this.clients.find(c=>c.sessionId===result.notification.to)?.send('whisper-notification',result.notification);
         this.activitiesState();this.dirty=true;
+      });
+      this.onMessage('character-style',(client,input)=>{
+        const actor=this.member(client);
+        if(!actor||!client.userData.identity.startsWith('local-test:')||(input!==null&&!validAppearance(input)))return;
+        actor.appearance=input===null?null:normalizeAppearance(input);this.dirty=true;
       });
       this.onMessage('wand-style',(client,input)=>{
         const actor=this.member(client);

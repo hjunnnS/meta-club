@@ -1,3 +1,4 @@
+import {characterCustomization} from './character-customization.js';
 import {clubActionsUI} from './club-actions-ui.js';
 import {wandCustomization} from './wand-customization.js';
 import {rhythmGame} from './rhythm-game.js';
@@ -49,6 +50,7 @@ const frame = (kind, data) => map.contentWindow?.postMessage({ kind, data }, loc
 const shop = initShop(frame);
 const activities=clubActionsUI({root:el('character-actions'),dialog:el('whisper-dialog'),shoutRoot:el('shout-actions'),vipRoot:el('vip-actions'),alertButton:el('whisper-alert'),send:(kind,data)=>room?.send(kind,data),frame});
 const wandStyles=wandCustomization(el('wand-customization'),(kind,data)=>room?.send(kind,data),frame);
+const characterStyles=characterCustomization(el('character-customization'),(kind,data)=>room?.send(kind,data),frame);
 let guideOpened = false;
 function showGuide(open) {
   el('guide').hidden = !open;
@@ -82,6 +84,7 @@ function display(data) {
   }
   const self = data.actors.find((a) => a.id === room.sessionId);
   activities.update({...data,self:room.sessionId},ready&&memberId?.startsWith('local-test:'));
+  characterStyles.update(self,ready&&memberId?.startsWith('local-test:'));
   wandStyles.update(self,ready&&memberId?.startsWith('local-test:'));
   el('wand').textContent = self?.wand ? '무드봉 내리기' : '무드봉 들기';
   el('wand').setAttribute('aria-pressed', String(Boolean(self?.wand)));
@@ -139,7 +142,7 @@ function disconnected(message, reconnect) {
   showMusic(null);
   // Keep the last rendered club visible during a temporary channel outage.
   activities.update(null,false);
-  wandStyles.update(null,false);
+  wandStyles.update(null,false);characterStyles.update(null,false);
   frame('connection-state', false);
   frame('audible-track', null);
   if (!sceneLoaded) map.hidden = true;
@@ -300,7 +303,7 @@ window.addEventListener('message', (event) => {
     if (snapshot) display(snapshot);
     frame('fast-flash', el('fast-flash').checked);
     frame('quality', el('quality').value);
-    frame('other-wands', el('other-wands').checked);wandStyles.resume();activities.resume();room.send('activities-state');
+    frame('other-wands', el('other-wands').checked);wandStyles.resume();characterStyles.resume();activities.resume();room.send('activities-state');
   }
   if(['podium-request','podium-start','podium-cancel'].includes(kind)&&ready)room.send(kind,data);
   if(kind==='pole-grip'&&ready)room.send('pole-grip',data);
