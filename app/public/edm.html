@@ -139,6 +139,13 @@
   .wand-style-panel select{flex:1;min-width:0}
   .wand-style-actions{display:flex;flex-wrap:wrap;gap:.5rem;margin:.8rem 0}
   .wand-style-panel output{display:block;font-size:.85rem;color:#d3bfdc}
+  .birthday-panel{padding:1rem;line-height:1.5;max-width:min(30rem,95vw)}
+  .birthday-panel p{margin:.5rem 0;color:#d3bfdc}
+  .birthday-panel label{display:flex;align-items:center;gap:.4rem;margin:.7rem 0}
+  .birthday-panel select{min-width:0;flex:1}
+  .birthday-panel output{display:block;margin:.7rem 0;font-size:.85rem}
+  .birthday-panel section{border-top:1px solid #60566f;margin-top:.8rem;padding-top:.8rem}
+  .birthday-panel button[aria-pressed="true"]{background:#695080}
 </style>
   <header>
     <h1>EDM 클럽</h1>
@@ -186,6 +193,28 @@
       </div>
     </div>
   </nav>
+  <details id="birthday-events" class="extras" hidden>
+    <summary>생일 축하</summary>
+    <div class="extra-panel birthday-panel">
+      <strong>생일 축하 제안</strong>
+      <p>대상을 고르고 축하를 제안하세요. 상대가 수락하면 전광판에 축하 문구가 표시됩니다.</p>
+      <button data-birthday-pick aria-pressed="false">캐릭터로 선택</button>
+      <label>사용자 목록 <select aria-label="생일 축하 대상 사용자"></select></label>
+      <p data-birthday-target>대상을 선택해 주세요.</p>
+      <button data-birthday-propose disabled>생일 축하 제안하기</button>
+      <button data-birthday-cancel hidden>제안 취소</button>
+      <output data-birthday-status aria-live="polite">작은 선물·결제는 제공하지 않는 체험입니다.</output>
+      <button data-birthday-demo hidden>받는 사람 화면 체험</button>
+      <section data-birthday-demo-panel hidden aria-label="받는 사람 화면 체험">
+        <strong>체험 손님 응답 · 실제 사용자 아님</strong><p></p>
+        <button data-birthday-demo-reply="accept">수락 체험</button><button data-birthday-demo-reply="decline">거절 체험</button>
+      </section>
+      <section data-birthday-incoming hidden aria-label="받은 생일 축하 제안">
+        <strong>생일 축하 제안이 도착했습니다</strong><p></p>
+        <button data-birthday-reply="accept">수락</button><button data-birthday-reply="decline">거절</button>
+      </section>
+    </div>
+  </details>
   <details id="wand-customization" class="extras" hidden>
     <summary>무드봉 꾸미기</summary>
     <div class="extra-panel wand-style-panel">

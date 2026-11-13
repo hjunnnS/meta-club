@@ -1,3 +1,4 @@
+import {birthdayRequests} from './birthday-requests.js';
 import {validWandStyle,normalizeWandStyle} from './public/wand-customization.js';
 import {requestPodium,validPodiumArrival,beginPodium,clearPodium} from './podium-activity.js';
 import { DanceTrain, onTrainFloor } from './dance-train.js';
@@ -62,6 +63,25 @@ export class EdmRoom extends Room {
     this.dirty = false;
     if (localTest) {
       this.eventSequence = 0;
+      this.birthdays=birthdayRequests(()=>[...this.members.values()],(request,sender,target)=>{
+        if(blockedMessage(target.nickname)||blockedMessage(sender.nickname)||/[\p{Cc}\p{Cf}]/u.test(target.nickname+sender.nickname))return '닉네임 문구를 확인해 주세요.';
+        if(this.stageEvent&&Date.now()<this.stageEvent.start+effects[this.stageEvent.kind].seconds*1000)return '다른 연출이 진행 중입니다. 종료 후 다시 제안해 주세요.';
+        this.stageEvent={id:request.id,kind:'led',start:Date.now(),bpm:playlistPosition(playlist(),this.epoch,Date.now())?.track.bpm||132,
+          message:target.nickname+'님 생일 축하합니다!',nickname:sender.nickname};this.dirty=true;return null;
+      });
+      const birthdayState=()=>{for(const c of this.clients)if(c.userData?.identity?.startsWith('local-test:'))c.send('birthday-state',this.birthdays.state(c.sessionId));};
+      this.birthdayState=birthdayState;
+      for(const kind of ['birthday-state','birthday-propose','birthday-reply','birthday-cancel'])this.onMessage(kind,(client,input)=>{
+        if(!this.member(client)||!client.userData.identity.startsWith('local-test:'))return;
+        let result;
+        if(kind==='birthday-propose'){
+          if(!this.clients.some(c=>c.sessionId===input?.targetId&&c.userData?.identity?.startsWith('local-test:')))return this.notice(client,'같은 클럽의 시험 회원을 선택해 주세요.');
+          result=this.birthdays.propose(client.sessionId,input.targetId);
+        }else if(kind==='birthday-reply')result=this.birthdays.answer(client.sessionId,input?.id,input?.accept);
+        else if(kind==='birthday-cancel')result=this.birthdays.cancel(client.sessionId,input?.id);
+        if(result?.error)this.notice(client,result.error);
+        birthdayState();
+      });
       this.onMessage('wand-style',(client,input)=>{
         const actor=this.member(client);
         if(!actor||!client.userData.identity.startsWith('local-test:')||!validWandStyle(input))return;
@@ -421,7 +441,9 @@ export class EdmRoom extends Room {
       null,
     );
     this.podiumClaims.delete(client.sessionId);
+    this.birthdays?.leave(client.sessionId);
     this.members.delete(client.sessionId);
+    this.birthdayState?.();
     if (connected.get(identity)?.client === client) connected.delete(identity);
     if (remember) {
       const { x, y, z, yaw } = m;

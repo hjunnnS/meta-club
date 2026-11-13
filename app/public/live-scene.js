@@ -127,6 +127,7 @@ export function startLiveScene({
     glow.isEnabled = !low;
     engine.setHardwareScalingLevel(low ? 1.5 : 1);
   }
+  let birthdayPicking=false,birthdayTrial=false;
   let wandPreview=null;
   const wandVisible=a=>Boolean((a.wand||a.id===own&&wandPreview)&&(a.id===own||otherWands));
   let states = ['CLOSED', 'CLOSED'],
@@ -178,7 +179,8 @@ export function startLiveScene({
   // The west-side reactive guest already carries a wand beside the entry group.
   const wandGuest = 'ai-3';
   let responders = [];
-  function onSnapshot({ actors, self, zones, stageEvent, nextPerformance }) {
+  function onSnapshot({ actors, self, zones, stageEvent, nextPerformance, personalTrial=false }) {
+    birthdayTrial=personalTrial;
     if(nextPerformance?.id==='scheduled-0'&&nextPerformance.kind==='laser')firstLaserAt=nextPerformance.start;
     if(movingPreview||activePeripheralPreview())stageEvents.stop();else stageEvents.set(stageEvent);
     if (zones) states = zones;
@@ -340,6 +342,10 @@ export function startLiveScene({
       spectrum = data.map(value => Number.isFinite(value) ? Math.max(0,Math.min(1,value)) : 0);
       spectrumAt = performance.now();
     }
+    if(kind==='birthday-picking'){
+      birthdayPicking=data===true&&connected&&!gameActive;cancelWalk();feedback.seat(null);
+      if(birthdayPicking&&poleApproaching){poleApproaching=false;poleApproach=null;send('podium-cancel');}
+    }
     if(kind==='wand-preview'){
       wandPreview=validWandStyle(data)?normalizeWandStyle(data):null;
       const model=models.get(own);model?.setWandStyle(wandPreview||model.actor.wandStyle);
@@ -348,10 +354,10 @@ export function startLiveScene({
     if (kind === 'fast-flash') fastFlash = data === true;
     if (kind === 'led-preview') showPreview(data);
     if (kind === 'actors') onSnapshot(data);
-    if(kind==='game-active'){gameActive=data===true;lockInput(gameActive);cancelWalk();}
+    if(kind==='game-active'){gameActive=data===true;if(gameActive)birthdayPicking=false;lockInput(gameActive);cancelWalk();}
     if (kind === 'connection-state') {
       connected=data===true;
-      if(!connected){cancelWalk();joystick(0,0);stageEvents.stop();}
+      if(!connected){birthdayPicking=false;cancelWalk();joystick(0,0);stageEvents.stop();}
     }
     if (kind === 'place') {
       feedback.seat(null);
@@ -426,6 +432,14 @@ export function startLiveScene({
     lookId = null;
   };
   let seatTap = null,hoverAt=0;
+  function birthdayTarget(x,y){
+    const candidates=new Map();
+    for(const [id,model] of models)if(id!==own&&(!model.actor.ai||birthdayTrial))
+      for(const mesh of model.root.getChildMeshes())if(mesh!==model.label)candidates.set(mesh,id);
+    const hit=scene.pick(x,y,mesh=>mesh.isEnabled()&&mesh.isVisible&&
+      (candidates.has(mesh)||mesh.checkCollisions||mesh.name.startsWith('wall/')));
+    return hit?.hit?candidates.get(hit.pickedMesh):null;
+  }
   function pickedPole(hit){
     if(!hit?.hit)return null;
     const names=[hit.pickedMesh.name,hit.pickedMesh.parent?.name];
@@ -439,6 +453,10 @@ export function startLiveScene({
   canvas.addEventListener('pointermove',e=>{
     if(e.buttons||performance.now()-hoverAt<80)return;hoverAt=performance.now();
     const r=canvas.getBoundingClientRect();
+    if(birthdayPicking){
+      const id=birthdayTarget((e.clientX-r.left)*engine.getRenderWidth()/r.width,(e.clientY-r.top)*engine.getRenderHeight()/r.height);
+      canvas.style.cursor=id?'pointer':'crosshair';canvas.title=id?models.get(id).actor.nickname+' · 생일 축하 대상으로 선택':'축하할 캐릭터를 클릭하세요.';return;
+    }
     const hit=pickDestination((e.clientX-r.left)*engine.getRenderWidth()/r.width,(e.clientY-r.top)*engine.getRenderHeight()/r.height);
     const selection=pickedSeat(hit),index=selection?.index??-1;
     const can=index>=0&&activeSeat===null&&!riding&&!speakerCamera&&connected&&!gameActive;
@@ -455,7 +473,15 @@ export function startLiveScene({
   canvas.addEventListener('pointercancel', ()=>seatTap=null);
   canvas.addEventListener('pointerup', e=>{
     const tap=seatTap;seatTap=null;
-    if(!tap||tap.id!==e.pointerId||tap.drag||activeSeat!==null||riding||speakerCamera||preview||!connected||gameActive)return;
+    if(!tap||tap.id!==e.pointerId||tap.drag||!connected||gameActive)return;
+    if(birthdayPicking){
+      const r=canvas.getBoundingClientRect();
+      const id=birthdayTarget((e.clientX-r.left)*engine.getRenderWidth()/r.width,(e.clientY-r.top)*engine.getRenderHeight()/r.height);
+      if(id){birthdayPicking=false;canvas.style.cursor='grab';send('birthday-target',id);}
+      else send('gate-notice','대상 선택 중입니다. 캐릭터를 클릭하거나 생일 축하의 사용자 목록을 이용하세요.');
+      return;
+    }
+    if(activeSeat!==null||riding||speakerCamera||preview)return;
     if(poleApproaching){poleApproaching=false;poleApproach=null;cancelWalk();send('podium-cancel');}
     const bounds=canvas.getBoundingClientRect();
     const hit=pickDestination((e.clientX-bounds.left)*engine.getRenderWidth()/bounds.width,
