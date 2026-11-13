@@ -24,12 +24,12 @@ test('same-user limits survive a changed session, room instance and browser adap
  const third=fixture({usage:activityUsage({storage:adapter})});third.at(31001);assert(third.a.command('0','shout-send',request({text:'새 방'})).error);
  assert(![...storage.values()].some(v=>v.includes('외치기')||v.includes('새 방')));
 });
-test('shout is 3s, cooldown 30s, FIFO queue maximum 3 and rejected full-queue request remains reusable',()=>{
+test('shout is 5s, cooldown 30s, FIFO queue maximum 3 and rejected full-queue request remains reusable',()=>{
  const f=fixture(),{a}=f;const send=(id,text)=>a.command(id,'shout-send',request({text}));
  assert(send('0','표시').ok);assert(send('1','대기1').ok);assert(send('2','대기2').ok);assert(send('3','대기3').ok);assert.equal(a.snapshot().activityStatus.shoutWaiting,3);
  const refused=request({text:'대기4'});assert(a.command('4','shout-send',refused).error);assert(!a.view('4').cooldowns.shoutUntil);
- f.at(4000);assert.equal(a.snapshot().shout.text,'대기1');assert(a.command('4','shout-send',refused).ok);
- f.at(7000);assert.equal(a.snapshot().shout.text,'대기2');f.at(10000);assert.equal(a.snapshot().shout.text,'대기3');f.at(13000);assert.equal(a.snapshot().shout.text,'대기4');f.at(16000);assert.equal(a.snapshot().shout,null);
+ f.at(6000);assert.equal(a.snapshot().shout.text,'대기1');assert(a.command('4','shout-send',refused).ok);
+ f.at(11000);assert.equal(a.snapshot().shout.text,'대기2');f.at(16000);assert.equal(a.snapshot().shout.text,'대기3');f.at(21000);assert.equal(a.snapshot().shout.text,'대기4');f.at(26000);assert.equal(a.snapshot().shout,null);
  f.at(30999);assert.equal(send('0','다시').retryAfterMs,1);f.at(31000);assert(send('0','다시').ok);
 });
 test('main show priority holds shouts without changing its clock; queued shouts resume after parade',()=>{
@@ -37,15 +37,15 @@ test('main show priority holds shouts without changing its clock; queued shouts 
  assert(a.command('0','shout-send',request({text:'공연 후'})).queued);assert.equal(a.snapshot().shout,null);assert(a.command('1','whisper-send',request({to:'2',text:'대화 가능'})).ok);
  assert(a.command('1','vip-start',request()).error);assert(!a.view('1').cooldowns.paradeUntil);
  f.at(17000);assert.equal(a.snapshot().shout.text,'공연 후');assert(a.command('1','vip-start',request()).error);
- f.at(20000);assert(a.command('1','vip-start',request()).ok);assert(a.command('2','shout-send',request({text:'퍼레이드 후'})).queued);assert.equal(a.snapshot().shout,null);
- f.at(30000);assert.equal(a.snapshot().parade,null);assert.equal(a.snapshot().shout.text,'퍼레이드 후');
+ f.at(22000);assert(a.command('1','vip-start',request()).ok);assert(a.command('2','shout-send',request({text:'퍼레이드 후'})).queued);assert.equal(a.snapshot().shout,null);
+ f.at(32000);assert.equal(a.snapshot().parade,null);assert.equal(a.snapshot().shout.text,'퍼레이드 후');
 });
-test('no shout begins without 3s clearance and preview interruption preserves the unused display duration',()=>{
+test('no shout begins without 5s clearance and preview interruption preserves the unused display duration',()=>{
  const f=fixture(),{a}=f;f.shows({active:null,next:{start:3000}});a.command('0','shout-send',request({text:'대기'}));assert.equal(a.snapshot().shout,null);
  f.at(3000);f.shows({active:{kind:'whale',start:3000,seconds:14},next:{start:90000}});assert.equal(a.snapshot().shout,null);
  f.at(17000);assert.equal(a.snapshot().shout.start,17000);
  f.at(18000);f.shows({active:{kind:'laser',start:18000,seconds:16},next:{start:90000}});assert.equal(a.snapshot().shout,null);
- f.at(34000);const resumed=a.snapshot().shout;assert.equal(resumed.seconds,2);assert.equal(resumed.start,34000);f.at(36000);assert.equal(a.snapshot().shout,null);
+ f.at(34000);const resumed=a.snapshot().shout;assert.equal(resumed.seconds,4);assert.equal(resumed.start,34000);f.at(38000);assert.equal(a.snapshot().shout,null);
 });
 test('parade 15s start clearance, 10s lifetime, personal 120s and club 60s from natural end',()=>{
  const f=fixture(),{a}=f;f.shows({active:null,next:{start:15999}});assert(a.command('0','vip-start',request()).error);assert(!a.view('0').cooldowns.paradeUntil);

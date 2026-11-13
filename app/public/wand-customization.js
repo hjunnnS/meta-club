@@ -6,7 +6,7 @@ export const wandThemes=Object.freeze([
   {id:'gold',label:'웜 골드',rod:'#ffe294',core:'#ffc562',edge:'#372613'},
 ]);
 export const wandDecorations=[['none','장식 없음'],['star','둥근 별'],['heart','하트'],['cloud','구름']];
-export const wandSizes=[['default','기본 크기'],['large','큰 무드봉 · 1.5배']];
+export const wandSizes=[['default','기본 크기']];
 export const wandTrails=[['default','기본 궤적'],['double','두 겹 빛줄기'],['sparkles','별가루 궤적']];
 export function validWandStyle(value){
   return Boolean(value&&typeof value==='object'&&!Array.isArray(value)
@@ -24,17 +24,16 @@ export function wandCustomization(root,send,frame){
   const decoration=root.querySelector('[data-wand-decoration]'),trail=root.querySelector('[data-wand-trail]');
   for(const [id,label]of wandDecorations)decoration.append(new Option(label,id));
   for(const [id,label]of wandTrails)trail.append(new Option(label,id));
-  const size=root.querySelector('[data-wand-size]');
-  for(const [id,label]of wandSizes)size.append(new Option(label,id));
-  const sync=()=>{size.value=draft.size;select.value=draft.color;decoration.value=draft.decoration;trail.value=draft.trail;};
+
+  const sync=()=>{select.value=draft.color;decoration.value=draft.decoration;trail.value=draft.trail;};
   let applied=normalizeWandStyle(),draft={...applied},dirty=false,preview=false,enabled=false;
   for(const theme of wandThemes){
     const option=document.createElement('option');option.value=theme.id;option.textContent=theme.label;select.append(option);
   }
   const clearPreview=()=>{preview=false;frame('wand-preview',null);};
   const showStatus=message=>{status.textContent=message;};
-  select.onchange=decoration.onchange=trail.onchange=size.onchange=()=>{
-    draft=normalizeWandStyle({color:select.value,decoration:decoration.value,trail:trail.value,size:size.value});dirty=true;
+  select.onchange=decoration.onchange=trail.onchange=()=>{
+    draft=normalizeWandStyle({color:select.value,decoration:decoration.value,trail:trail.value,size:'default'});dirty=true;
     if(preview)frame('wand-preview',draft);
     showStatus(preview?'내 화면에서만 미리보기 중':'꾸미기를 골랐습니다. 미리보기 또는 적용을 눌러 주세요.');
   };

@@ -1,6 +1,6 @@
 import {socialTrial} from './social-trial.js';
 // Approved activity rules; prices, ownership and permanent message storage remain outside scope.
-export const activityTrialRules=Object.freeze({shoutSeconds:3,shoutMaxLength:20,shoutCooldown:30000,shoutQueue:3,whisperMaxLength:200,whisperCooldown:2000,paradeSeconds:10,paradeCount:5,paradeCooldown:120000,paradeClubCooldown:60000,paradeClearance:15000});
+export const activityTrialRules=Object.freeze({shoutSeconds:5,shoutMaxLength:20,shoutCooldown:30000,shoutQueue:3,whisperMaxLength:200,whisperCooldown:2000,paradeSeconds:10,paradeCount:5,paradeCooldown:120000,paradeClubCooldown:60000,paradeClearance:15000});
 export const activityCommands=['gift-send','whisper-send','whisper-block','whisper-unblock','shout-send','vip-start','activities-stop'];
 const mainShows=new Set(['laser','phoenix','whale','dragon','jellyfish','butterflies']);
 // Server instances share this store within the running service. The independent Sites adapter

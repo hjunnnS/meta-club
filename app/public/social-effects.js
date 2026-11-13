@@ -30,26 +30,34 @@ export function socialEffects(B,scene,glow){
    const hearts=[];for(let i=0;i<7;i++){const heart=wandOrnament(B,scene,root,'heart',rose);heart.rotation.z=0;hearts.push(heart);}record.hearts=hearts;
   }else if(event.kind==='bouquet'){
    const holder=new B.TransformNode('social bouquet holder',scene);holder.parent=root;record.holder=holder;
-   for(let i=0;i<7;i++){
-    const a=i*2.4,x=Math.cos(a)*.14,z=Math.sin(a)*.10,y=.25+(i%3)*.065;
-    cylinder('flower stem',.45,.02,green,x,.02,z);
-    sphere('flower centre',.09,gold,x,y,z);
-    for(let j=0;j<5;j++){const b=j*Math.PI*2/5;sphere('flower petal',.12,i%2?cream:rose,x+Math.cos(b)*.075,y+Math.sin(b)*.055,z);}
+   const wrap=part(B.MeshBuilder.CreateCylinder('social bouquet wrap',{height:.48,diameterTop:.48,diameterBottom:.09,tessellation:24},scene),cream,0,-.04,0);
+   wrap.rotation.z=-.10;
+   for(let i=0;i<11;i++){
+    const a=i*2.4,r=i?.16+.035*(i%2):0,x=Math.cos(a)*r,z=Math.sin(a)*r,y=.29+(i%3)*.045;
+    cylinder('flower stem',.42,.018,green,x*.4,.02,z*.4);
+    sphere('flower centre',.11,gold,x,y,z);
+    for(let j=0;j<7;j++){const b=j*Math.PI*2/7;const petal=sphere('flower petal',.13,i%3?rose:cream,x+Math.cos(b)*.065,y+.015,z+Math.sin(b)*.065);petal.scaling.y=.65;}
+    if(i%3===0){const leaf=sphere('bouquet leaf',.18,green,x*1.25,.18,z*1.25);leaf.scaling.set(.4,1.3,.8);leaf.rotation.z=a;}
    }
-   cylinder('bouquet ribbon',.09,.26,gold,0,-.08,0);
-   for(const mesh of meshes)mesh.parent=holder;holder.scaling.setAll(1.65);holder.rotation.x=-.22;
+   cylinder('bouquet ribbon',.075,.24,rose,0,-.17,0);
+   for(const side of [-1,1]){const bow=sphere('ribbon bow',.16,rose,side*.08,-.15,.17);bow.scaling.set(1.1,.6,.35);}
+   for(const mesh of meshes)mesh.parent=holder;holder.scaling.setAll(1.9);holder.rotation.x=-.18;
   }else if(event.kind==='cake'){
-   part(B.MeshBuilder.CreateBox('social serving tray',{width:1.03,height:.045,depth:.78},scene),gold,0,-.02,0);
-   cylinder('cake plate',.035,.78,cream,0,.02,0);cylinder('cake lower',.22,.65,cream,0,.145,0);cylinder('cake top',.16,.45,rose,0,.335,0);
-   const flames=[];for(let i=0;i<3;i++){const x=(i-1)*.12;cylinder('candle',.15,.025,cream,x,.48,0);flames.push(sphere('candle flame',.055,gold,x,.585,0));}record.flames=flames;
+   part(B.MeshBuilder.CreateBox('social serving tray',{width:1.15,height:.055,depth:.88},scene),gold,0,-.02,0);
+   cylinder('cake plate',.045,.92,cream,0,.025,0);cylinder('cake lower',.24,.79,rose,0,.17,0);
+   cylinder('cake lower cream',.055,.82,cream,0,.30,0);cylinder('cake top',.20,.56,cream,0,.425,0);cylinder('cake top icing',.045,.59,rose,0,.535,0);
+   for(let i=0;i<10;i++){const a=i*Math.PI*2/10;sphere('cake icing bead',.09,cream,Math.cos(a)*.36,.28,Math.sin(a)*.36);}
+   for(let i=0;i<6;i++){const a=i*Math.PI/3;sphere('cake berry',.095,rose,Math.cos(a)*.225,.59,Math.sin(a)*.225);}
+   const flames=[];for(let i=0;i<3;i++){const x=(i-1)*.12;cylinder('candle',.17,.028,gold,x,.64,0);flames.push(sphere('candle flame',.065,gold,x,.755,0));}record.flames=flames;
+
   }
   for(const mesh of root.getChildMeshes())if(!mesh.name.includes('flame')){glow?.addExcludedMesh(mesh);excluded.push(mesh);}
   records.set(event.id,record);return record;
  }
  function receivingPose(record,target,sender){
   if(['pole-dance','podium-dance'].includes(target.actor.action))return;
-  const arms=record.event.kind==='cake'?[target.limbs[0],target.limbs[2]]:[target.limbs[0]];
-  record.saved={model:target,yaw:target.root.rotation.y,limbs:arms.map(node=>({node,rotation:node.rotation.clone(),quaternion:node.rotationQuaternion?.clone()||null})),hiddenWand:record.event.kind==='cake'};
+  const arms=[target.limbs[0],target.limbs[2]];
+  record.saved={model:target,yaw:target.root.rotation.y,limbs:arms.map(node=>({node,rotation:node.rotation.clone(),quaternion:node.rotationQuaternion?.clone()||null})),hiddenWand:true};
   const direction=sender.root.position.subtract(target.root.position);direction.y=0;
   if(direction.lengthSquared()>.01)target.root.rotation.y=Math.atan2(-direction.x,-direction.z);
   arms.forEach((node,i)=>{node.rotationQuaternion=null;node.rotation.x=-1.05;node.rotation.z=i===0?.12:-.12;});

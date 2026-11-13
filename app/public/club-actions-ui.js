@@ -28,7 +28,7 @@ export function clubActionsUI({root,dialog,shoutRoot,vipRoot,alertButton,send,fr
     if(conversation.dataset.signature!==signature){
       conversation.dataset.signature=signature;conversation.replaceChildren();
       for(const message of privateState.messages.filter(m=>m.from===self&&m.to===peer||m.to===self&&m.from===peer)){
-        const line=document.createElement('p');line.textContent=(message.from===self?'나':message.sender)+(message.simulated?' (체험)':'')+': '+message.text;conversation.append(line);
+        const line=document.createElement('p');line.textContent=(message.from===self?'나 · 보냄':message.sender)+(message.simulated?' (체험)':'')+': '+message.text;conversation.append(line);
       }
       conversation.scrollTop=conversation.scrollHeight;
     }
@@ -84,8 +84,8 @@ export function clubActionsUI({root,dialog,shoutRoot,vipRoot,alertButton,send,fr
       lastNotice=value;alertButton.textContent=value.sender+'님에게 귓속말이 왔습니다'+(value.simulated?' · 체험':'');alertButton.hidden=false;
     },
     result(value){
-      const text=value.error||({ 'gift-send':'선물을 보냈습니다. 받는 사람을 확인하세요.','shout-send':value.queued?'외치기를 접수했습니다. 공연·앞선 표시가 끝나면 양옆에 3초 표시됩니다.':'양옆 전광판에 3초 표시합니다.','vip-start':'병 불꽃 퍼레이드를 시작했습니다.','activities-stop':'내 체험 이벤트를 종료했습니다.','whisper-block':'이 상대의 귓속말을 차단했습니다.','whisper-unblock':'귓속말 차단을 해제했습니다.','whisper-send':'귓속말을 보냈습니다.'})[value.kind]||'';
-      if(value.kind==='whisper-send'&&value.ok)input.value='';
+      const text=value.error||({ 'gift-send':'선물을 보냈습니다. 받는 사람을 확인하세요.','shout-send':value.queued?'외치기를 접수했습니다. 공연·앞선 표시가 끝나면 양옆에 5초 표시됩니다.':'양옆 전광판에 5초 표시합니다.','vip-start':'병 불꽃 퍼레이드를 시작했습니다.','activities-stop':'내 체험 이벤트를 종료했습니다.','whisper-block':'이 상대의 귓속말을 차단했습니다.','whisper-unblock':'귓속말 차단을 해제했습니다.','whisper-send':'귓속말을 보냈습니다.'})[value.kind]||'';
+      if(value.kind==='whisper-send'&&value.ok){input.value='';frame('whisper-sent',{to:value.notification?.to,personal});}
       if(value.kind?.startsWith('whisper'))resultText(dialog.querySelector('output'),text);
       else if(value.kind==='shout-send')resultText(shoutRoot.querySelector('output'),text);
       else if(value.kind==='vip-start'||value.kind==='activities-stop')resultText(vipRoot.querySelector('output'),text);

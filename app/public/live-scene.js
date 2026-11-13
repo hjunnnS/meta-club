@@ -1,3 +1,4 @@
+import {privateWhisperFeedback} from './private-whisper-feedback.js';
 import {clubEventRenderer} from './club-event-renderer.js';
 import {socialEffects} from './social-effects.js';
 import {normalizeWandStyle,validWandStyle} from './wand-customization.js';
@@ -37,6 +38,7 @@ export function startLiveScene({
     offset = 0;
   const feedback=activityFeedback(B,scene);
   const social=socialEffects(B,scene,glow);
+  const whisperReceipt=privateWhisperFeedback(B,scene,glow);
   const activitiesRenderer=clubEventRenderer(B,scene,glow,make);
   const renderCeiling = ceilingLights(B,scene);
   const renderSpeakers = musicSpeakers(B,scene);
@@ -360,11 +362,12 @@ export function startLiveScene({
     if (kind === 'fast-flash') fastFlash = data === true;
     if (kind === 'led-preview') showPreview(data);
     if (kind === 'actors') onSnapshot(data);
+    if(kind==='whisper-sent')whisperReceipt.show(data?.to,data?.personal===true,Date.now()+offset);
     if(kind==='chat-active'){chatActive=data===true;lockInput(gameActive||chatActive);cancelWalk();}
     if(kind==='game-active'){gameActive=data===true;if(gameActive)actionPicking=false;lockInput(gameActive||chatActive);cancelWalk();}
     if (kind === 'connection-state') {
       connected=data===true;
-      if(!connected){social.set([]);social.stop();activitiesRenderer.stop();actionPicking=false;cancelWalk();joystick(0,0);stageEvents.stop();}
+      if(!connected){social.set([]);social.stop();activitiesRenderer.stop();whisperReceipt.clear();actionPicking=false;cancelWalk();joystick(0,0);stageEvents.stop();}
     }
     if (kind === 'place') {
       feedback.seat(null);
@@ -917,7 +920,7 @@ export function startLiveScene({
       frames = 0;
     }
   });
-  scene.onBeforeRenderObservable.add(()=>{social.render(Date.now()+offset,models);activitiesRenderer.render(Date.now()+offset);});
+  scene.onBeforeRenderObservable.add(()=>{social.render(Date.now()+offset,models);activitiesRenderer.render(Date.now()+offset);whisperReceipt.render(Date.now()+offset,models);});
   send('scene-ready', true);
   let lastGateNotice = -Infinity;
   return (from, to) => {

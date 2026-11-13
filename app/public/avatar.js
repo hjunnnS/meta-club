@@ -156,7 +156,7 @@ export function avatarFactory(B, scene, glow) {
       if(tip){ornament?.dispose();ornament=wandOrnament(B,scene,tip,styleState.decoration,ownWandMaterial);}
       if(ownWandMaterial)ownWandMaterial.emissiveColor=B.Color3.FromHexString(theme.rod);
       if(ownTrailMaterial)ownTrailMaterial.emissiveColor=B.Color3.FromHexString(theme.rod);
-      smoothTrail?.setPalette(theme.core,theme.edge);smoothTrail?.setVariant(styleState.trail);smoothTrail?.setScale(styleState.size==='large'?1.5:1);
+      smoothTrail?.setPalette(theme.core,theme.edge);smoothTrail?.setVariant(styleState.trail);smoothTrail?.setScale(1);
     }
     function showWand(visible, detailed, motion=null) {
       if (!visible && !wand) return;
@@ -173,7 +173,7 @@ export function avatarFactory(B, scene, glow) {
         tip.position.y = featuredWand ? -0.415 : -0.27;
         ornament=wandOrnament(B,scene,tip,styleState.decoration,ownWandMaterial);
       }
-      const wandScale=styleState.size==='large'?1.5:1;wand.scaling.setAll(wandScale);
+      const wandScale=1;wand.scaling.setAll(wandScale);
       wand.parent = detailed ? limbs[2] : root;
       wand.position.set(detailed ? -0.117 : 0.38, detailed ? (featuredWand ? -0.88 : -0.753) : 1.28, detailed ? 0 : 0.12);
       wand.rotation.set(0,0,detailed ? -0.45 : -0.85);
