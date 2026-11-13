@@ -1,3 +1,4 @@
+import {socialEffects} from './social-effects.js';
 import {normalizeWandStyle,validWandStyle} from './wand-customization.js';
 import {tableSeatTarget,animateSeatArrival} from './seat-presentation.js';
 import {podiumSlots,podiumDanceAt} from './podium-activity.js';
@@ -34,6 +35,7 @@ export function startLiveScene({
   let epoch = Date.now(),
     offset = 0;
   const feedback=activityFeedback(B,scene);
+  const social=socialEffects(B,scene,glow);
   const renderCeiling = ceilingLights(B,scene);
   const renderSpeakers = musicSpeakers(B,scene);
   const renderAccents = strobeAccents(B,scene);
@@ -179,7 +181,8 @@ export function startLiveScene({
   // The west-side reactive guest already carries a wand beside the entry group.
   const wandGuest = 'ai-3';
   let responders = [];
-  function onSnapshot({ actors, self, zones, stageEvent, nextPerformance, personalTrial=false }) {
+  function onSnapshot({ actors, self, zones, stageEvent, nextPerformance, personalTrial=false, socialEvents=[] }) {
+    social.set(socialEvents);
     birthdayTrial=personalTrial;
     if(nextPerformance?.id==='scheduled-0'&&nextPerformance.kind==='laser')firstLaserAt=nextPerformance.start;
     if(movingPreview||activePeripheralPreview())stageEvents.stop();else stageEvents.set(stageEvent);
@@ -342,6 +345,11 @@ export function startLiveScene({
       spectrum = data.map(value => Number.isFinite(value) ? Math.max(0,Math.min(1,value)) : 0);
       spectrumAt = performance.now();
     }
+    if(kind==='social-preview'&&connected&&!gameActive){
+      const ok=social.preview(data?.kind,own,data?.to,Date.now()+offset,models);
+      send('social-feedback',ok?({heart:'하트 전달·퍼짐',bouquet:'왼손 꽃다발 받기',cake:'축하 케이크·촛불'})[data.kind]+' 미리보기 중 · 종료 후 자동 제거됩니다.':'미리보기 대상을 확인해 주세요.');
+    }
+    if(kind==='social-stop')social.stop();
     if(kind==='birthday-picking'){
       birthdayPicking=data===true&&connected&&!gameActive;cancelWalk();feedback.seat(null);
       if(birthdayPicking&&poleApproaching){poleApproaching=false;poleApproach=null;send('podium-cancel');}
@@ -357,7 +365,7 @@ export function startLiveScene({
     if(kind==='game-active'){gameActive=data===true;if(gameActive)birthdayPicking=false;lockInput(gameActive);cancelWalk();}
     if (kind === 'connection-state') {
       connected=data===true;
-      if(!connected){birthdayPicking=false;cancelWalk();joystick(0,0);stageEvents.stop();}
+      if(!connected){social.set([]);social.stop();birthdayPicking=false;cancelWalk();joystick(0,0);stageEvents.stop();}
     }
     if (kind === 'place') {
       feedback.seat(null);
@@ -913,6 +921,7 @@ export function startLiveScene({
       frames = 0;
     }
   });
+  scene.onBeforeRenderObservable.add(()=>social.render(Date.now()+offset,models));
   send('scene-ready', true);
   let lastGateNotice = -Infinity;
   return (from, to) => {

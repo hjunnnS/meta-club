@@ -8,10 +8,11 @@ def put(relative,content):
  p=dist/relative;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(content)
 def copy(source,relative):
  p=dist/relative;p.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(ROOT/source,p)
-modules=['birthday-ui.js','wand-customization.js','wand-trail.js','seat-presentation.js','pole-dance.js','live-scene.js','music.js','free-dance.js','avatar.js','ceiling-lights.js','ambience.js','rhythm-floor.js','click-walk.js','scene-look.js','activity-feedback.js','rhythm-game.js','neon-horizon-chart.json']
+modules=['social-effects.js','wand-ornament.js','birthday-ui.js','wand-customization.js','wand-trail.js','seat-presentation.js','pole-dance.js','live-scene.js','music.js','free-dance.js','avatar.js','ceiling-lights.js','ambience.js','rhythm-floor.js','click-walk.js','scene-look.js','activity-feedback.js','rhythm-game.js','neon-horizon-chart.json']
 for name in modules:copy('app/public/'+name,'clubs/edm/'+name)
 # The Node server exposes live-scene.js at scene.js; preserve that public URL.
 copy('app/public/live-scene.js','clubs/edm/scene.js')
+copy('app/social-trial.js','clubs/edm/social-trial.js')
 copy('app/birthday-requests.js','clubs/edm/birthday-requests.js')
 copy('app/podium-activity.js','clubs/edm/podium-activity.js')
 copy('app/edm-layout.js','clubs/edm/edm-layout.js');copy('app/visitors.js','clubs/edm/visitors.js')

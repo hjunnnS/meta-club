@@ -194,7 +194,7 @@
     </div>
   </nav>
   <details id="birthday-events" class="extras" hidden>
-    <summary>생일 축하</summary>
+    <summary>축하·선물</summary>
     <div class="extra-panel birthday-panel">
       <strong>생일 축하 제안</strong>
       <p>대상을 고르고 축하를 제안하세요. 상대가 수락하면 전광판에 축하 문구가 표시됩니다.</p>
@@ -203,7 +203,8 @@
       <p data-birthday-target>대상을 선택해 주세요.</p>
       <button data-birthday-propose disabled>생일 축하 제안하기</button>
       <button data-birthday-cancel hidden>제안 취소</button>
-      <output data-birthday-status aria-live="polite">작은 선물·결제는 제공하지 않는 체험입니다.</output>
+      <output data-birthday-status aria-live="polite">생일 축하는 수락 후 실행하고, 작은 선물은 내 화면에서만 미리 봅니다.</output>
+      <button data-birthday-receive-demo hidden>받는 사람으로 생일 축하 체험</button>
       <button data-birthday-demo hidden>받는 사람 화면 체험</button>
       <section data-birthday-demo-panel hidden aria-label="받는 사람 화면 체험">
         <strong>체험 손님 응답 · 실제 사용자 아님</strong><p></p>
@@ -213,19 +214,31 @@
         <strong>생일 축하 제안이 도착했습니다</strong><p></p>
         <button data-birthday-reply="accept">수락</button><button data-birthday-reply="decline">거절</button>
       </section>
+      <section aria-label="시각적 선물 미리보기">
+        <strong>시각적 선물 · 내 화면 미리보기</strong>
+        <p>실제 전송·결제 없이 효과만 봅니다. 선택한 상대의 화면에는 전달되지 않습니다.</p>
+        <label><input type="checkbox" data-social-self checked>내 캐릭터로 체험</label>
+        <button data-social-preview="heart">하트 선물 체험 · 4초</button>
+        <button data-social-preview="bouquet">꽃다발 체험 · 8초</button>
+        <button data-social-preview="cake">케이크 체험 · 10초</button>
+        <button data-social-stop>새 체험 효과 종료</button>
+        <output data-social-status aria-live="polite">기존 공연과 별도로 표시됩니다.</output>
+      </section>
     </div>
   </details>
   <details id="wand-customization" class="extras" hidden>
     <summary>무드봉 꾸미기</summary>
     <div class="extra-panel wand-style-panel">
-      <strong>무드봉 컬러 체험</strong>
+      <strong>무드봉 꾸미기 체험</strong>
       <p>결제 없이 골라 보세요. 선택은 이번 접속에만 적용됩니다.</p>
       <label>컬러 테마 <select aria-label="무드봉 컬러 테마"></select></label>
+      <label>봉 끝 장식 <select data-wand-decoration aria-label="무드봉 끝 장식"></select></label>
+      <label>잔상 테마 <select data-wand-trail aria-label="무드봉 잔상 테마"></select></label>
       <div class="wand-style-actions">
         <button data-wand-preview>내 화면 미리보기</button><button data-wand-apply>적용하고 들기</button>
-        <button data-wand-cancel>미리보기 취소</button><button data-wand-reset>기본색 복귀</button>
+        <button data-wand-cancel>미리보기 취소</button><button data-wand-reset>기본 꾸미기 복귀</button>
       </div>
-      <output aria-live="polite">기본 하늘색 · 라벤더 · 로즈 핑크 · 웜 골드</output>
+      <output aria-live="polite">컬러·끝 장식·잔상을 함께 골라 볼 수 있습니다.</output>
     </div>
   </details>
   <details class="extras"><summary>더 보기</summary><div class="extra-panel"><nav aria-label="추가 활동">

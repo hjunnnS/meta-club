@@ -1,3 +1,4 @@
+import {socialTrial} from './social-trial.js';
 import {birthdayRequests} from './birthday-requests.js';
 import {validWandStyle,normalizeWandStyle} from './public/wand-customization.js';
 import {requestPodium,validPodiumArrival,beginPodium,clearPodium} from './podium-activity.js';
@@ -63,11 +64,19 @@ export class EdmRoom extends Room {
     this.dirty = false;
     if (localTest) {
       this.eventSequence = 0;
+      this.social=socialTrial(()=>[...this.members.values()]);
       this.birthdays=birthdayRequests(()=>[...this.members.values()],(request,sender,target)=>{
         if(blockedMessage(target.nickname)||blockedMessage(sender.nickname)||/[\p{Cc}\p{Cf}]/u.test(target.nickname+sender.nickname))return '닉네임 문구를 확인해 주세요.';
         if(this.stageEvent&&Date.now()<this.stageEvent.start+effects[this.stageEvent.kind].seconds*1000)return '다른 연출이 진행 중입니다. 종료 후 다시 제안해 주세요.';
         this.stageEvent={id:request.id,kind:'led',start:Date.now(),bpm:playlistPosition(playlist(),this.epoch,Date.now())?.track.bpm||132,
-          message:target.nickname+'님 생일 축하합니다!',nickname:sender.nickname};this.dirty=true;return null;
+          message:target.nickname+'님 생일 축하합니다!',nickname:sender.nickname,socialBirthday:true,birthdayFrom:sender.id,birthdayTo:target.id};
+        this.social.add('birthday',sender.id,target.id);this.dirty=true;return null;
+      });
+      this.onMessage('social-stop',client=>{
+        if(!this.member(client)||!client.userData.identity.startsWith('local-test:'))return;
+        this.social.stop(client.sessionId);
+        if(this.stageEvent?.socialBirthday&&[this.stageEvent.birthdayFrom,this.stageEvent.birthdayTo].includes(client.sessionId))this.stageEvent=null;
+        this.dirty=true;
       });
       const birthdayState=()=>{for(const c of this.clients)if(c.userData?.identity?.startsWith('local-test:'))c.send('birthday-state',this.birthdays.state(c.sessionId));};
       this.birthdayState=birthdayState;
@@ -334,6 +343,7 @@ export class EdmRoom extends Room {
     if (event && Date.now() >= event.start + effects[event.kind].seconds * 1000) this.stageEvent = null;
     const performances = performanceStatus(this.epoch, Date.now(), playlist());
     return {
+      socialEvents:this.social?.snapshot()||[],
       stageEvent: this.stageEvent ?? performances.active,
       nextPerformance: performances.next,
       performanceNow: Date.now(),

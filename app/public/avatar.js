@@ -1,4 +1,5 @@
-import {wandTheme} from './wand-customization.js';
+import {wandOrnament} from './wand-ornament.js';
+import {wandTheme,normalizeWandStyle} from './wand-customization.js';
 import {createWandTrail} from './wand-trail.js';
 import {edmStage,edmSeats} from './edm-layout.js';
 const colors = { indigo: '#8973F2', teal: '#49C8B1', rose: '#F28BAB', gold: '#FFCC55' };
@@ -147,13 +148,15 @@ export function avatarFactory(B, scene, glow) {
     root.position.set(actor.x, actor.y, actor.z);
     root.rotation.y = actor.yaw;
     let wand, tip, trail, smoothTrail, orbit, previousTip, previousTime = 0;
-    let theme=wandTheme(),ownWandMaterial,ownTrailMaterial;
+    let theme=wandTheme(),styleState=normalizeWandStyle(),ornament,ownWandMaterial,ownTrailMaterial;
     function setWandStyle(style){
-      const next=wandTheme(style);if(theme.id===next.id)return;
-      theme=next;
+      const normalized=normalizeWandStyle(style),next=wandTheme(normalized);
+      if(JSON.stringify(normalized)===JSON.stringify(styleState))return;
+      styleState=normalized;theme=next;
+      if(tip){ornament?.dispose();ornament=wandOrnament(B,scene,tip,styleState.decoration,ownWandMaterial);}
       if(ownWandMaterial)ownWandMaterial.emissiveColor=B.Color3.FromHexString(theme.rod);
       if(ownTrailMaterial)ownTrailMaterial.emissiveColor=B.Color3.FromHexString(theme.rod);
-      smoothTrail?.setPalette(theme.core,theme.edge);
+      smoothTrail?.setPalette(theme.core,theme.edge);smoothTrail?.setVariant(styleState.trail);
     }
     function showWand(visible, detailed, motion=null) {
       if (!visible && !wand) return;
@@ -168,6 +171,7 @@ export function avatarFactory(B, scene, glow) {
         tip = new B.TransformNode('wand tip', scene);
         tip.parent = wand;
         tip.position.y = featuredWand ? -0.415 : -0.27;
+        ornament=wandOrnament(B,scene,tip,styleState.decoration,ownWandMaterial);
       }
       wand.parent = detailed ? limbs[2] : root;
       wand.position.set(detailed ? -0.117 : 0.38, detailed ? (featuredWand ? -0.88 : -0.753) : 1.28, detailed ? 0 : 0.12);
@@ -188,7 +192,7 @@ export function avatarFactory(B, scene, glow) {
         const sweep=Math.min(1,speed/3.5);
         if(motion){
           if(trail)trail.visibility=0;
-          if(!smoothTrail){smoothTrail=createWandTrail(B,scene,glow,featuredWand);smoothTrail.setPalette(theme.core,theme.edge);}
+          if(!smoothTrail){smoothTrail=createWandTrail(B,scene,glow,featuredWand);smoothTrail.setPalette(theme.core,theme.edge);smoothTrail.setVariant(styleState.trail);}
           smoothTrail.update(point,now,(.65+.35*sweep)*motion.sweep,motion.reduced,speed);
         }else{
           smoothTrail?.reset();

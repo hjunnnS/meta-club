@@ -16,12 +16,14 @@ export function birthdayUI(root,send,frame){
     cancel.hidden=!waiting;
     demo.hidden=!(waiting&&state.demo===true);
     if(!waiting)demoPanel.hidden=true;
-    if(out){
-      const labels={pending:'상대의 수락을 기다리는 중',accepted:'수락 완료 · 전광판 축하 실행',declined:'상대가 거절했습니다. 축하는 실행되지 않습니다.',cancelled:'제안을 취소했습니다.',unavailable:'상대 또는 발신자가 클럽을 나가 제안이 종료됐습니다.',failed:out.message||'축하를 시작하지 못했습니다.'};
-      status.textContent=out.target+' · '+(labels[out.status]||out.status);
+    const latest=state.requests?.at(-1);
+    if(latest){
+      const labels={pending:'상대의 수락을 기다리는 중',accepted:'수락 완료 · 전광판 축하 실행',declined:'상대가 거절했습니다. 축하는 실행되지 않습니다.',cancelled:'제안을 취소했습니다.',unavailable:'상대 또는 발신자가 클럽을 나가 제안이 종료됐습니다.',failed:latest.message||'축하를 시작하지 못했습니다.'};
+      status.textContent=(latest.from===self?latest.target:latest.sender+'님의 축하')+' · '+(labels[latest.status]||latest.status);
     }
     incoming.hidden=!request;
     if(request)incoming.querySelector('p').textContent=request.sender+'님이 생일 축하를 제안했습니다. 수락하면 전광판에 축하 문구가 표시됩니다.';
+    root.querySelector('[data-birthday-receive-demo]').hidden=state.demo!==true;
     if(waiting&&state.demo===true)demoPanel.querySelector('p').textContent='받는 사람: '+out.target+' · '+out.sender+'님이 생일 축하를 제안했습니다. 아래 응답은 실제 사용자의 동의가 아닌 체험 조작입니다.';
   }
   function choose(id){
@@ -35,6 +37,14 @@ export function birthdayUI(root,send,frame){
   };
   propose.onclick=()=>{if(propose.disabled)return;stopPicking();demoPanel.hidden=true;send('birthday-propose',{targetId:selected});};
   cancel.onclick=()=>{const out=outgoing();if(out?.status==='pending')send('birthday-cancel',{id:out.id});};
+  root.querySelector('[data-birthday-receive-demo]').onclick=()=>send('birthday-incoming-demo',{from:selected});
+  root.querySelectorAll('[data-social-preview]').forEach(button=>button.onclick=()=>{
+    if(!enabled)return;
+    const to=root.querySelector('[data-social-self]').checked?self:selected;
+    if(!to){root.querySelector('[data-social-status]').textContent='대상을 선택하거나 내 캐릭터 체험을 켜 주세요.';return;}
+    frame('social-preview',{kind:button.dataset.socialPreview,to});
+  });
+  root.querySelector('[data-social-stop]').onclick=()=>{frame('social-stop');send('social-stop');root.querySelector('[data-social-status]').textContent='새 축하·선물 체험 효과를 종료했습니다.';};
   demo.onclick=()=>{demoPanel.hidden=!demoPanel.hidden;render();};
   incoming.querySelectorAll('[data-birthday-reply]').forEach(button=>button.onclick=()=>{
     const request=received();if(request)send('birthday-reply',{id:request.id,accept:button.dataset.birthdayReply==='accept'});
@@ -58,6 +68,7 @@ export function birthdayUI(root,send,frame){
       render();
     },
     state(value){state=value;self=value.self||self;render();if(received()){root.open=true;stopPicking();}},
+    feedback(message){root.querySelector('[data-social-status]').textContent=message;},
     select:choose,
     resume(){frame('birthday-picking',picking);},
   };

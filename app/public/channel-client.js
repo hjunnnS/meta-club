@@ -269,6 +269,7 @@ window.addEventListener('message', (event) => {
   if (!room || event.source !== map.contentWindow || event.origin !== location.origin) return;
   const { kind, data } = event.data || {};
   if (kind === 'gate-notice') note(data);
+  if(kind==='social-feedback')birthdays.feedback(data);
   if(kind==='birthday-target'&&ready)birthdays.select(data);
   if (kind === 'seat-request' && ready && Number.isInteger(data)) room.send('seat',data);
   if (kind === 'scene-error') {
