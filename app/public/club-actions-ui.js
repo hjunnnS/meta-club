@@ -44,10 +44,18 @@ export function clubActionsUI({root,dialog,shoutRoot,vipRoot,alertButton,send,fr
     dialog.querySelector('[data-whisper-block]').disabled=!enabled||!actor;
     whisperDemo.hidden=!personal;renderLimits();
   }
-  function choose(id){
+  function choose(value){
+    const id=typeof value==='string'?value:value?.id;
     if(!enabled||!target(id))return;selected=id;list.value=id;resetPick();root.open=true;
+    frame('action-selection',id);
+    const anchor=typeof value==='object'?value:null;
+    if(anchor){
+      const map=document.querySelector('iframe').getBoundingClientRect(),main=root.parentElement.getBoundingClientRect();
+      root.style.left=Math.max(8,Math.min(main.width-308,map.left-main.left+anchor.x*map.width+12))+'px';
+      root.style.top=Math.max(8,Math.min(main.height-400,map.top-main.top+anchor.y*map.height))+'px';root.style.right='auto';root.style.bottom='auto';
+    }else{root.style.left='';root.style.top='';root.style.right='';root.style.bottom='';}
     targetLabel.textContent='선택: '+target(id).nickname+(target(id).ai?' · 체험 손님':'');
-    for(const button of root.querySelectorAll('[data-gift],[data-open-whisper]'))button.disabled=false;
+    for(const button of root.querySelectorAll('[data-gift],[data-open-whisper],[data-greeting]'))button.disabled=false;
   }
   function openWhisper(id){
     if(!target(id))return;peer=id;root.open=false;renderConversation();
@@ -59,6 +67,8 @@ export function clubActionsUI({root,dialog,shoutRoot,vipRoot,alertButton,send,fr
     if(panel.open)for(const other of legacyPanels)if(other!==panel)other.open=false;
   });
   list.onchange=()=>choose(list.value);
+  root.addEventListener('toggle',()=>{if(!root.open)frame('action-selection',null);});
+  root.querySelectorAll('[data-greeting]').forEach(button=>button.onclick=()=>{if(!enabled||!target(selected))return;request('greeting-send',{to:selected,kind:button.dataset.greeting});root.open=false;});
   pick.onclick=()=>{picking=!picking;pick.setAttribute('aria-pressed',String(picking));frame('action-picking',picking);if(picking)root.open=false;};
   root.querySelectorAll('[data-gift]').forEach(button=>button.onclick=()=>{if(!enabled||!target(selected))return;status.textContent=target(selected).nickname+'님에게 선물을 보내는 중…';request('gift-send',{to:selected,kind:button.dataset.gift});});
   root.querySelector('[data-open-whisper]').onclick=()=>openWhisper(selected);
@@ -87,7 +97,7 @@ export function clubActionsUI({root,dialog,shoutRoot,vipRoot,alertButton,send,fr
       const nextKey=JSON.stringify(roster.map(a=>[a.id,a.nickname,a.avatar]));
       if(key!==nextKey){key=nextKey;list.replaceChildren(new Option('사용자 목록에서 선택',''));
         for(const a of roster)list.append(new Option(a.nickname+(a.ai?' · 체험 손님':''),a.id));
-        if(target(selected))list.value=selected;else{selected='';targetLabel.textContent='캐릭터 또는 목록에서 대상을 선택하세요.';for(const b of root.querySelectorAll('[data-gift],[data-open-whisper]'))b.disabled=true;}
+        if(target(selected))list.value=selected;else{selected='';targetLabel.textContent='캐릭터 또는 목록에서 대상을 선택하세요.';for(const b of root.querySelectorAll('[data-gift],[data-open-whisper],[data-greeting]'))b.disabled=true;}
       }
       activityStatus=snapshot.activityStatus||{};
       renderConversation();
@@ -99,8 +109,8 @@ export function clubActionsUI({root,dialog,shoutRoot,vipRoot,alertButton,send,fr
       frame('whisper-received',{from:value.from,text:value.text,sender:value.sender,personal:value.simulated===true});
     },
     result(value){
-      const text=value.error||({ 'gift-send':'선물을 보냈습니다. 받는 사람을 확인하세요.','shout-send':value.queued?'외치기를 접수했습니다. 공연·앞선 표시가 끝나면 양옆에 5초 표시됩니다.':'양옆 전광판에 5초 표시합니다.','vip-preview':'개인 화면에서 퍼레이드 시험을 시작했습니다.','vip-start':'병 불꽃 퍼레이드를 시작했습니다.','activities-stop':'내 체험 이벤트를 종료했습니다.','whisper-block':'이 상대의 귓속말을 차단했습니다.','whisper-unblock':'귓속말 차단을 해제했습니다.','whisper-send':'귓속말을 보냈습니다.'})[value.kind]||'';
-      if(value.kind==='whisper-send'&&value.ok)input.value='';
+      const text=value.error||({ 'greeting-send':'선택한 상대에게 인사했습니다.','gift-send':'선물을 보냈습니다. 받는 사람을 확인하세요.','shout-send':value.queued?'외치기를 접수했습니다. 공연·앞선 표시가 끝나면 양옆에 5초 표시됩니다.':'양옆 전광판에 5초 표시합니다.','vip-preview':'개인 화면에서 퍼레이드 시험을 시작했습니다.','vip-start':'병 불꽃 퍼레이드를 시작했습니다.','activities-stop':'내 체험 이벤트를 종료했습니다.','whisper-block':'이 상대의 귓속말을 차단했습니다.','whisper-unblock':'귓속말 차단을 해제했습니다.','whisper-send':'귓속말을 보냈습니다.'})[value.kind]||'';
+      if(value.kind==='whisper-send'&&value.ok){input.value='';frame('whisper-outgoing',{text:value.notification?.text,recipient:value.notification?.recipient});}
       if(value.kind?.startsWith('whisper'))resultText(dialog.querySelector('output'),text);
       else if(value.kind==='shout-send')resultText(shoutRoot.querySelector('output'),text);
       else if(value.kind==='vip-start'||value.kind==='vip-preview'||value.kind==='activities-stop')resultText(vipRoot.querySelector('output'),text);

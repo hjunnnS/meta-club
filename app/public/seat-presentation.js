@@ -53,22 +53,23 @@ export function animateSeatArrival(B,model,actor,now,reduced){
     model.seatMotionKey=key;model.seatArrival={points,lengths,duration:Math.max(.25,lengths.at(-1)/2.6)};
   }
   const {points,lengths,duration}=model.seatArrival,age=Math.max(0,(now-motion.at)/1000);
-  if(age>=duration+.48)return false;
+  if(age>=duration+.72){model.torso.rotation.x=0;return false;}
   let turn=0;
   if(age<duration){
-    const travel=lengths.at(-1)*age/duration;
+    const travel=lengths.at(-1)*(1-Math.pow(1-age/duration,1.18));
     let i=1;while(i<lengths.length-1&&lengths[i]<travel)i++;
     const f=Math.min(1,(travel-lengths[i-1])/Math.max(.001,lengths[i]-lengths[i-1]));
     const a=points[i-1],b=points[i];model.root.position.set(a.x+(b.x-a.x)*f,a.y,a.z+(b.z-a.z)*f);
     const heading=Math.atan2(a.x-b.x,a.z-b.z);
     model.root.rotation.y=age<.16?angle(motion.from.yaw,heading,smooth(age/.16)):heading;
   }else{
-    turn=smooth(Math.min(1,(age-duration)/.48));
+    turn=smooth(Math.min(1,(age-duration)/.72));
     const end=points.at(-1),before=points.at(-2)||motion.from;
     model.root.position.set(end.x+(actor.x-end.x)*turn,end.y+(actor.y-end.y)*turn,end.z+(actor.z-end.z)*turn);
     model.root.rotation.y=angle(Math.atan2(before.x-end.x,before.z-end.z),actor.yaw,turn);
   }
   model.near.position.set(0,-.32*turn,0);model.near.rotation.setAll(0);model.torso.rotation.z=0;
+  model.torso.rotation.x=.12*Math.sin(turn*Math.PI);
   const stride=Math.sin(age*8)*(1-turn);
   model.limbs.forEach((joint,i)=>{const arm=i%2===0,sign=i<2?-1:1;
     joint.rotationQuaternion=null;joint.scaling.y=1;
@@ -76,4 +77,27 @@ export function animateSeatArrival(B,model,actor,now,reduced){
     joint.rotation.z=arm?sign*.12:0;
   });
   model.near.setEnabled(true);model.far.setEnabled(false);return true;
+}
+
+export function captureSeatDeparture(model,next,now){
+ if(model.actor?.seat==null||next.seat!=null)return;
+ model.standMotion={at:now,from:{x:model.root.position.x,y:model.root.position.y,z:model.root.position.z,yaw:model.root.rotation.y},to:{x:next.x,y:next.y,z:next.z,yaw:next.yaw}};
+}
+// Visual rise and a short step to the existing authoritative seat exit.
+export function animateSeatDeparture(B,model,actor,now,reduced){
+ const motion=model.standMotion;if(!motion)return false;
+ if(actor.seat!=null||actor.action==='walk'||reduced){delete model.standMotion;return false;}
+ const age=Math.max(0,(now-motion.at)/1000),rise=smooth(Math.min(1,age/.45)),step=smooth(Math.max(0,Math.min(1,(age-.40)/.55)));
+ const {from,to}=motion;
+ model.root.position.set(from.x+(to.x-from.x)*step,from.y+(to.y-from.y)*step,from.z+(to.z-from.z)*step);
+ model.root.rotation.y=angle(from.yaw,to.yaw,step);
+ model.near.position.set(0,-.32*(1-rise),0);model.near.rotation.setAll(0);
+ model.torso.rotation.set(.18*Math.sin(rise*Math.PI),0,0);
+ model.limbs.forEach((joint,i)=>{
+  const arm=i%2===0,sign=i<2?-1:1,stride=Math.sin(step*Math.PI*2)*.24;
+  joint.rotationQuaternion=null;joint.scaling.y=1;joint.rotation.set(arm?-sign*stride:-1.1*(1-rise)+sign*stride,0,arm?sign*.12:0);
+ });
+ model.near.setEnabled(true);model.far.setEnabled(false);
+ if(age>=.95){model.torso.rotation.x=0;delete model.standMotion;return false;}
+ return true;
 }

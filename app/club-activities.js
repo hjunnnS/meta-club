@@ -2,7 +2,7 @@ import {paradePlan} from './parade-plan.js';
 import {socialTrial} from './social-trial.js';
 // Approved activity rules; prices, ownership and permanent message storage remain outside scope.
 export const activityTrialRules=Object.freeze({shoutSeconds:5,shoutMaxLength:20,shoutCooldown:30000,shoutQueue:3,whisperMaxLength:200,whisperCooldown:2000,paradeSeconds:paradePlan.seconds,paradeCount:5,paradeCooldown:120000,paradeClubCooldown:60000,paradeClearance:(paradePlan.seconds+5)*1000});
-export const activityCommands=['gift-send','whisper-send','whisper-block','whisper-unblock','shout-send','vip-start','activities-stop'];
+export const activityCommands=['gift-send','greeting-send','whisper-send','whisper-block','whisper-unblock','shout-send','vip-start','activities-stop'];
 const mainShows=new Set(['laser','phoenix','whale','dragon','jellyfish','butterflies']);
 // Server instances share this store within the running service. The independent Sites adapter
 // may persist only anonymous trial deadlines in its own browser; never messages or recipients.
@@ -21,6 +21,7 @@ export function activityUsage({storage=null,storageKey='club-activity-usage-v1'}
 export function clubActivities({actors,blockedMessage=()=>false,identity=id=>id,now=()=>Date.now(),performances=()=>({active:null,next:null}),usage=activityUsage()}){
  const rules=activityTrialRules,gifts=socialTrial(actors,now),messages=[],blocks=new Map(),seen=new Map(),queue=[];
  const instanceId=crypto.randomUUID();
+ const greetings=new Map();
  let shout=null,parade=null,sequence=0;
  const actor=id=>actors().find(a=>a.id===id),key=id=>identity(id)||id;
  const blocked=(recipient,sender)=>blocks.get(key(recipient))?.has(key(sender))===true;
@@ -49,11 +50,16 @@ export function clubActivities({actors,blockedMessage=()=>false,identity=id=>id,
   const sender=actor(who);if(!sender)return {error:'클럽에 다시 입장해 주세요.'};
   if(!activityCommands.includes(type))return {error:'지원하지 않는 활동입니다.'};
   advance();const target=actor(input.to);
-  if(['gift-send','whisper-send','shout-send','vip-start'].includes(type)){
+  if(['gift-send','greeting-send','whisper-send','shout-send','vip-start'].includes(type)){
    if(typeof input.requestId!=='string'||!input.requestId||input.requestId.length>80)return {error:'요청을 확인해 주세요.'};
    const id=key(who)+':'+type+':'+input.requestId;if(seen.has(id))return {duplicate:true};
    const remember=()=>{seen.set(id,true);while(seen.size>256)seen.delete(seen.keys().next().value);};
    const limited=(kind,label)=>{const retryAfterMs=remaining(who,kind);return retryAfterMs?{error:label+' · '+Math.ceil(retryAfterMs/1000)+'초 후 다시 이용해 주세요.',retryAfterMs}:null;};
+   if(type==='greeting-send'){
+    if(!target||target.id===who||!['wave','bow','heart','clap'].includes(input.kind))return {error:'인사할 상대와 동작을 선택해 주세요.'};
+    if(sender.seat!=null||sender.trainSlot!=null||['pole-dance','podium-dance'].includes(sender.action))return {error:'자리나 단상에서 나온 뒤 인사해 주세요.'};
+    remember();greetings.set(who,{id:'greeting-'+ ++sequence,from:who,to:target.id,kind:input.kind,start:now(),seconds:3});return {ok:true,to:target.id};
+   }
    if(type==='gift-send'){
     if(!target||target.id===who||!['heart','bouquet','cake'].includes(input.kind))return {error:'다른 클럽 손님을 선택해 주세요.'};
     remember();gifts.add(input.kind,who,target.id);return {ok:true,to:target.id};
@@ -66,7 +72,7 @@ export function clubActivities({actors,blockedMessage=()=>false,identity=id=>id,
     remember();mark(who,'whisperUntil',rules.whisperCooldown);
     const message={id:'whisper-'+ ++sequence,from:who,to:target.id,sender:sender.nickname,recipient:target.nickname,text:input.text.trim(),at:now(),simulated:input.simulated===true};
     messages.push(message);while(messages.length>200)messages.shift();
-    return {ok:true,notification:{to:target.id,from:who,sender:sender.nickname,text:message.text,simulated:message.simulated}};
+    return {ok:true,notification:{to:target.id,from:who,sender:sender.nickname,recipient:target.nickname,text:message.text,simulated:message.simulated}};
    }
    if(type==='shout-send'){
     if(!safe(input.text,rules.shoutMaxLength)||!safe(sender.nickname,40))return {error:'외치기는 20자 이내의 허용 문구를 입력해 주세요.'};
@@ -94,7 +100,7 @@ export function clubActivities({actors,blockedMessage=()=>false,identity=id=>id,
  }
  return {
   command,
-  snapshot(){advance();return {socialEvents:gifts.snapshot(),shout:shout&&!shout.paused?{...shout}:null,parade:parade?{...parade}:null,activityStatus:publicStatus()};},
+  snapshot(){advance();for(const [id,g]of greetings)if(now()>=g.start+g.seconds*1000||!actor(g.from)||!actor(g.to))greetings.delete(id);return {greetings:[...greetings.values()].map(g=>({...g})),socialEvents:gifts.snapshot(),shout:shout&&!shout.paused?{...shout}:null,parade:parade?{...parade}:null,activityStatus:publicStatus()};},
   view(who){return {self:who,serverNow:now(),cooldowns:{...usage.get(key(who))},messages:messages.filter(m=>m.from===who||m.to===who).map(m=>({...m})),blockedIds:actors().filter(a=>blocked(who,a.id)).map(a=>a.id)};},
   leave(who){gifts.stop(who);for(let i=queue.length-1;i>=0;i--)if(queue[i].from===who)queue.splice(i,1);if(parade?.from===who)paradeEnd(now());if(shout?.from===who)shout=null;},
  };

@@ -10,6 +10,7 @@ def copy(source,relative):
  p=dist/relative;p.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(ROOT/source,p)
 modules=['club-interface.js','club-interface.css','vip-personal.js','vip-personal-ui.js','character-appearance.js','character-customization.js','parade-woman.js','shout-screen.js','private-whisper-feedback.js','social-effects.js','wand-ornament.js','club-actions-ui.js','club-event-renderer.js','wand-customization.js','wand-trail.js','seat-presentation.js','pole-dance.js','live-scene.js','music.js','free-dance.js','avatar.js','ceiling-lights.js','ambience.js','rhythm-floor.js','click-walk.js','scene-look.js','activity-feedback.js','rhythm-game.js','neon-horizon-chart.json']
 modules.append('toy-avatar.js')
+modules.append('greeting-motion.js')
 for name in modules:copy('app/public/'+name,'clubs/edm/'+name)
 for retired in ['birthday-ui.js','birthday-requests.js']:
  (dist/'clubs/edm'/retired).unlink(missing_ok=True)

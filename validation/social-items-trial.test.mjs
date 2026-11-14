@@ -148,3 +148,21 @@ test('all five adult women complete one slow lap with clothed bra tops and two h
   renderer.render(1000+P*1000);assert.equal(renderer.count(),0);assert(!scene.meshes.some(m=>m.name.startsWith('parade woman ')));
  }finally{scene.dispose();engine.dispose();}
 });
+
+
+test('targeted greetings validate peers, deduplicate, expire and preserve the existing dance and wand',()=>{
+ let at=1000;const actors=roster();actors[0].action='side-step';actors[0].wand=true;const activity=clubActivities({actors:()=>actors,now:()=>at});
+ for(const kind of ['wave','bow','heart','clap']){const input=request({to:'b',kind});assert(activity.command('a','greeting-send',input).ok);assert(activity.command('a','greeting-send',input).duplicate);assert.equal(activity.snapshot().greetings.length,1);assert.equal(activity.snapshot().greetings[0].kind,kind);}
+ assert(activity.command('a','greeting-send',request({to:'a',kind:'wave'})).error);assert(activity.command('a','greeting-send',request({to:'missing',kind:'wave'})).error);
+ assert.equal(actors[0].action,'side-step');assert.equal(actors[0].wand,true);at=4001;assert.equal(activity.snapshot().greetings.length,0);
+});
+test('four greeting layers restore baseline joints and seat departures rise before reaching the same exit',async()=>{
+ const {greetingMotion}=await import('../app/public/greeting-motion.js');const {captureSeatDeparture,animateSeatDeparture}=await import('../app/public/seat-presentation.js');
+ const engine=new B.NullEngine(),scene=new B.Scene(engine),a=model(scene,'a'),b=model(scene,'b',2,0,2);a.torso=a.near.getChildMeshes()[0];a.actor.action='side-step';const models=new Map([['a',a],['b',b]]),motion=greetingMotion(B,scene);
+ try{for(const kind of ['wave','bow','heart','clap']){const before=a.limbs.map(j=>j.rotation.clone());motion.set([{from:'a',to:'b',kind,start:1000,seconds:3}]);motion.render(2000,models);assert(a.limbs.some((j,i)=>!j.rotation.equals(before[i])));motion.restore();a.limbs.forEach((j,i)=>assert(j.rotation.equals(before[i])));assert.equal(a.actor.action,'side-step');assert.equal(a.actor.wand,true);}
+  a.actor.seat=0;a.root.position.set(18,0,3);captureSeatDeparture(a,{seat:null,x:16,y:0,z:3,yaw:0},1000);a.actor={...a.actor,seat:null,action:'idle'};
+  assert(animateSeatDeparture(B,a,a.actor,1200,false));assert.equal(a.root.position.x,18);assert(a.near.position.y<0);
+  assert(animateSeatDeparture(B,a,a.actor,1700,false));assert(a.root.position.x<18&&a.root.position.x>16);
+  animateSeatDeparture(B,a,a.actor,2000,false);assert.equal(a.root.position.x,16);assert(Math.abs(a.near.position.y)<.000001);assert(!a.standMotion);
+ }finally{motion.restore();scene.dispose();engine.dispose();}
+});

@@ -206,9 +206,9 @@
     <summary>캐릭터 행동</summary>
     <div class="extra-panel activity-panel">
       <strong>선택한 캐릭터와 함께</strong>
-      <button data-action-pick aria-pressed="false">캐릭터로 선택</button>
-      <label>사용자 목록 <select aria-label="행동 대상 사용자"><option value="">사용자 목록에서 선택</option></select></label>
+      <details class="user-list-fallback"><summary>화면 밖 사용자 찾기</summary><button data-action-pick aria-pressed="false">캐릭터로 선택</button><label>사용자 목록 <select aria-label="행동 대상 사용자"><option value="">사용자 목록에서 선택</option></select></label></details>
       <p data-action-target>캐릭터 또는 목록에서 대상을 선택하세요.</p>
+      <div class="activity-buttons greeting-buttons"><button data-greeting="wave">손 흔들기</button><button data-greeting="bow">가볍게 인사</button><button data-greeting="heart">손하트</button><button data-greeting="clap">응원 박수</button></div>
       <div class="activity-buttons">
         <button data-gift="heart" disabled>하트 선물 보내기</button><button data-gift="bouquet" disabled>꽃다발 보내기</button>
         <button data-gift="cake" disabled>케이크 보내기</button><button data-open-whisper disabled>귓속말 보내기</button>

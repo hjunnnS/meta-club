@@ -202,6 +202,7 @@ export async function startChannels(app, { origin, secret, port }) {
   app.get('/clubs/edm/rhythm-floor.js', serveFile('./public/rhythm-floor.js'));
   app.get('/clubs/edm/avatar.js', serveFile('./public/avatar.js'));
   app.get('/clubs/edm/toy-avatar.js', serveFile('./public/toy-avatar.js'));
+  app.get('/clubs/edm/greeting-motion.js', serveFile('./public/greeting-motion.js'));
   app.get('/clubs/edm/sdk.js', serveFile('./node_modules/colyseus.js/dist/colyseus.js'));
   app.get('/clubs/edm/music.js', serveFile('./public/music.js'));
   app.get('/clubs/edm/edm-layout.js', serveFile('./edm-layout.js'));

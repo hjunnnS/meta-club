@@ -4,7 +4,8 @@ import {privateWhisperFeedback} from './private-whisper-feedback.js';
 import {clubEventRenderer} from './club-event-renderer.js';
 import {socialEffects} from './social-effects.js';
 import {normalizeWandStyle,validWandStyle} from './wand-customization.js';
-import {tableSeatTarget,animateSeatArrival} from './seat-presentation.js';
+import {tableSeatTarget,animateSeatArrival,captureSeatDeparture,animateSeatDeparture} from './seat-presentation.js';
+import {greetingMotion} from './greeting-motion.js';
 import {podiumSlots,podiumDanceAt} from './podium-activity.js';
 import {animatePoleDance,releasePoleGrip} from './pole-dance.js';
 import { ceilingLights, musicSpeakers, strobeAccents, strobeAccentCue, accentDurations, movingLightPreview, addedFloorWallLights, podiumRimLights } from './ceiling-lights.js';
@@ -41,6 +42,8 @@ export function startLiveScene({
   const feedback=activityFeedback(B,scene);
   const social=socialEffects(B,scene,glow);
   const whisperReceipt=privateWhisperFeedback(B,scene,glow);
+  const whisperOutgoing=privateWhisperFeedback(B,scene,glow);
+  const greetings=greetingMotion(B,scene);
   const activitiesRenderer=clubEventRenderer(B,scene,glow,make);
   const renderCeiling = ceilingLights(B,scene);
   const renderSpeakers = musicSpeakers(B,scene);
@@ -187,7 +190,8 @@ export function startLiveScene({
   // The west-side reactive guest already carries a wand beside the entry group.
   const wandGuest = 'ai-3';
   let responders = [];
-  function onSnapshot({ actors, self, zones, stageEvent, nextPerformance, personalTrial=false, socialEvents=[],shout=null,parade=null }) {
+  function onSnapshot({ actors, self, zones, stageEvent, nextPerformance, personalTrial=false, socialEvents=[],greetings:greetingEvents=[],shout=null,parade=null }) {
+    greetings.set(greetingEvents);
     activitiesRenderer.set({shout,parade});
     social.set(socialEvents);
     actionTrial=personalTrial;
@@ -212,6 +216,7 @@ export function startLiveScene({
         models.set(a.id, model);
       }
       const previous=model.actor;
+      captureSeatDeparture(model,a,Date.now()+offset);
       if(previous&&a.id===self){
         if(a.wand&&!previous.wand)feedback.start(a.id,'wand');
         else if(a.action!==previous.action&&dances.has(a.action))feedback.start(a.id,'dance');
@@ -375,11 +380,13 @@ export function startLiveScene({
     if (kind === 'actors') onSnapshot(data);
     if(kind==='whisper-received'&&data?.from!==own)whisperReceipt.show(data?.from,data?.personal===true,Date.now()+offset,data?.text,data?.sender);
     if(kind==='whisper-clear')whisperReceipt.clear();
+    if(kind==='whisper-outgoing')whisperOutgoing.show(own,false,Date.now()+offset,data?.text,data?.recipient||'상대',true);
+    if(kind==='action-selection')greetings.select(data);
     if(kind==='chat-active'){chatActive=data===true;lockInput(gameActive||chatActive);cancelWalk();}
     if(kind==='game-active'){gameActive=data===true;if(gameActive)actionPicking=false;lockInput(gameActive||chatActive);cancelWalk();}
     if (kind === 'connection-state') {
       connected=data===true;
-      if(!connected){social.set([]);social.stop();activitiesRenderer.stop();whisperReceipt.clear();actionPicking=false;cancelWalk();joystick(0,0);stageEvents.stop();}
+      if(!connected){social.set([]);social.stop();activitiesRenderer.stop();whisperReceipt.clear();whisperOutgoing.clear();greetings.set([]);greetings.select(null);actionPicking=false;cancelWalk();joystick(0,0);stageEvents.stop();}
     }
     if (kind === 'place') {
       feedback.seat(null);
@@ -387,6 +394,7 @@ export function startLiveScene({
       activeSeat = data.seat??null;
       const model=models.get(own);
       if(model&&(data.seatMotion||wasSeated)){
+        captureSeatDeparture(model,data,Date.now()+offset);
         model.actor={...data};
         if(data.seat==null){delete model.seatMotionKey;delete model.seatArrival;}
         view.actor(model,null,data.seat!=null);view.pole(null);
@@ -457,8 +465,9 @@ export function startLiveScene({
   function actionTarget(x,y){
     const candidates=new Map();
     for(const [id,model] of models)if(id!==own&&(!model.actor.ai||actionTrial))
-      for(const mesh of model.root.getChildMeshes())if(mesh!==model.label)candidates.set(mesh,id);
-    const hit=scene.pick(x,y,mesh=>mesh.isEnabled()&&mesh.isVisible&&
+      for(const mesh of model.root.getChildMeshes())candidates.set(mesh,id);
+    const rect=canvas.getBoundingClientRect();
+    const hit=scene.pick(x*engine.getRenderWidth()/rect.width,y*engine.getRenderHeight()/rect.height,mesh=>mesh.isEnabled()&&mesh.isVisible&&
       (candidates.has(mesh)||mesh.checkCollisions||mesh.name.startsWith('wall/')));
     return hit?.hit?candidates.get(hit.pickedMesh):null;
   }
@@ -475,6 +484,8 @@ export function startLiveScene({
   canvas.addEventListener('pointermove',e=>{
     if(e.buttons||performance.now()-hoverAt<80)return;hoverAt=performance.now();
     const r=canvas.getBoundingClientRect();
+    const hovered=actionTarget(e.clientX-r.left,e.clientY-r.top);
+    if(hovered){canvas.style.cursor='pointer';canvas.title=models.get(hovered).actor.nickname+' · 귓속말·인사·선물';return;}
     if(actionPicking){
       const id=actionTarget(e.clientX-r.left,e.clientY-r.top);
       canvas.style.cursor=id?'pointer':'crosshair';canvas.title=id?models.get(id).actor.nickname+' · 행동 메뉴 열기':'선택할 캐릭터를 클릭하세요.';return;
@@ -498,7 +509,7 @@ export function startLiveScene({
     if(!tap||tap.id!==e.pointerId||tap.drag||!connected||gameActive||chatActive)return;
     const targetBounds=canvas.getBoundingClientRect();
     const selectedActor=actionTarget(e.clientX-targetBounds.left,e.clientY-targetBounds.top);
-    if(selectedActor){actionPicking=false;cancelWalk();canvas.style.cursor='grab';send('action-target',selectedActor);return;}
+    if(selectedActor){actionPicking=false;cancelWalk();canvas.style.cursor='grab';send('action-target',{id:selectedActor,x:(e.clientX-targetBounds.left)/targetBounds.width,y:(e.clientY-targetBounds.top)/targetBounds.height});return;}
     if(actionPicking){send('gate-notice','대상 선택 중입니다. 캐릭터를 클릭하거나 사용자 목록을 이용하세요.');return;}
     if(activeSeat!==null||riding||speakerCamera||preview)return;
     if(poleApproaching){poleApproaching=false;poleApproach=null;cancelWalk();send('podium-cancel');}
@@ -566,6 +577,7 @@ export function startLiveScene({
   }
   let nextNameLayout = 0;
   scene.onBeforeRenderObservable.add(() => {
+    greetings.restore();
     const now = performance.now(),
       dt = engine.getDeltaTime(),
       t = (Date.now() + offset - epoch) / 1000;
@@ -768,6 +780,7 @@ export function startLiveScene({
       }
       if(!['pole-dance','podium-dance'].includes(a.action))releasePoleGrip(m);
       m.vipProps?.render(a,beats,calmBeats.matches);
+      if(animateSeatDeparture(B,m,a,Date.now()+offset,calmBeats.matches)){m.showWand(wandVisible(a),true);detailed++;continue;}
       if(animateSeatArrival(B,m,a,Date.now()+offset,calmBeats.matches)){m.showWand(wandVisible(a),true);detailed++;continue;}
       if(a.action==='podium-dance'&&podiumSlots[a.podiumSlot]){
         const anchor=podiumSlots[a.podiumSlot],nearPole=Boolean(nearbyEdmPole(a,.95));
@@ -798,7 +811,7 @@ export function startLiveScene({
       }
       const adjacentRider = ownSlot != null && a.trainSlot != null && Math.abs(a.trainSlot - ownSlot) <= 1;
       const detailRadius = low ? (adjacentRider ? 12 : 8) : 21;
-      const close = a.id === own || B.Vector3.DistanceSquared(scene.activeCamera.position, target) < detailRadius ** 2;
+      const close = a.id === own || greetings.active(a.id,Date.now()+offset) || B.Vector3.DistanceSquared(scene.activeCamera.position, target) < detailRadius ** 2;
       const response = release >= 0 && otherWands && responders.includes(a.id);
       const liftWand = gather > .48 && a.id === wandGuest && a.wand && otherWands && a.trainSlot == null;
       const dance = response ? 'disco-point' : liftWand || a.action === 'dance' ? 'groove' : a.action;
@@ -939,7 +952,7 @@ export function startLiveScene({
       frames = 0;
     }
   });
-  scene.onBeforeRenderObservable.add(()=>{social.render(Date.now()+offset,models);activitiesRenderer.render(Date.now()+offset);whisperReceipt.render(Date.now()+offset,models);});
+  scene.onBeforeRenderObservable.add(()=>{social.render(Date.now()+offset,models);activitiesRenderer.render(Date.now()+offset);greetings.render(Date.now()+offset,models,calmBeats.matches);whisperReceipt.render(Date.now()+offset,models);whisperOutgoing.render(Date.now()+offset,models);});
   send('scene-ready', true);
   let lastGateNotice = -Infinity;
   return (from, to) => {
