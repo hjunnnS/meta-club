@@ -1,0 +1,112 @@
+/* Interface presentation only. The embedded club scene is unchanged. */
+.play-interface{--ui-line:#65557966;--ui-surface:#171320f5;--ui-muted:#bfb4ce;--ui-accent:#b9f4e7}
+.play-interface > header{position:relative;z-index:8;min-height:54px;gap:14px;border-bottom:1px solid var(--ui-line);background:#110e1bed;padding:8px 20px;flex-wrap:nowrap}
+.play-interface > header h1{font-size:15px;letter-spacing:.02em;white-space:nowrap}
+.play-interface #performance{font-size:12px;color:var(--ui-muted);margin-left:auto;white-space:nowrap}
+.play-interface .music-control{display:flex;align-items:center;gap:8px;white-space:nowrap}
+.play-interface .music-control #music,.play-interface .music-control #music.awaiting{position:static;transform:none;box-shadow:none;font-size:13px;padding:7px 12px;border:1px solid #b9f4e744;border-radius:10px;white-space:nowrap}
+.play-interface #track{max-width:17ch;font-size:11px;color:var(--ui-muted)}
+.play-interface > footer{min-height:68px;position:relative;z-index:7;justify-content:center;background:#110e1bf2;border-top:1px solid var(--ui-line);padding:8px 16px;flex-shrink:0}
+.play-interface #first-actions{width:min(620px,100%);display:flex;justify-content:center;gap:8px;flex-wrap:nowrap}
+.play-menu{flex:1;min-width:0}
+.play-menu>summary,.play-settings>summary{list-style:none;cursor:pointer;user-select:none;text-align:center;border-radius:12px;border:1px solid var(--ui-line);color:#eee8f8;background:#28203188;padding:12px 20px;font-size:14px;font-weight:650;white-space:nowrap}
+.play-menu>summary::-webkit-details-marker,.play-settings>summary::-webkit-details-marker{display:none}
+.play-menu[open]>summary,.play-settings[open]>summary{border-color:#b9f4e799;background:#b9f4e71a;color:var(--ui-accent)}
+.play-menu>summary:hover,.play-settings>summary:hover{background:#51405b88}
+.play-menu>summary:focus-visible,.play-interface button:focus-visible{outline:2px solid var(--ui-accent);outline-offset:3px}
+.play-panel{position:absolute;right:16px;bottom:calc(100% + 12px);z-index:9;width:min(430px,calc(100vw - 32px));max-height:calc(100dvh - 180px);overflow:auto;background:var(--ui-surface);border:1px solid var(--ui-line);border-radius:18px;padding:18px;box-shadow:0 16px 48px #0007;overscroll-behavior:contain}
+.play-menu:not([open])>.play-panel,.play-settings:not([open])>.play-panel{display:none}
+.play-panel-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px;width:100%}
+.play-panel-heading strong{font-size:17px;color:#f5f0ff}
+.play-interface .panel-close{font-size:12px;padding:6px 10px;background:transparent;border:1px solid var(--ui-line);border-radius:9px;cursor:pointer;color:var(--ui-muted)}
+.play-interface .panel-description{font-size:12px;line-height:1.6;color:var(--ui-muted);margin:12px 0 0}
+.play-panel button,.context-actions button,.developer-panel button{cursor:pointer;min-height:36px;padding:8px 12px;border-radius:10px;border:1px solid var(--ui-line);font-size:13px;background:#32283e}
+.play-panel button:hover:enabled,.context-actions button:hover:enabled{background:#493954}
+.play-panel button[aria-pressed=true]{border-color:#b9f4e7aa;background:#b9f4e71a;color:var(--ui-accent)}
+.play-panel button:disabled{opacity:.42;cursor:default}
+.play-panel label{font-size:13px}
+.play-panel select,.play-panel input{padding:7px 9px;border-radius:8px;min-height:34px;font-size:13px}
+.play-panel #dance-options{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.play-panel>[data-vip-solo]{width:100%;margin-bottom:14px}
+.play-panel>#pole-dance{width:100%;margin-bottom:8px}
+.play-panel>#wand,.play-panel>[data-vip-fan]{width:calc(50% - 6px);margin:0 2px 14px 0;vertical-align:top}
+.play-panel .extras{border-top:1px solid var(--ui-line);margin-top:12px;padding-top:10px}
+.play-panel .extras>summary{margin:0;padding:10px 0;cursor:pointer;font-size:14px;color:#e8ddf6}
+.play-panel .extras>.extra-panel{position:static;width:auto;max-height:none;overflow:visible;background:transparent;padding:10px 0 0;border:0}
+.play-panel #character-customization{border:0;margin:0;padding:0}
+.play-panel #character-customization>summary{display:none}
+.play-panel .wand-style-panel>strong{display:none}
+.play-panel .wand-style-panel label{margin:8px 0;justify-content:space-between}
+.play-panel .wand-style-panel select{max-width:235px}
+.play-panel .wand-style-panel p,.play-panel .activity-panel p{font-size:12px;line-height:1.6;color:var(--ui-muted)}
+.play-panel .activity-buttons{gap:8px}
+.play-panel output{font-size:12px;line-height:1.6;color:var(--ui-accent)}
+.play-interface .rhythm-shortcut{display:block;box-sizing:border-box;width:100%;border:1px solid var(--ui-line);background:#28203188;border-radius:12px;font-size:14px;font-weight:650;color:#eee8f8;padding:12px 20px;cursor:pointer;white-space:nowrap}
+.play-interface #whisper-dialog{position:fixed;inset:70px 16px auto auto;margin:0;width:min(350px,calc(100vw - 32px));max-height:calc(100dvh - 160px);overflow:auto;z-index:20;box-shadow:0 16px 48px #0007}
+.play-interface #whisper-dialog [data-whisper-log]{height:min(12rem,28dvh)}
+@media(max-width:900px){.play-interface .rhythm-shortcut{padding:12px}}
+.play-settings{flex-shrink:0;position:relative}
+.play-settings>summary{font-size:12px;padding:8px 12px}
+.play-settings>.settings-panel{top:calc(100% + 14px);bottom:auto;right:0;width:min(330px,calc(100vw - 32px))}
+.settings-panel>label{display:flex;align-items:center;gap:9px;margin:14px 0}
+.settings-panel>button,.settings-panel>a{display:block;margin-top:10px;width:100%;text-align:left}
+.settings-panel>a{font-size:13px;padding:10px 0;color:var(--ui-muted)}
+.play-interface .context-tray{position:absolute;z-index:15;left:50%;transform:translateX(-50%);bottom:18px;display:flex;align-items:center;gap:10px;padding:10px 14px;max-width:calc(100vw - 32px);border-radius:16px;background:#171320f2;border:1px solid var(--ui-line);box-shadow:0 8px 30px #0005}
+.context-tray .seat-context{max-width:32ch;font-size:12px;line-height:1.4;color:var(--ui-muted)}
+.play-interface #seat{cursor:pointer;border-radius:12px;padding:11px 22px;font-size:15px;font-weight:750;white-space:nowrap}
+.play-interface #seat[data-sitting=true]{background:var(--ui-accent);color:#152a25;border:1px solid #dcfff5;box-shadow:0 0 0 3px #b9f4e71a}
+.play-interface .context-actions{position:absolute;right:16px;bottom:18px;z-index:10;width:min(430px,calc(100vw - 32px))}
+.play-interface .context-actions>summary,.play-interface .context-actions:not([open]){display:none}
+.play-interface .context-actions>.extra-panel{position:static;width:100%;max-height:calc(100dvh - 180px);overflow:auto;background:var(--ui-surface);border:1px solid var(--ui-line);border-radius:18px;padding:18px;box-shadow:0 16px 48px #0007}
+.play-interface .context-actions .extra-panel>strong{display:none}
+.play-interface .developer-panel{position:absolute;z-index:12;top:14px;right:16px;bottom:14px;width:min(540px,calc(100vw - 32px));overflow:auto;display:block;padding:18px;background:#171320fa;border:1px solid #ac7d4b88;border-radius:18px;box-shadow:0 16px 48px #0009}
+.developer-panel>output{display:block;font:12px ui-monospace,monospace;color:var(--ui-muted);margin:8px 0}
+.developer-panel>#particle-tests{display:flex;flex-wrap:wrap;gap:8px}
+.developer-panel #event-controls{margin:16px 0;border-top:1px solid var(--ui-line);padding-top:14px}
+.developer-panel #event-controls button{margin:5px 3px 0 0}
+#developer-panel .trial-effects-panel{position:static;width:100%;max-height:none;box-shadow:none;border:0;padding:12px 0;background:transparent}
+#developer-panel .trial-effects>summary{display:block;text-align:left;margin-top:14px}
+.play-interface #notice:not(:empty){position:fixed;z-index:13;bottom:154px;left:50%;transform:translateX(-50%);max-width:min(600px,90vw);padding:10px 16px;border:1px solid var(--ui-line);border-radius:12px;background:#171320ee;color:#ddd5e8;font-size:12px;line-height:1.5;pointer-events:none}
+.play-interface #guide{z-index:11;bottom:88px;border:1px solid var(--ui-line);max-height:calc(100dvh - 190px);overflow:auto;padding:16px;border-radius:16px;background:var(--ui-surface)}
+@media(max-width:900px){.play-interface #track{display:none}.play-interface > header{padding:8px 12px;gap:8px}.play-interface #performance{max-width:26ch;overflow:hidden;text-overflow:ellipsis}.play-menu>summary{padding:12px}.play-interface .context-tray .seat-context{max-width:20ch}}
+
+/* Detail panels must not inherit the single-line navigation's nowrap rule. */
+.play-panel,.play-interface .context-actions>.extra-panel,.play-interface .developer-panel{white-space:normal;overflow-wrap:anywhere}
+.play-panel p,.play-panel output{max-width:100%;white-space:normal}
+.play-interface .context-tray{flex-wrap:wrap;justify-content:center;row-gap:8px}
+.play-interface .context-tray .seat-context:empty{display:none}
+.quick-dance{display:flex;align-items:center;gap:12px;white-space:normal}
+.current-dance{font-size:13px;font-weight:650;color:#e8e2f0;max-width:25ch}
+.play-interface .quick-dance-stop{cursor:pointer;min-height:40px;padding:9px 17px;border-radius:11px;background:#b9f4e7;color:#152a25;border:1px solid #dcfff5;font-weight:750;font-size:14px;white-space:nowrap}
+
+.play-interface .context-actions{width:min(300px,calc(100vw - 16px))}
+.context-actions .activity-buttons{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.context-actions .user-list-fallback{font-size:12px;margin:10px 0}
+.context-actions .user-list-fallback select{max-width:100%}
+.context-actions [data-open-whisper]{background:#b9f4e7;color:#152a25;font-weight:700}
+
+.play-interface .context-actions>.extra-panel{max-height:min(400px,calc(100dvh - 160px))}
+
+/* Compact icon dock; panels, commands and the club scene stay unchanged. */
+.play-interface > footer{min-height:82px;padding:8px 12px;background:transparent;border-top:0;overflow:visible}
+.play-interface #first-actions{box-sizing:border-box;width:min(440px,100%);gap:4px;padding:5px;background:#15131ee8;border:1px solid #69607155;border-radius:19px}
+.play-interface .play-menu>summary,.play-interface .rhythm-shortcut{box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;width:100%;height:62px;min-height:62px;padding:6px 4px;border:1px solid transparent;border-radius:13px;background:transparent;font-size:12px;font-weight:600;line-height:1.2;color:#d6cfdf}
+.play-interface .dock-icon{display:block;width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;color:#d4bbf0}
+.play-interface .dock-label{white-space:nowrap}
+.play-interface .play-menu>summary:hover,.play-interface .rhythm-shortcut:hover{background:#51405b66;color:#fff}
+.play-interface .play-menu[open]>summary{background:#b9f4e715;border-color:#b9f4e766;color:var(--ui-accent)}
+.play-interface .play-menu[open]>summary .dock-icon{color:var(--ui-accent)}
+@media(max-width:480px){.play-interface > footer{padding:6px 8px}.play-interface #first-actions{gap:2px}.play-interface .play-menu>summary,.play-interface .rhythm-shortcut{font-size:11px;padding:6px 2px}}
+
+/* Give the small dock a clearer silhouette without enlarging the controls. */
+.play-interface #first-actions{background:#181323ed;border-color:#b79cd94d;box-shadow:0 6px 24px #0005,inset 0 1px #e8d9ff12}
+.play-interface .play-menu>summary,.play-interface .rhythm-shortcut{position:relative;color:#e9e1f3;letter-spacing:.01em;transition:background-color .16s,border-color .16s,color .16s}
+.play-interface .dock-icon{width:24px;height:24px;stroke-width:1.85;color:#d9c1fa}
+.play-interface .play-menu:nth-child(2) .dock-icon{color:#a9e4e8}
+.play-interface .play-menu:nth-child(3) .dock-icon{color:#ebc5e8}
+.play-interface .play-menu:nth-child(4) .dock-icon{color:#e8d3ab}
+.play-interface .play-menu:nth-child(5) .dock-icon{color:#c9c6f5}
+.play-interface .play-menu[open]>summary{background:#b9f4e71c;border-color:#b9f4e75c;color:#ddfff5}
+.play-interface .play-menu[open]>summary::after{content:'';position:absolute;bottom:3px;left:calc(50% - 9px);width:18px;height:2px;border-radius:2px;background:#b9f4e7}
+.play-interface .play-menu[open]>summary .dock-icon{color:#b9f4e7}
+@media(prefers-reduced-motion:reduce){.play-interface .play-menu>summary,.play-interface .rhythm-shortcut{transition:none}}

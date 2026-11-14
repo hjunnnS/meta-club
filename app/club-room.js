@@ -1,14 +1,22 @@
+import {vipCommands,vipPersonalCommand} from './vip-personal-state.js';
+import {validAppearance,normalizeAppearance} from './public/character-appearance.js';
+import {clubActivities,activityCommands,activityUsage} from './club-activities.js';
+import {validWandStyle,normalizeWandStyle} from './public/wand-customization.js';
+import {requestPodium,validPodiumArrival,beginPodium,clearPodium} from './podium-activity.js';
 import { DanceTrain, onTrainFloor } from './dance-train.js';
 import { effects } from '../stage/festival/events.js';
 import { localTest } from './local-test.js';
 import { ManagedChannelZones } from './managed-channel-zones.js';
-import { edmArea, permittedPath } from './edm-layout.js';
+import { edmArea, permittedPath, edmSeats as seats, nearbyEdmSeats, nearbyEdmPole } from './edm-layout.js';
 import { blockedMessage } from './message-filter.js';
-import { background } from './visitors.js';
+import { background, extraGuestPlaces } from './visitors.js';
+import { performanceStatus } from './club-performances.js';
+import { playlistPosition,trackBeat } from './public/music.js';
 import { playlist } from './music.js';
 import { Room } from '@colyseus/core';
 import { profile } from './store.js';
 
+const sharedActivityUsage=activityUsage();
 export const capacity = 60;
 export const seatSeconds = 15;
 export const connected = new Map(),
@@ -16,15 +24,12 @@ export const connected = new Map(),
   recent = new Map(),
   rooms = new Map();
 // Additional background visitors use only spare human places, never reserved seats.
-const extraVisitors = Number(process.env.CLUB_AI_EXTRA_WHEN_EMPTY || 0);
+const extraVisitors = Number(process.env.CLUB_AI_EXTRA_WHEN_EMPTY || 15);
 if (!Number.isInteger(extraVisitors) || extraVisitors < 0 || extraVisitors > capacity)
   throw Error('CLUB_AI_EXTRA_WHEN_EMPTY must be an integer from 0 to ' + capacity);
-const floorEntry = { x: 0, y: 0, z: 25, yaw: 0 };
-const seats = [-17.6, -15.65, -13.7, -11.75, -9.8].map((x) => ({ x, y: 0, z: 17.95, yaw: 0 }));
-for (const x of [11.1, 16.9])
-  for (const z of [14, 18.65]) seats.push({ x, y: 0, z, yaw: z > 16 ? 0 : Math.PI });
+const floorEntry = { x: -1.8, y: 0.018, z: 6.4, yaw: -1.0 };
 import { dances } from './public/free-dance.js';
-const emotions = new Set(['idle', 'dance', 'wave', ...dances.keys()]);
+const emotions = new Set(['idle', 'dance', 'wave', 'pole-dance', ...dances.keys()]);
 function text(value, max) {
   return typeof value === 'string' && value.length <= max && !/[\u0000-\u001f\u007f]/.test(value)
     ? value.trim()
@@ -38,6 +43,8 @@ export class EdmRoom extends Room {
     this.maxClients = capacity;
     this.setSeatReservationTime(seatSeconds);
     this.members = new Map();
+    this.poleAnchors = new WeakMap();
+    this.podiumClaims=new Map();
     this.train = new DanceTrain();
     this.zones = new ManagedChannelZones();
     this.preparing = [];
@@ -59,6 +66,35 @@ export class EdmRoom extends Room {
     this.dirty = false;
     if (localTest) {
       this.eventSequence = 0;
+      this.activities=clubActivities({actors:()=>[...this.members.values()],blockedMessage,usage:sharedActivityUsage,
+        performances:()=>{const scheduled=performanceStatus(this.epoch,Date.now(),playlist());return {...scheduled,active:scheduled.active||(this.stageEvent?{...this.stageEvent,seconds:effects[this.stageEvent.kind]?.seconds}:null)};},
+        identity:id=>this.clients.find(c=>c.sessionId===id)?.userData?.identity||id});
+      this.activitiesState=()=>{for(const c of this.clients)if(c.userData?.identity?.startsWith('local-test:'))c.send('activities-state',this.activities.view(c.sessionId));};
+      this.onMessage('activities-state',client=>{if(this.member(client)&&client.userData.identity.startsWith('local-test:'))client.send('activities-state',this.activities.view(client.sessionId));});
+      for(const kind of activityCommands)this.onMessage(kind,(client,input)=>{
+        if(!this.member(client)||!client.userData.identity.startsWith('local-test:'))return;
+        if(input?.to&&!this.clients.some(c=>c.sessionId===input.to&&c.userData?.identity?.startsWith('local-test:')))return this.notice(client,'같은 클럽의 시험 회원을 선택해 주세요.');
+        const result=this.activities.command(client.sessionId,kind,{...input,simulated:false});
+        if(result.error)this.notice(client,result.error);
+        client.send('activities-result',{kind,...result});
+        if(result.notification)this.clients.find(c=>c.sessionId===result.notification.to)?.send('whisper-notification',result.notification);
+        this.activitiesState();this.dirty=true;
+      });
+      for(const kind of vipCommands)this.onMessage(kind,(client,input)=>{
+        const actor=this.member(client);if(!actor||!client.userData.identity.startsWith('local-test:')||!this.allowActivity(client))return;
+        const result=vipPersonalCommand([...this.members.values()],actor,kind,input);
+        if(result.error)this.notice(client,result.error);else this.notice(client,'');this.dirty=true;
+      });
+      this.onMessage('character-style',(client,input)=>{
+        const actor=this.member(client);
+        if(!actor||!client.userData.identity.startsWith('local-test:')||(input!==null&&!validAppearance(input)))return;
+        actor.appearance=input===null?null:normalizeAppearance(input);this.dirty=true;
+      });
+      this.onMessage('wand-style',(client,input)=>{
+        const actor=this.member(client);
+        if(!actor||!client.userData.identity.startsWith('local-test:')||!validWandStyle(input))return;
+        actor.wandStyle=normalizeWandStyle(input);this.dirty=true;
+      });
       this.onMessage('preview-event', (client, input) => {
         const actor = this.member(client);
         if (!actor || !client.userData.identity.startsWith('local-test:')) return;
@@ -66,7 +102,7 @@ export class EdmRoom extends Room {
           this.stageEvent = null;
         } else {
           if (typeof input?.kind !== 'string' || !Object.hasOwn(effects, input.kind)) return;
-          const event = { id: ++this.eventSequence, kind: input.kind, start: Date.now() };
+          const event = { id: ++this.eventSequence, kind: input.kind, start: Date.now(), bpm:playlistPosition(playlist(),this.epoch,Date.now())?.track.bpm || 120 };
           if (event.kind === 'led') {
             const message = text(input.message, 80);
             if (!message || /[\p{Cc}\p{Cf}]/u.test(message + actor.nickname) ||
@@ -92,6 +128,12 @@ export class EdmRoom extends Room {
         return this.notice(client, '열린 동선에서만 기차에 참여할 수 있습니다.');
       }
       Object.assign(actor, next);
+      if (command === 'start') {
+        const distance = a => Math.hypot(a.x - next.x, a.z - next.z);
+        const nearby = this.ai.filter(a => a.action !== 'sit').sort((a, b) => distance(a) - distance(b));
+        for (const guest of nearby.slice(0, 2)) this.train.board(guest, 'join');
+        this.refreshVisitors();
+      }
       client.send('place', actor);
       this.notice(client, command === 'start' ? '중앙 플로어에서 WASD로 기차를 이끄세요.' : '댄스 기차에 합류했습니다.');
       this.dirty = true;
@@ -99,7 +141,9 @@ export class EdmRoom extends Room {
     this.onMessage('wand', (client, enabled) => {
       const actor = this.member(client);
       if (actor && typeof enabled === 'boolean' && this.allowActivity(client)) {
+        if(enabled&&!actor.wand)this.react(actor,'disco-point',true);
         actor.wand = enabled;
+        if(enabled)actor.danceProp=null;
         this.dirty = true;
       }
     });
@@ -110,34 +154,72 @@ export class EdmRoom extends Room {
         c.send('clock', { sent, now: Date.now(), epoch: this.epoch, tracks: playlist() });
     });
     this.onMessage('move', (c, p) => this.move(c, p));
+    this.onMessage('podium-request',(c,data)=>{
+      const m=this.member(c);if(!m||!this.allowActivity(c))return;
+      const place=requestPodium(this.podiumClaims,[...this.members.values(),...this.ai],m,data?.podium,Date.now());
+      if(!place)return this.notice(c,'단상에 빈 자리가 없습니다. 다른 단상을 선택해 주세요.');
+      clearPodium(m);m.action='idle';this.poleAnchors.delete(m);this.dirty=true;c.send('podium-place',place);
+    });
+    this.onMessage('podium-cancel',c=>this.podiumClaims.delete(c.sessionId));
+    this.onMessage('podium-start',(c,data)=>{
+      const m=this.member(c),now=Date.now();
+      if(!m||!this.allowActivity(c)||!validPodiumArrival(this.podiumClaims,m,data,now)||!this.positionMember(m.id,m,data))return;
+      const position=playlistPosition(playlist(),this.epoch,now);
+      const beat=trackBeat(position,0)+(position?.cycle||0)*(position?.track.duration||0)*(position?.track.bpm||132)/60;
+      beginPodium(this.podiumClaims,m,data,beat);this.poleAnchors.set(m,{x:m.x,y:m.y,z:m.z});
+      c.userData.lastMove=now;this.dirty=true;
+    });
+    this.onMessage('pole-grip',(c,p)=>{
+      const m=this.member(c);
+      if(!m||!this.allowActivity(c)||m.seat!==null||this.train.riders.has(m.id)||!p||
+        !['x','y','z','yaw'].every(k=>Number.isFinite(p[k]))||!nearbyEdmPole({...m,...p},.95))return;
+      const elapsed=Math.max(0,(Date.now()-c.userData.lastMove)/1000);
+      if(Math.hypot(p.x-m.x,p.y-m.y,p.z-m.z)>Math.min(.5,elapsed*4.5+.16)||!this.positionMember(m.id,m,p))return;
+      Object.assign(m,{x:p.x,y:p.y,z:p.z,yaw:p.yaw,action:'pole-dance'});
+      this.poleAnchors.set(m,{x:p.x,y:p.y,z:p.z});
+      c.userData.lastMove=Date.now();this.dirty=true;
+    });
     this.onMessage('action', (c, a) => {
       const m = this.member(c);
       if (!m || !this.allowActivity(c) || !emotions.has(a) || m.seat !== null || this.train.riders.has(m.id)) return;
+      if(a==='pole-dance'&&!nearbyEdmPole(m,.95))return this.notice(c,'단상 위 봉 가까이에서 시작해 주세요.');
+      clearPodium(m);this.podiumClaims.delete(m.id);
       m.action = a;
+      if(a==='pole-dance')this.poleAnchors.set(m,{x:m.x,y:m.y,z:m.z});
+      else this.poleAnchors.delete(m);
       this.dirty = true;
       if (a === 'wave' || a === 'dance') this.react(m, a, true);
     });
-    this.onMessage('seat', (c) => {
+    const seatActivity = (c, requested, standOnly=false) => {
       const m = this.member(c);
       if (!m || !this.allowActivity(c) || this.train.riders.has(m.id)) return;
+      if(standOnly&&m.seat==null){c.send('place',m);return;}
       if (m.seat !== null) {
-        if (!this.positionMember(c.sessionId, m, c.userData.preSeat)) return;
-        Object.assign(m, c.userData.preSeat);
+        const exit = seats[m.seat]?.exit || c.userData.preSeat;
+        if (!exit || !this.positionMember(c.sessionId, m, exit)) return;
+        Object.assign(m, exit);
         m.seat = null;
-        m.action = 'idle';
+        m.table = null;
+        m.action = 'idle';delete m.seatMotion;delete c.userData.preSeat;
       } else {
-        const idx = seats.findIndex(
-          (s) => Math.hypot(m.x - s.x, m.z - s.z) < 2 && Math.abs(m.y - s.y) < 0.5,
-        );
-        if (idx < 0 || [...this.members.values()].some((other) => other.seat === idx))
-          return this.notice(c, '가까운 빈 좌석이 필요합니다.');
+        if (requested !== undefined && !Number.isInteger(requested)) return;
+        const occupied = new Set([...this.members.values()].map(other=>other.seat));
+        const candidate = nearbyEdmSeats(m).find(({index})=>
+          (requested === undefined || index === requested) && !occupied.has(index));
+        if (!candidate) return this.notice(c, '가까운 빈 소파 의자 앞에서 앉기를 눌러 주세요.');
+        const idx = candidate.index;
         if (!this.positionMember(c.sessionId, m, seats[idx])) return;
         c.userData.preSeat = { x: m.x, y: m.y, z: m.z, yaw: m.yaw };
-        Object.assign(m, seats[idx], { seat: idx, action: 'sit' });
+        const {exit,label,balcony,area,...pose} = seats[idx];
+        if(seats[idx].table||seats[idx].balcony)m.seatMotion={from:{...c.userData.preSeat},at:Date.now(),seat:idx};
+        clearPodium(m);this.poleAnchors.delete(m);this.podiumClaims.delete(m.id);
+        Object.assign(m, pose, { seat: idx, table: pose.table ?? null, action: 'sit' });
       }
-      this.dirty = true;
+      delete m.vipTowerSeat;this.dirty = true;
       c.send('place', m);
-    });
+    };
+    this.onMessage('seat', (c, requested)=>seatActivity(c,requested));
+    this.onMessage('stand', c=>seatActivity(c,undefined,true));
     this.setSimulationInterval(() => {
       if (this.dirty) {
         this.broadcast('snapshot', this.snapshot());
@@ -154,6 +236,7 @@ export class EdmRoom extends Room {
   leaveTrain(id) {
     for (const rider of this.train.leave(id)) {
       const actor = this.members.get(rider);
+      if (!actor) continue; // AI resumes its usual pose on the next snapshot.
       actor.trainSlot = null;
       actor.action = 'idle';
       const client = this.clients.find(c => c.sessionId === rider);
@@ -192,15 +275,17 @@ export class EdmRoom extends Room {
   refreshVisitors() {
     const before = new Set(this.ai.map((a) => a.id));
     const elapsed = (Date.now() - this.epoch) / 1000;
-    for (let i = 0; i < 3; i++) this.ai[i] = background(i, elapsed);
-    const extra = Math.min(extraVisitors, capacity - this.members.size);
+    for (let i = 0; i < 3; i++) {
+      if (!this.train.riders.has(this.ai[i].id)) this.ai[i] = background(i, elapsed);
+    }
+    const extra = Math.min(extraGuestPlaces.length, extraVisitors, capacity - this.members.size);
     this.ai.length = 5 + extra;
     for (let i = 0; i < extra; i++) {
-      const actor = background(i % 3, elapsed + (i + 1) * 4);
+      if (this.ai[5 + i]) continue;
       this.ai[5 + i] = {
-        ...actor,
-        id: 'extra-' + i + '-' + actor.id,
-        nickname: 'AI 손님 ' + (6 + i),
+        id: 'floor-dancer-' + i, ai: true, nickname: 'AI 손님 ' + (6 + i),
+        avatar: ['teal', 'rose', 'gold', 'indigo'][i % 4],
+        ...extraGuestPlaces[i],
       };
     }
     // Two reactive dancers use the reviewed side floors once available.
@@ -216,13 +301,16 @@ export class EdmRoom extends Room {
       }
       actor.wand = i === 3 || i === 4;
       before.delete(actor.id);
-      const { tier, group } = edmArea(actor);
+      const { tier, group } = edmArea(this.train.riders.has(actor.id) ? this.train.pose(actor.id) : actor);
       if (!this.zones.move('ai', actor.id, this.zones.location('ai', actor.id), tier, group)) {
-        Object.assign(actor, { x: 0, y: 0.018, z: 0, action: 'dance' });
+        Object.assign(actor, actor.fallback || { x: 0, y: 0.018, z: 0, action: 'dance' });
         this.zones.move('ai', actor.id, this.zones.location('ai', actor.id), 0, 'dancefloor');
       }
     }
-    for (const id of before) this.zones.move('ai', id, this.zones.location('ai', id), null);
+    for (const id of before) {
+      this.train.leave(id);
+      this.zones.move('ai', id, this.zones.location('ai', id), null);
+    }
   }
   react(member, action, explicit = false) {
     for (const ai of this.ai.slice(3, 5)) {
@@ -253,10 +341,15 @@ export class EdmRoom extends Room {
   snapshot() {
     const event = this.stageEvent;
     if (event && Date.now() >= event.start + effects[event.kind].seconds * 1000) this.stageEvent = null;
+    const performances = performanceStatus(this.epoch, Date.now(), playlist());
     return {
-      ...(localTest && { stageEvent: this.stageEvent ?? null }),
+      ...(this.activities?.snapshot()||{socialEvents:[],shout:null,parade:null}),
+      stageEvent: this.stageEvent ?? performances.active,
+      nextPerformance: performances.next,
+      performanceNow: Date.now(),
       trainLeader: this.train.leader,
-      actors: [...this.members.values(), ...this.ai],
+      actors: [...this.members.values(), ...this.ai.map(a =>
+        this.train.riders.has(a.id) ? { ...a, ...this.train.pose(a.id) } : a)],
       epoch: this.epoch,
       zones: this.zoneStates(),
     };
@@ -282,6 +375,12 @@ export class EdmRoom extends Room {
       c.send('place', m);
       return;
     }
+    const anchor=['pole-dance','podium-dance'].includes(m.action)?this.poleAnchors.get(m):null;
+    if(anchor&&Math.hypot(p.x-anchor.x,p.z-anchor.z)<.08&&Math.abs(p.y-anchor.y)<.08){
+      // Heartbeats and small standing corrections must not become walking.
+      m.yaw=p.yaw;c.userData.lastMove=Date.now();this.dirty=true;return;
+    }
+    if(anchor){this.poleAnchors.delete(m);clearPodium(m);}
     const walking = Math.hypot(p.x - m.x, p.z - m.z) > 0.025;
     Object.assign(m, { x: p.x, y: p.y, z: p.z, yaw: p.yaw });
     if (m.trainSlot === 0) {
@@ -289,6 +388,7 @@ export class EdmRoom extends Room {
       for (const id of this.train.riders.keys()) {
         if (id === m.id) continue;
         const rider = this.members.get(id);
+        if (!rider) continue; // AI poses are sampled directly from the train path.
         const next = this.train.pose(id);
         if (this.positionMember(id, rider, next)) Object.assign(rider, next);
         else this.leaveTrain(id);
@@ -321,6 +421,7 @@ export class EdmRoom extends Room {
       ai: false,
       action: 'idle',
       seat: null,
+      table: null,
     };
     client.userData = { identity, lastMove: Date.now() };
     this.members.set(client.sessionId, m);
@@ -349,7 +450,10 @@ export class EdmRoom extends Room {
       this.zones.location('human', client.sessionId),
       null,
     );
+    this.podiumClaims.delete(client.sessionId);
+    this.activities?.leave(client.sessionId);
     this.members.delete(client.sessionId);
+    this.activitiesState?.();
     if (connected.get(identity)?.client === client) connected.delete(identity);
     if (remember) {
       const { x, y, z, yaw } = m;

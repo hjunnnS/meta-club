@@ -32,16 +32,23 @@ function permitted(r, now) {
     existsSync(resolve(dirname(catalogue), r.file))
   );
 }
-const testLoop = {
-  id: 'g0-loop',
-  title: 'EDM 시험 루프',
-  duration: 12,
-  bpm: 120,
+const testTracks = [{
+  id: 'neon-horizon-treblo',
+  title: 'Neon Horizon · Treblo',
+  file: fileURLToPath(new URL('./fixtures/club-music/neon-horizon-treblo.mp3', import.meta.url)),
+  duration: 448 * 60 / 132,
+  sourceDuration: 208.728,
+  loopStart: .23,
+  loopEnd: .23 + 448 * 60 / 132,
+  bpm: 132,
+  // Measured full-band and bass RMS per 16 beats of the supplied file.
+  energySections: [[0.7,0.727],[0.693,0.692],[0.874,0.947],[0.893,0.965],[0.932,0.983],[0.928,0.973],[0.973,0.991],[0.985,0.997],[0.399,0.287],[0.445,0.288],[0.949,0.93],[0.973,0.957],[0.995,0.978],[0.998,0.975],[0.917,0.965],[0.919,0.964],[0.961,0.977],[0.981,0.994],[0.94,0.994],[0.946,0.994],[0.987,0.969],[0.996,0.97],[0.997,0.977],[0.996,0.967],[0.933,0.987],[0.904,0.949],[0.791,0.811],[0.727,0.722],[0.195,0.228]],
+  firstBeat: 0, // Playback buffer starts on the original first beat.
   until: null,
-  url: '/media/edm/g0-loop',
-};
+  url: '/media/edm/neon-horizon-treblo',
+}];
 export function playlist(now = Date.now()) {
-  if (localTest) return [testLoop];
+  if (localTest) return testTracks.map(({file, ...track}) => track);
   return records
     .filter((r) => permitted(r, now))
     .map(({ id, title, duration, until, bpm, firstBeat }) => ({
@@ -69,8 +76,11 @@ export function installMusic(app) {
   );
   app.get('/media/edm/:id', (req, res) => {
     if (localTest) {
-      if (req.params.id !== testLoop.id) return res.sendStatus(404);
-      return res.sendFile(fileURLToPath(new URL('./fixtures/g0-loop.wav', import.meta.url)));
+      // Keep the G0 comparison fixture reachable for existing validation clients.
+      if (req.params.id === 'g0-loop')
+        return res.sendFile(fileURLToPath(new URL('./fixtures/g0-loop.wav', import.meta.url)));
+      const track = testTracks.find(t => t.id === req.params.id);
+      return track ? res.sendFile(track.file) : res.sendStatus(404);
     }
     const record = records.find((r) => r.id === req.params.id && permitted(r, Date.now()));
     if (!record) return res.sendStatus(404);

@@ -11,21 +11,43 @@
 <label><input id="fast-flash" type="checkbox" checked>빠른 점멸 (0.1초)</label>
 <button id="stop-effect">중단</button><span id="effect-state" role="status">이벤트를 선택하세요</span></section>
 <script type="module">
+import {planWalk} from '/clubs/edm/click-walk.js';
 const sources=window.festivalAssets||{engine:'../../dance/node_modules/babylonjs/babylon.js',loader:'../../dance/node_modules/babylonjs-loaders/babylonjs.loaders.min.js',map:'edm-festival.glb'};
 const canvas=document.querySelector('canvas'), status=document.querySelector('output');
-async function script(url){const el=document.createElement('script');el.src=url;const done=new Promise((ok,no)=>{el.onload=ok;el.onerror=no});document.head.append(el);await done;}
+let activeEngine;
+async function script(url){const el=document.createElement('script');el.src=url;const done=new Promise((ok,no)=>{el.onload=ok;el.onerror=()=>no(Error('화면 파일 다운로드 실패: '+url));});document.head.append(el);await done;}
+async function downloadMap(url){
+ let failure;
+ for(let attempt=0;attempt<3;attempt++){
+   try{
+     const response=await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(20000)});
+     if(!response.ok){
+       const error=Error('HTTP '+response.status);
+       error.permanent=response.status<500;
+       throw error;
+     }
+     // A dropped connection can also fail while reading the large GLB body.
+     return await response.arrayBuffer();
+   }catch(error){
+     failure=error;
+     if(error.permanent||attempt===2)break;
+     status.textContent='맵 연결을 다시 시도하는 중… ('+(attempt+1)+'/2)';
+     await new Promise(resolve=>setTimeout(resolve,attempt===0?400:1000));
+   }
+ }
+ throw Error('맵 다운로드 실패: '+url+' · '+failure.message);
+}
+
 async function open(){
  await script(sources.engine);await script(sources.loader);
- const B=BABYLON, engine=new B.Engine(canvas,true,{preserveDrawingBuffer:true,stencil:true});
+ const B=BABYLON, engine=activeEngine=new B.Engine(canvas,true,{preserveDrawingBuffer:true,stencil:true});
  const scene=new B.Scene(engine);scene.useRightHandedSystem=true;
  scene.clearColor=new B.Color4(.038,.026,.075,1);
  const cam=new B.FreeCamera('visitor',B.Vector3.Zero(),scene);cam.minZ=.06;cam.fov=1.14;
  cam.attachControl(canvas,true);cam.inputs.removeByType('FreeCameraKeyboardMoveInput');cam.angularSensibility=2200;
  const sky=new B.HemisphericLight('ambient',new B.Vector3(.2,1,.4),scene);
  sky.diffuse=new B.Color3(.72,.66,.92);sky.groundColor=new B.Color3(.26,.18,.35);sky.intensity=.95;
- const response=await fetch(sources.map);
- if(!response.ok)throw Error('맵 파일을 불러올 수 없습니다.');
- const bytes=await response.arrayBuffer();
+ const bytes=await downloadMap(sources.map);
  const jsonLength=new DataView(bytes).getUint32(12,true);
  const {reviewRoute,eyeHeight,stops}=JSON.parse(new TextDecoder().decode(new Uint8Array(bytes,20,jsonLength))).extras;
  const model=URL.createObjectURL(new Blob([bytes],{type:'model/gltf-binary'}));
@@ -33,21 +55,21 @@ async function open(){
  finally{URL.revokeObjectURL(model);}
  for(const m of scene.materials)if('maxSimultaneousLights' in m)m.maxSimultaneousLights=10;
  const glow=new B.GlowLayer('light diffusion',scene,{blurKernelSize:48});glow.intensity=.53;
- const views={'입구':[[0,1.65,25],[0,3.4,-16]],'발코니':[[10.1,5.65,-13],[0,.4,0]],'바': [[-7.8,1.65,19.7],[-14,1.6,14]],'라운지':[[8,1.65,13.5],[15,.85,17]],'무대':[[0,1.67,3],[0,3.6,-17]]};
+ const views={'입구':[[0,1.65,25],[0,3.4,-16]],'발코니':[[-16.7,5.65,-7.9],[0,3.4,-16]],'바': [[-13.6,1.7,15.15],[0,3.4,-16]],'테이블':[[6.5,4.1,19],[19,.9,4]],'계단':[[-12.5,3.6,12],[-19.2,2,6.5]],'바 직원':[[-11.3,1.95,14.7],[-13.6,1.4,18.1]],'DJ':[[3.9,4.0,-11.9],[0,2.75,-15.6]],'부채꼴 빛':[[0,2.4,18.2],[0,5,-3.5]],'회전 무늬':[[0,7.4,17],[0,.2,3]],'벽 커튼':[[0,2.3,18.2],[0,4,-3]],'무대':[[0,1.67,3],[0,3.6,-17]]};
  const nav=document.querySelector('nav'), tour=document.querySelector('.tour');
  const play=document.querySelector('#play'), slider=tour.querySelector('input'), locationLabel=document.querySelector('#location');
  const points=reviewRoute.map(p=>B.Vector3.FromArray(p));
  const lengths=[0];
  for(let i=1;i<points.length;i++)lengths.push(lengths[i-1]+B.Vector3.Distance(points[i-1],points[i]));
  const end=lengths.at(-1);
- const landmarks=[[0,'입구'],[stops.floor,'중앙 플로어'],[stops.stage,'DJ 무대'],[8,'중앙 플로어'],[stops.west,'서쪽 댄스존'],[10,'중앙 플로어'],[stops.east,'동쪽 댄스존'],[12,'경사로 입구'],[13,'2층 데크'],[stops.balcony,'발코니']];
+ const landmarks=[[0,'입구'],[stops.floor,'중앙 플로어'],[stops.stage,'DJ 무대'],[8,'중앙 플로어'],[stops.east,'동쪽 댄스존'],[10,'중앙 플로어'],[stops.west,'서쪽 댄스존'],[12,'경사로 입구'],[14,'2층 데크'],[stops.balcony,'발코니']];
  let distance=0, playing=false, onRoute=false;
  const walk=document.querySelector('#walk');
  const keys=new Set(), movementKeys=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight']);
  const floors=new Set(), barriers=new Set();
- const barrierNames=/^(Rear wall|Side wall|Entry parapet|(East|West) (deck handrail|ramp rail))$/;
- const floorNames=/^(Arena floor|Entry floor|Dance floor|DJ platform|DJ access|(East|West) (dance zone|deck ramp|upper deck))$/;
- const solidNames=/^(Rear wall|Side wall|Entry parapet|DJ booth|DJ platform|DJ access|(East|West) (deck ramp|upper deck|ramp rail|ramp posts|deck handrail|posts|supports)|Lobby wings|Side room (fins|parapet)|Perimeter acoustic bays|Deck banquettes|Deck backrests|Bar base|Bar stone slab|Stool foot|Stool stem|Upholstered stools|Backbar cabinet|Velvet sofa plinth|Velvet sofa cushions|Channel tufted sofa back|Cocktail table (stem|top)|Entrance return walls|Portal uprights|Stage pylons|Stage surround|Stage backdrop)$/;
+ const barrierNames=/^(Rear wall|Side wall|Entry parapet|Auxiliary podium pole|U lounge rail|(East|West) (deck handrail|ramp rail))$/;
+ const floorNames=/^(Arena floor|Entry floor|Dance floor|Auxiliary dance podium|DJ platform|DJ access|U lounge (floor|stair)|(East|West) (dance zone|deck ramp|upper deck))$/;
+ const solidNames=/^(Rear wall|Side wall|Entry parapet|DJ booth|DJ platform|DJ access|Auxiliary podium pole|U lounge (floor|stair|rail|post|support)|(East|West) (deck ramp|upper deck|ramp rail|ramp posts|deck handrail|posts|supports)|Lobby wings|Side room (fins|parapet)|Perimeter acoustic bays|Deck banquettes|Deck backrests|VIP (sofa (base|cushion|back|arm|return)|low table top|table leg)|West speaker (cabinet|plinth)|Bar base|Bar stone slab|Stool foot|Stool stem|Upholstered stools|Backbar cabinet|Velvet sofa plinth|Velvet sofa cushions|Channel tufted sofa back|Cocktail table (stem|top)|Wall booth (base|seat|back|table|leg)|Entrance return walls|Entry (end|side) enclosure|Portal uprights|Stage pylons|Stage surround|Stage backdrop|Festival LED backing)$/;
  for(const m of scene.meshes){
    if(!m.getTotalVertices())continue;
    const names=[m.name,m.parent?.name];
@@ -59,15 +81,21 @@ async function open(){
  walker.ellipsoid=new B.Vector3(.28,.71,.28);
  walker.ellipsoidOffset=new B.Vector3(0,walker.ellipsoid.y,0);
  walker.isPickable=false;
- let walking=false, allowedStep=()=>true;
+ let walking=false, movementBlocked=false, allowedStep=()=>true;
+ let walkRoute=[], walkArrival=null, stalled=0;
+ function cancelWalk(){walkRoute=[];walkArrival=null;stalled=0;}
  let joystick={x:0,y:0}, seated=false;
  const down=new B.Vector3(0,-1,0);
+ // Only the two half-metre podium edges get step assistance; stairs and other
+ // obstacles retain their existing height limits. No ramp geometry is needed.
+ function podiumEdge(x,z,foot){return foot<.8&&Math.abs(x+15.3)<2.1&&[-8.8,-1.6].some(cz=>Math.abs(z-cz)<2.1);}
  function groundAt(x,z,foot){
-   const hit=scene.pickWithRay(new B.Ray(new B.Vector3(x,foot+.22,z),down,.46),m=>floors.has(m));
+   const reach=podiumEdge(x,z,foot)?.56:.22;
+   const hit=scene.pickWithRay(new B.Ray(new B.Vector3(x,foot+reach,z),down,reach*2+.02),m=>floors.has(m));
    return hit?.hit?hit.pickedPoint.y:null;
  }
  function walkMode(active){
-   walking=active;keys.clear();walk.setAttribute('aria-pressed',String(active));
+   cancelWalk();walking=active;keys.clear();walk.setAttribute('aria-pressed',String(active));
    if(active){
      playing=false;onRoute=false;markView(null);canvas.focus();
      walker.position.copyFrom(cam.position);walker.position.y+=walker.ellipsoid.y-eyeHeight+.12;
@@ -75,40 +103,81 @@ async function open(){
    }else{syncControls();}
  }
  walk.onclick=()=>walkMode(!walking);
- window.addEventListener('keydown',event=>{
+ function walkKeyDown(event){
    if(!walking||event.altKey||event.ctrlKey||event.metaKey)return;
    if(event.code==='Escape'&&!tour.hidden){walkMode(false);walk.focus();return;}
    if(document.activeElement!==canvas||!movementKeys.has(event.code))return;
-   event.preventDefault();keys.add(event.code);
- });
+   cancelWalk();event.preventDefault();keys.add(event.code);
+ }
+ window.addEventListener('keydown',walkKeyDown);
  window.addEventListener('keyup',event=>keys.delete(event.code));
- window.addEventListener('blur',()=>keys.clear());
+ window.addEventListener('blur',()=>{keys.clear();cancelWalk();});
  canvas.addEventListener('blur',()=>keys.clear());
  function walkFrame(){
    const pressed=(a,b)=>Number(keys.has(a)||keys.has(b));
    const forward=pressed('KeyW','ArrowUp')-pressed('KeyS','ArrowDown')+joystick.y;
    const side=pressed('KeyD','ArrowRight')-pressed('KeyA','ArrowLeft')+joystick.x;
-   if(!forward&&!side)return;
-   const look=cam.getForwardRay().direction;
+   if(seated||movementBlocked){cancelWalk();return;}
+   const look=scene.activeCamera.getForwardRay().direction;
    const heading=new B.Vector3(look.x,0,look.z).normalize();
    const right=new B.Vector3(-heading.z,0,heading.x);
-   const delta=heading.scale(forward).add(right.scale(side)).normalize().scale(3*Math.min(engine.getDeltaTime(),50)/1000);
+   const stride=3*Math.min(engine.getDeltaTime(),50)/1000;
+   let delta;
+   if(forward||side){cancelWalk();delta=heading.scale(forward).add(right.scale(side)).normalize().scale(stride);}
+   else if(walkRoute.length){
+     const target=walkRoute[0],dx=target.x-walker.position.x,dz=target.z-walker.position.z,length=Math.hypot(dx,dz);
+     if(length<.06){walkRoute.shift();if(!walkRoute.length){const arrive=walkArrival;cancelWalk();arrive?.();}return;}
+     delta=new B.Vector3(dx,0,dz).scale(Math.min(stride,length)/length);
+   }else return;
+   cam.rotation.y=Math.atan2(-delta.x,-delta.z);
    const foot=cam.position.y-eyeHeight;
    const before=walker.position.clone();
    // Low parapets and thin handrails must stop the walker before its centre crosses them.
    const direction=delta.normalizeToNew(), reach=delta.length()+walker.ellipsoid.x;
    for(const height of [.45,1]){
      const origin=new B.Vector3(before.x,foot+height,before.z);
-     if(scene.pickWithRay(new B.Ray(origin,direction,reach),mesh=>barriers.has(mesh),true)?.hit)return;
+     if(scene.pickWithRay(new B.Ray(origin,direction,reach),mesh=>barriers.has(mesh),true)?.hit){cancelWalk();return;}
    }
    const nextGround=groundAt(before.x+delta.x,before.z+delta.z,foot);
-   if(nextGround===null)return;
+   if(nextGround===null){cancelWalk();return;}
    delta.y=nextGround-foot;
    walker.moveWithCollisions(delta);
    const y=groundAt(walker.position.x,walker.position.z,foot);
-   if(y===null || !allowedStep({x:before.x,y:foot,z:before.z},{x:walker.position.x,y,z:walker.position.z})){walker.position.copyFrom(before);return;}
+   if(y===null || !allowedStep({x:before.x,y:foot,z:before.z},{x:walker.position.x,y,z:walker.position.z})){walker.position.copyFrom(before);cancelWalk();return;}
+   if(walkRoute.length){
+     stalled=B.Vector3.DistanceSquared(before,walker.position)<.000001?stalled+engine.getDeltaTime():0;
+     if(stalled>350)cancelWalk();
+   }
    walker.position.y=y+walker.ellipsoid.y+.12;
    cam.position.set(walker.position.x,y+eyeHeight,walker.position.z);
+ }
+ function navigate(goal,onArrival,permit=()=>true){
+   cancelWalk();if(seated)return false;
+   const start={x:walker.position.x,y:cam.position.y-eyeHeight,z:walker.position.z};
+   const cache=new Map();
+   const step=(from,to)=>{
+     if(Math.abs(to.x)>22||to.z < -21||to.z>26.5)return null;
+     const key=to.x.toFixed(3)+','+to.z.toFixed(3)+','+from.y.toFixed(2);
+     let y=cache.get(key);
+     if(y===undefined){
+       const hit=scene.pickWithRay(new B.Ray(new B.Vector3(to.x,from.y+(podiumEdge(to.x,to.z,from.y)?.56:.4),to.z),down,podiumEdge(to.x,to.z,from.y)?1.14:.8),m=>floors.has(m));
+       y=hit?.hit?hit.pickedPoint.y:null;cache.set(key,y);
+     }
+     if(y===null||Math.abs(y-from.y)>(podiumEdge(to.x,to.z,from.y)?.54:.31))return null;
+     const at={x:to.x,y,z:to.z};if(!permit(from,at))return null;
+     const delta=new B.Vector3(at.x-from.x,at.y-from.y,at.z-from.z),length=delta.length();
+     if(length>.001){
+       const direction=delta.scale(1/length),across=new B.Vector3(-direction.z,0,direction.x);
+       for(const lateral of [-.29,0,.29])for(const height of [.32,.8,1.35]){
+         const origin=new B.Vector3(from.x,from.y+height,from.z).add(across.scale(lateral));
+         if(scene.pickWithRay(new B.Ray(origin,direction,length+.04),m=>m.checkCollisions&&!floors.has(m),true)?.hit)return null;
+       }
+     }
+     return at;
+   };
+   const path=planWalk(start,goal,step);
+   if(!path)return false;
+   walkRoute=path;walkArrival=onArrival;return true;
  }
  function pointAt(d){
    let i=1;
@@ -164,9 +233,9 @@ async function open(){
    playing=false;onRoute=true;distance=end*Number(slider.value)/1000;
    markView(distance>=end?'발코니':null);placeOnRoute(true);
  };
- select('입구');await scene.whenReadyAsync();
+ select(({booths:'테이블',bar:'바',speakers:'계단',bartender:'바 직원',dj:'DJ'})[new URLSearchParams(location.search).get('view')]||'입구');await scene.whenReadyAsync();
  engine.runRenderLoop(()=>{
-   if(walking&&!seated)walkFrame();
+   if(walking)walkFrame();
    if(playing){
      distance=Math.min(end,distance+Math.min(engine.getDeltaTime(),100)*.003);
      if(distance>=end){playing=false;markView('발코니');}
@@ -175,12 +244,45 @@ async function open(){
    scene.render();
  });
  window.addEventListener('resize',()=>engine.resize());status.hidden=true;tour.hidden=false;window.setView=select;
+ if(['bartender','dj'].includes(new URLSearchParams(location.search).get('view'))){
+   const {avatarFactory,staffNPC,animateStaff}=await import('/clubs/edm/avatar.js');
+   const {houseScreen}=await import('./events.js');
+   const reviewBoard=houseScreen(B,scene,null);
+   const make=avatarFactory(B,scene,glow),staff=['bartender','dj'].map(role=>({role,model:staffNPC(B,scene,make,role)}));
+   scene.onBeforeRenderObservable.add(()=>{
+     const seconds=performance.now()/1000;
+     reviewBoard(null,seconds*2,true,0,0,true,seconds*2,-1,B.Color3.White());
+     staff.forEach(({role,model})=>animateStaff(model,role,seconds*2,seconds,0,matchMedia('(prefers-reduced-motion: reduce)').matches));
+   });
+ }
+ if(new URLSearchParams(location.search).get('view')==='accents'){
+   const {strobeAccents,strobeAccentCue,accentDurations}=await import('/clubs/edm/ceiling-lights.js');
+   const render=strobeAccents(B,scene),panel=document.querySelector('#event-panel'),buttons=document.querySelector('#event-buttons');
+   const state=document.querySelector('#effect-state');let active=null;
+   panel.querySelector('h1').textContent='싸이키 보조 연출 시험';
+   panel.querySelectorAll('label').forEach(label=>label.hidden=true);
+   const repeatLabel=document.createElement('label'),repeat=document.createElement('input');
+   repeat.type='checkbox';repeat.checked=true;repeatLabel.append(repeat,' 반복 보기');panel.append(repeatLabel);
+   function stop(){active=null;state.textContent='효과를 선택하세요';for(const button of buttons.children)button.setAttribute('aria-pressed','false');}
+   for(const [kind,label] of Object.entries({curtain:'양쪽 벽 레이저 커튼',fan:'객석 위 부채꼴 빛',gobo:'회전 무늬 조명'})){
+     const button=document.createElement('button');button.textContent=label+' · '+accentDurations[kind]+'초';
+     button.onclick=()=>{stop();active={kind,start:performance.now()};state.textContent=label+' 시험 중';select(({curtain:'벽 커튼',fan:'부채꼴 빛',gobo:'회전 무늬'})[kind]);button.setAttribute('aria-pressed','true');};buttons.append(button);
+   }
+   document.querySelector('#stop-effect').onclick=stop;panel.hidden=false;
+   scene.onBeforeRenderObservable.add(()=>{
+     const seconds=performance.now()/1000;let age=active?(performance.now()-active.start)/1000:0;
+     if(active&&repeat.checked)age%=accentDurations[active.kind]+.8;
+     else if(active&&age>=accentDurations[active.kind])stop();
+     const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+     render(strobeAccentCue({beat:seconds*132/60,preview:active?{kind:active.kind,age}:null,reduced}),seconds*132/60,.75,reduced);
+   });
+ }
  if(window.festivalAssets?.events || location.search==='?events'){
    const {effects,eventPlayer}=await import(sources.events || './events.js');
    const panel=document.querySelector('#event-panel'), buttons=document.querySelector('#event-buttons');
    const state=document.querySelector('#effect-state'), fastFlash=document.querySelector('#fast-flash');
    const player=eventPlayer(B,scene,Date.now,()=>fastFlash.checked);
-   views['발코니']=[[10.1,5.65,-13],[0,4.2,-10]];
+   views['발코니']=[[-10.1,5.65,-13],[0,4.2,-10]];
    views['무대']=[[0,3.4,4.8],[0,4,-10]];
    select('무대');
    tour.hidden=true;
@@ -210,15 +312,45 @@ async function open(){
    nav.hidden=true;nav.style.display='none';tour.hidden=true;
    walkMode(true);
    cam.detachControl();
+   // Activity buttons live in the parent document. Hand walking back to the
+   // canvas on the very first key press, even when the key is held down.
+   const owner = parent.document;
+   const listeners = new AbortController();
+   owner.addEventListener('keydown', event => {
+     if (!movementKeys.has(event.code) || event.defaultPrevented || event.isComposing ||
+         event.ctrlKey || event.altKey || event.metaKey || owner.querySelector('dialog[open]') ||
+         owner.querySelector('#shop-stop:not([hidden])') ||
+         event.target.closest('input,textarea,select,[contenteditable]:not([contenteditable=false]),[role=textbox]')) return;
+     canvas.focus({preventScroll:true});
+     walkKeyDown(event);
+   }, {signal:listeners.signal});
+   owner.addEventListener('keyup', event=>keys.delete(event.code), {signal:listeners.signal});
+   window.addEventListener('pagehide',()=>listeners.abort(),{once:true});
    allowedStep=startLiveScene({B,cam,scene,engine,canvas,glow,eyeHeight,
-     joystick:(x,y)=>{joystick={x,y};},
+     joystick:(x,y)=>{if(x||y)cancelWalk();joystick={x,y};},
+     navigate,cancelWalk,
+     lockInput(value){movementBlocked=value;keys.clear();cancelWalk();joystick={x:0,y:0};},
+     pickDestination(x,y){return scene.pick(x,y,m=>floors.has(m)||m.checkCollisions);},
      place(actor){
-       seated=actor.seat!==null || actor.trainSlot>0;
+       cancelWalk();
+       seated=actor.seat!=null || actor.trainSlot>0;
        cam.position.set(actor.x,actor.y+eyeHeight-(actor.seat != null ? .35 : 0),actor.z);
        walker.position.set(actor.x,actor.y+walker.ellipsoid.y+.12,actor.z);
-       cam.rotation.y=actor.yaw;cam.cameraRotation.set(0,0);
+       cam.rotation.y=actor.yaw;if(actor.seat!=null&&actor.y>3.5)cam.rotation.x=.04;cam.cameraRotation.set(0,0);
      }});
  }
 }
-open().catch(e=>{status.textContent='장면을 열 수 없습니다. '+e;console.error(e)});
+open().catch(e=>{
+ activeEngine?.dispose();
+ document.querySelector('nav').hidden=true;
+ document.querySelector('.tour').hidden=true;
+ status.hidden=false;
+ status.textContent='장면을 열 수 없습니다. '+e.message+' ';
+ const retry=document.createElement('button');
+ retry.textContent='장면 다시 열기';retry.type='button';
+ retry.onclick=()=>location.reload();
+ status.append(retry);
+ if(window.parent!==window)parent.postMessage({kind:'scene-error',data:e.message},location.origin);
+ console.error(e);
+});
 </script></html>

@@ -1,4 +1,5 @@
 """Scenic dressing for the approved v3 footprint. Coordinates are in metres."""
+from pathlib import Path
 import math
 import random
 import struct
@@ -25,13 +26,27 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
         p=materials[i]['pbrMetallicRoughness']
         p.update(metallicFactor=metal,roughnessFactor=rough)
         if emission: materials[i]['emissiveFactor']=emission
+        textured={'Powder coated steel':'metal','Anodised aluminium':'metal','Satin champagne':'metal',
+                  'Obsidian counter':'stone','Booth smoked stone':'stone','Aubergine velvet':'cloth',
+                  'Booth midnight plum':'cloth','VIP plum velvet':'cloth','VIP lilac cushions':'cloth','Fluted walnut':'wood'}
+        kind=textured.get(name)
+        if kind:
+            p['baseColorFactor']=[1,1,1,1]
+            def surface(x,y,rgb=rgb,kind=kind):
+                grain=math.sin(x*91.7+y*57.3)*43758.5453
+                noise=grain-math.floor(grain)-.5
+                if kind=='stone': gain=.90+.12*math.sin(x*.13+math.sin(y*.055)*3)**12+noise*.045
+                elif kind=='metal': gain=.91+.07*math.sin(y*2.3)+noise*.035
+                elif kind=='cloth': gain=.86+.12*((x+y)%2)+noise*.025
+                else: gain=.85+.14*math.sin(x*.35+math.sin(y*.04))+noise*.04
+                return [int(max(0,min(255,c*255*gain))) for c in rgb]
+            images[i]=(png(128,128,surface),lambda x,y,z:(x*.55+z*.19,y*.65+z*.31))
         return i
     ink=finish('Powder coated steel',(.048,.045,.072),.35)
     silver=finish('Anodised aluminium',(.30,.32,.41),.50,.28)
     stone=finish('Obsidian counter',(.15,.095,.14),.32,.22)
     brass=finish('Satin champagne',(.61,.31,.115),.48,.33)
     seat=finish('Aubergine velvet',(.39,.064,.18),0,.94)
-    seam=finish('Velvet welting',(.61,.13,.27),0,.83)
     wood=finish('Fluted walnut',(.27,.103,.045),.06,.68)
     indigo=finish('Indigo acoustic felt',(.072,.049,.147),0,.95)
     black=finish('Speaker grille',(.015,.019,.028),.12,.71)
@@ -40,7 +55,10 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
         ('Amber LED',(1,.47,.095)),('Pearl LED',(.72,.86,1))]]
     purple,cyan,pink,gold,white=lamps
     for m in materials[:11]:
-        m['pbrMetallicRoughness']['roughnessFactor']=.53
+        p=m['pbrMetallicRoughness']
+        p['roughnessFactor']=.72 if m['name'] in ['Arena · basalt','Stage surface'] else .48
+        if m['name']=='Stage surface':p.update(baseColorFactor=[.08,.10,.14,1],metallicFactor=.14)
+        elif m['name']=='Structural graphite':p.update(baseColorFactor=[.035,.04,.055,1],metallicFactor=.35,roughnessFactor=.42)
     def post(name,mat,x,y,z,r,h):
         beam(name,mat,(x,y,z),(x,y+h,z),r)
     def ellipse(name,mat,x,y,z,rx,rz,r,n=64):
@@ -49,17 +67,7 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
             beam(name,mat,(x+rx*math.cos(a),y,z+rz*math.sin(a)),(x+rx*math.cos(b),y,z+rz*math.sin(b)),r)
     def lamp(name,xyz,color,intensity,reach):
         lights.append((name,xyz,dict(type='point',color=color,intensity=intensity,range=reach)))
-    # Radiating, individually inlaid glass sectors preserve the floor height.
-    for row in range(7):
-        for j in range(48):
-            a,b=2*pi*j/48,2*pi*(j+1)/48
-            k=(row+j//4)%3
-            mats=[indigo,ink,stone]
-            ring('Inlaid smoked glass',mats[k],.55+row*1.08,1.60+row*1.08,a+.002,b-.002,.0181,.021,2)
-            if (j+row)%7==0:
-                ring('Pixel traces',lamps[(row+j)%3],.62+row*1.08,.66+row*1.08,a+.008,b-.008,.021,.024,2)
-    for r in [1.16,4.88,7.98]:
-        ring('Flush optical fibre',purple,r,r+.025,0,2*pi,.022,.027,128)
+    # The approved rectangular floor replaces the old radial glass inlays.
     # Truss halo and chain suspension, set well above the two sight lines.
     for radius,y in [(8.45,7.95),(8.45,8.45),(8.12,8.18)]:
         ellipse('Arena lighting truss',silver,0,y,0,radius,radius,.055)
@@ -71,45 +79,23 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
             post('Moving heads',black,x,7.61,z,.17,.32)
             post('Optics',lamps[(j//3)%3],x,7.59,z,.132,.035)
             if j%6==0:post('Suspension drops',ink,x,8.45,z,.025,2.55)
-    ellipse('LED halo',purple,0,7.91,0,8.44,8.44,.044)
-    # The LED artwork is baked into the actual GLB for independent viewers.
-    def led_pixel(x,y):
-        u=(x+.5)/768*2-1;v=1-(y+.5)/384*2
-        a=math.atan2(v-.04,u*1.55);r=math.hypot(u*1.55,v-.04)
-        warp=.19*math.sin(3*a+1.6*r)+.11*math.cos(5*a-4*r)
-        phase=12*(r+warp)+2.5*a
-        line=math.exp(-13*abs(math.sin(phase)))
-        fine=math.exp(-19*abs(math.sin(phase*2+.35)))
-        haze=.12+.23*(.5+.5*math.cos(phase))**4
-        t=.5+.5*math.sin(2*a+4*r)
-        rgb=(100+146*t,35+170*(1-t),250-32*t)
-        level=(haze+.88*line+.21*fine)*(.82 if y%3==0 else 1)
-        return [min(255,round(c*level+5)) for c in rgb]
-    screen=finish('LED / chromatic vortex',(1,1,1),0,.7,(1,1,1))
-    images[screen]=(png(768,384,led_pixel),lambda x,y,z:((x+6.55)/13.1,(8.35-y)/5.70))
-    box('Festival LED wall',screen,-6.55,6.55,-18.1,-18.03,2.65,8.35)
+    halo=finish('Muted violet truss strip',(.11,.05,.22),0,.8,(.18,.06,.34))
+    ellipse('LED halo',halo,0,7.91,0,8.44,8.44,.044)
+    # A dark backing replaces the obsolete baked screen; the live screen sits just in front.
+    screen=finish('LED backing graphite',(.018,.018,.03),.12,.85)
+    box('Festival LED backing',screen,-9.15,9.15,-18.1,-18.03,2.64,9.08)
     for s in [-1,1]:
-        for i in range(4):
-            x=s*(7.3+.53*i)
-            y=7.9-.47*i
-            box('Wing blade housings',ink,x-.22,x+.22,-17.60,-17.24,2,y)
-            for j in range(13):
-                yy=2.2+j*(y-2.4)/13
-                box('LED wing arrays',lamps[(i+j//5)%3],x-.14,x+.14,-17.23,-17.19,yy,yy+.15)
-        for j in range(5):
-            x=s*(6.5+.04*j);y=6.8-j*.48
-            box('Flown line arrays',black,x-.43,x+.43,-14.7,-14.08,y,y+.43)
-            for k in range(3):box('Array grille ribs',silver,x-.34,x+.34,-14.065,-14.05,y+.08+k*.10,y+.096+k*.10)
+        # Retired wing blades and pixel stacks are replaced by flush live equalizer panels.
         for i in range(10):
             x=s*(.33+.28*i)
-            box('Booth equalizer',cyan if i%3 else pink,x-.045,x+.045,-14.896,-14.87,1.56,1.7+.45*abs(math.sin(i)))
+            box('Booth equalizer',cyan if i%3 else pink,x-.045,x+.045,-12.046,-12.02,1.56,1.7+.45*abs(math.sin(i)))
         for i in range(4):
-            x=s*(2.1+i*1.35);near=(x,1.58,-11.1);far=(s*(7.0+i*1.7),8.85-i*.28,-8.5+i*1.4)
-            post('Stage spot body',black,x,1.35,-11.1,.22,.23)
+            x=s*(4.0+i*.75);near=(x,1.58,-15.1);far=(s*(7.0+i*1.7),8.85-i*.28,-8.5+i*1.4)
+            post('Stage spot body',black,x,1.35,-15.1,.22,.23)
             tint=[(.25,.046,1),(.025,.37,1),(1,.023,.37)][i%3]
             haze=finish('Beam wash '+str(s)+' '+str(i),tint,0,1,tint)
             materials[haze].update(alphaMode='BLEND',doubleSided=True)
-            materials[haze]['pbrMetallicRoughness']['baseColorFactor'][3]=.048
+            materials[haze]['pbrMetallicRoughness']['baseColorFactor'][3]=.018
             for j in range(12):
                 a,b=2*pi*j/12,2*pi*(j+1)/12
                 def edge(t):return (far[0]+.48*math.cos(t),far[1],far[2]+.48*math.sin(t))
@@ -127,52 +113,166 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
             z=-18+j*7
             beam('Roof ribs',ink,(s*21.7,7.7,z),(s*7.5,11,z),.125)
             beam('Roof ribs',ink,(s*7.5,11,z),(0,11.25,z),.10)
-        # Leave the inner part of each elevated deck and its ramp clear.
-        for j in range(3):
-            x=s*18.05;z=-18+j*2.9
-            octagon('Deck banquettes',seat,x,z,2.25,2.2,.20,4.14,4.55)
-            box('Deck backrests',seat,x-.94,x+.94,z-.98,z-.66,4.42,5.06)
+        if s > 0:
+            continue
+        # Three stage-facing lounge groups sit near the inner rail, clear of the ramp and cross-deck route.
+        velvet=finish('VIP plum velvet',(.22,.075,.31),0,.96)
+        cushion=finish('VIP lilac cushions',(.33,.14,.42),0,.96)
+        table=finish('VIP smoked stone',(.075,.060,.105),.22,.40)
+        rug=finish('VIP woven rug',(.065,.052,.085),0,.98)
+        cove=finish('VIP warm cove',(.52,.26,.10),0,.72,(.55,.29,.12))
+        soft=finish('VIP violet cove',(.18,.08,.28),0,.78,(.26,.10,.38))
+        def furnished(cx,cz,fx,fz):
+            sx,sz=-fz,fx
+            def pt(u,v,y):return (cx+fx*u+sx*v,y,cz+fz*u+sz*v)
+            def ob(name,mat,u,v,w,d,cut,lo,hi):
+                xx,_,zz=pt(u,v,0);octagon(name,mat,xx,zz,w if fx else d,d if fx else w,cut,lo,hi)
+            def bx(name,mat,u1,u2,v1,v2,lo,hi):
+                points=[pt(u,v,0) for u in [u1,u2] for v in [v1,v2]]
+                box(name,mat,min(p[0] for p in points),max(p[0] for p in points),min(p[2] for p in points),max(p[2] for p in points),lo,hi)
+            def line(name,mat,a,b,r):beam(name,mat,pt(a[0],a[2],a[1]),pt(b[0],b[2],b[1]),r)
+            ob('VIP rug',rug,1,0,4.1,3.2,.18,4.006,4.016)
+            ob('VIP sofa base',ink,0,0,1.70,2.40,.15,4.10,4.28)
+            for v in [-.72,0,.72]:
+                ob('VIP sofa cushion',velvet,.06,v,1.45,.69,.12,4.28,4.49)
+                bx('VIP back upholstery',cushion,-.625,-.60,v-.29,v+.29,4.51,4.82)
+            ob('VIP sofa back',velvet,-.75,0,.22,2.42,.08,4.28,4.91)
+            for v in [-1.11,1.11]:ob('VIP sofa arm',velvet,.03,v,1.62,.20,.07,4.28,4.72)
+            ob('VIP sofa return',velvet,1.03,-.94,1.05,.63,.12,4.14,4.49)
+            line('VIP sofa underglow',cove,(.85,4.13,-1.02),(.85,4.13,1.02),.022)
+            ob('VIP low table top',table,1.9,.22,1.1,1.28,.16,4.43,4.51)
+            for u in [1.54,2.26]:
+                for v in [-.22,.66]:
+                    x,_,z=pt(u,v,0);post('VIP table leg',brass,x,4.04,z,.034,.39)
+            x,_,z=pt(1.9,.22,0);post('VIP table lamp diffuser',cove,x,4.51,z,.065,.15)
+        for z in [-10.7,-7.9]:
+            furnished(-20.5,z,1,0)
+            furnished(20.5,z,-1,0)
+        for x in [-2.1,2.1]:furnished(x,19.2,0,-1)
+    # Rotate the complete bar 180 degrees around (-13.65, 16.2).
+    # The tall bottle display moves behind the stools, clearing the stage sightline.
+    def bar_box(name,mat,x1,x2,z1,z2,lo,hi):
+        box(name,mat,-27.3-x2,-27.3-x1,33.1-z2,33.1-z1,lo,hi)
+    def bar_octagon(name,mat,x,z,*shape):
+        octagon(name,mat,-27.3-x,33.1-z,*shape)
+    def bar_beam(name,mat,a,b,r):
+        beam(name,mat,(-27.3-a[0],a[1],33.1-a[2]),(-27.3-b[0],b[1],33.1-b[2]),r)
+    def bar_post(name,mat,x,y,z,r,h):
+        post(name,mat,-27.3-x,y,33.1-z,r,h)
     # West entry bar, tucked outboard of the v3 approach wings.
-    octagon('Bar base',wood,-13.65,16.2,9.7,1.35,.28,.02,1.16)
-    octagon('Bar stone slab',stone,-13.65,16.2,10.05,1.65,.31,1.15,1.29)
+    bar_octagon('Bar base',wood,-13.65,16.2,9.7,1.35,.28,.02,1.16)
+    bar_octagon('Bar stone slab',stone,-13.65,16.2,10.05,1.65,.31,1.15,1.29)
     for j in range(37):
         x=-18.1+j*.246
-        box('Fluted bar front',brass,x,x+.052,16.86,16.90,.13,1.09)
-    beam('Underbar amber',gold,(-18.28,1.12,16.92),(-9.05,1.12,16.92),.038)
+        bar_box('Fluted bar front',brass,x,x+.052,16.86,16.90,.13,1.09)
+    bar_beam('Underbar amber',gold,(-18.28,1.12,16.92),(-9.05,1.12,16.92),.038)
     for x in [-17.6,-15.65,-13.7,-11.75,-9.8]:
-        post('Stool foot',brass,x,.02,17.95,.33,.08)
-        post('Stool stem',silver,x,.10,17.95,.068,.66)
-        post('Upholstered stools',seat,x,.76,17.95,.35,.15)
-    box('Backbar cabinet',wood,-18.6,-9.05,13.62,14.0,0,3.8)
+        bar_post('Stool foot',brass,x,.02,17.95,.33,.08)
+        bar_post('Stool stem',silver,x,.10,17.95,.068,.66)
+        bar_post('Upholstered stools',seat,x,.76,17.95,.35,.15)
+    bar_box('Backbar cabinet',wood,-18.6,-9.05,13.62,14.0,0,3.8)
     bottleMats=[finish('Bottle '+str(i),c,.15,.21) for i,c in enumerate([(.08,.35,.23),(.66,.26,.06),(.30,.48,.58)])]
     for row in range(3):
         y=1.16+row*.87
-        box('Bottle shelves',brass,-18.5,-9.15,13.95,14.50,y,y+.07)
-        beam('Backbar shelf light',gold,(-18.4,y+.08,14.02),(-9.25,y+.08,14.02),.045)
+        bar_box('Bottle shelves',brass,-18.5,-9.15,13.95,14.50,y,y+.07)
+        bar_beam('Backbar shelf light',gold,(-18.4,y+.08,14.02),(-9.25,y+.08,14.02),.045)
         for k in range(25):
             x=-18.15+k*.36+rng.uniform(-.045,.045);h=rng.uniform(.23,.39);m=rng.choice(bottleMats)
-            post('Backbar bottles',m,x,y+.08,14.24,.073,h)
-            post('Bottle necks',m,x,y+.08+h,14.24,.035,.14)
-    # Lounge groups face tables and keep a clear approach from the lobby.
-    for x in [11.1,16.9]:
-        for z in [14.0,18.65]:
-            octagon('Velvet sofa plinth',brass,x,z,3.9,1.52,.24,.08,.25)
-            octagon('Velvet sofa cushions',seat,x,z,3.97,1.58,.24,.25,.62)
-            sign=1 if z>16 else -1
-            octagon('Channel tufted sofa back',seat,x,z+sign*.57,3.96,.48,.16,.48,1.12)
-            for j in range(11):
-                xx=x-1.66+j*.33
-                beam('Upholstery piping',seam,(xx,.63,z+sign*.314),(xx,1.08,z+sign*.314),.013)
-        post('Cocktail table stem',brass,x,.08,16.35,.16,.58)
-        post('Cocktail table top',stone,x,.64,16.35,.74,.10)
-        post('Table lantern',gold,x,.75,16.35,.095,.22)
-    for x,z in [(-17,15),(-11,15),(11,16),(17,16)]:
-        post('Pendant cable',ink,x,3.3,z,.022,4.3)
-        post('Pendant brass shade',brass,x,3.09,z,.40,.24)
-        post('Pendant diffuser',gold,x,3.06,z,.335,.035)
-        lamp('Amber pendant',(x,2.96,z),(1,.47,.17),80,8)
+            bar_post('Backbar bottles',m,x,y+.08,14.24,.073,h)
+            bar_post('Bottle necks',m,x,y+.08+h,14.24,.035,.14)
+    # Extend the open east-wall booth row toward the entrance, numbered from the entrance toward the stage.
+    booth=finish('Booth midnight plum',(.17,.065,.25),0,.88,(.015,.005,.025))
+    piping=finish('Booth muted cyan',(.08,.52,.64),.15,.5,(.025,.22,.28))
+    top=finish('Booth smoked stone',(.10,.08,.17),.28,.32)
+    for index,z in enumerate([16.6,12.2,1.0,-3.4,-10.2,-14.6], start=1):
+        # Back bench, two returns and an unobstructed central opening toward -X.
+        octagon('Wall booth base',ink,19.0,z,3.8,4.4,.20,.01,.17)
+        octagon('Wall booth seat',booth,20.05,z,1.12,4.05,.12,.17,.57)
+        box('Wall booth back',booth,20.52,20.82,z-2.08,z+2.08,.42,1.36)
+        for side in [-1,1]:
+            zz=z+side*1.65
+            octagon('Wall booth seat',booth,18.55,zz,2.38,.92,.12,.17,.57)
+            box('Wall booth back',booth,17.35,19.85,zz+side*.46-.10,zz+side*.46+.10,.42,1.24)
+            beam('Wall booth cyan piping',piping,(20.45,1.31,z+side*1.98),(17.42,1.18,z+side*1.98),.025)
+        beam('Wall booth back piping',piping,(20.49,1.36,z-1.98),(20.49,1.36,z+1.98),.025)
+        octagon('Wall booth table',top,18.5,z,1.35,1.4,.16,.62,.72)
+        for xx in [18.95,18.05]:
+            for zz in [z-.46,z+.46]:post('Wall booth leg',brass,xx,.04,zz,.045,.58)
+        beam('Wall booth table glow',purple,(17.82,.69,z-.49),(17.82,.69,z+.49),.022)
+        post('Wall booth lantern',gold,18.5,.73,z,.065,.18)
+        for side in [-1,1]:
+            beam('Booth underside light',piping,(17.35,.095,z+side*1.98),(20.45,.095,z+side*1.98),.014)
+        # Small number plaques attach to the aisle-facing lower front of each return seat.
+        number=finish('Table number '+str(index),(1,1,1),0,.65,(.72,.72,.72))
+        digits={1:['010','110','010','010','111'],2:['111','001','111','100','111'],
+                3:['111','001','111','001','111'],4:['101','101','111','001','001'],5:['111','100','111','001','111'],
+                6:['111','100','111','101','111'],7:['111','001','010','010','010'],
+                8:['111','101','111','101','111']}
+        glyph=digits[index]
+        def number_pixel(x,y,glyph=glyph):
+            if x<5 or x>122 or y<5 or y>122:return [80,196,218]
+            col=(x-37)//18;row=(y-19)//18
+            if 0<=col<3 and 0<=row<5 and glyph[row][col]=='1':return [246,235,255]
+            return [24,12,39]
+        images[number]=(png(128,128,number_pixel),lambda x,y,zz,center=z+1.65:((zz-center+.14)/.28,(.49-y)/.26))
+        box('Table number '+str(index),number,17.325,17.345,z+1.51,z+1.79,.23,.49)
+    # Two media players and a four-channel mixer sit on the relocated DJ booth.
+    gear=finish('DJ equipment charcoal',(.025,.029,.042),.28,.42)
+    platter=finish('DJ platter rubber',(.055,.060,.076),.22,.48)
+    play_green=finish('DJ play green',(.055,.65,.24),0,.45,(.025,.48,.10))
+    for side in [-1,1]:
+        x=side*1.77;z=-12.88
+        box('DJ player chassis',gear,x-.70,x+.70,z-.55,z+.55,2.46,2.56)
+        for i in range(32):
+            a,b=i*2*pi/32,(i+1)*2*pi/32
+            tri('DJ player jog disc',platter,(x,2.585,z+.12),
+                (x+.31*math.cos(b),2.585,z+.12+.31*math.sin(b)),
+                (x+.31*math.cos(a),2.585,z+.12+.31*math.sin(a)))
+        ellipse('DJ jog silver rim',silver,x,2.59,z+.12,.32,.32,.022,32)
+        ellipse('DJ jog inner mark',cyan,x,2.594,z+.12,.17,.17,.009,24)
+        box('DJ player screen housing',ink,x-.47,x+.47,z-.45,z-.26,2.56,2.75)
+        box('DJ player screen glass',black,x-.41,x+.41,z-.255,z-.241,2.60,2.72)
+        for j in range(17):
+            xx=x-.37+j*.045
+            box('DJ player waveform',cyan if side<0 else pink,xx,xx+.022,z-.239,z-.230,2.615,2.63+.07*abs(math.sin(j*.72)))
+        for j in range(4):
+            box('DJ deck cue pad',pink if j%2 else gold,x-.54+j*.16,x-.43+j*.16,z+.40,z+.49,2.56,2.59)
+        post('DJ play button',play_green,x+.51,2.56,z+.41,.055,.035)
+        box('DJ tempo slider rail',black,x+.49,x+.54,z-.08,z+.24,2.56,2.57)
+        box('DJ tempo slider cap',silver,x+.46,x+.57,z+.03,z+.08,2.57,2.60)
+    box('DJ central mixer',gear,-.65,.65,-13.43,-12.33,2.46,2.58)
+    for x in [-.39,-.13,.13,.39]:
+        for z in [-13.22,-13.03,-12.84]:post('DJ mixer EQ knob',silver,x,2.58,z,.038,.055)
+        box('DJ mixer fader rail',black,x-.025,x+.025,-12.73,-12.44,2.58,2.59)
+        box('DJ mixer channel fader',silver,x-.065,x+.065,-12.58+x*.12,-12.52+x*.12,2.59,2.62)
+    box('DJ mixer crossfader rail',black,-.39,.39,-12.40,-12.36,2.58,2.59)
+    box('DJ mixer crossfader',silver,.04,.19,-12.43,-12.33,2.59,2.62)
+    for j in range(8):
+        z=-13.25+j*.068
+        for x in [-.57,.54]:box('DJ mixer level meter',play_green if j<5 else gold,x,x+.035,z,z+.043,2.584,2.603)
+    # Visible housings for the same three stage lights used by the DJ, matching edmStage.focusOrigins.
+    for x,y,z in [(-1.8,3.85,-13.10),(2.4,3.5,-13.50),(1.2,5.1,-17.15)]:
+        direction=(0-x,2.9-y,-16.05-z)
+        length=math.sqrt(sum(v*v for v in direction));direction=tuple(v/length for v in direction)
+        origin=(x,y,z);back=tuple(origin[i]-direction[i]*.28 for i in range(3))
+        lens=tuple(origin[i]+direction[i]*.025 for i in range(3))
+        beam('DJ focus fixture body',ink,back,origin,.13)
+        beam('DJ focus fixture lens',white,origin,lens,.075)
+        beam('DJ focus fixture suspension',ink,(back[0],7.5,back[2]),back,.025)
+    # The former west speaker footprint is now the relocated stair approach.
+    # Rotate the existing bar pendants with the counter and bottle display.
+    for x,z in [(-17,15),(-11,15)]:
+        bar_post('Pendant cable',ink,x,3.3,z,.022,4.3)
+        bar_post('Pendant brass shade',brass,x,3.09,z,.40,.24)
+        bar_post('Pendant diffuser',gold,x,3.06,z,.335,.035)
+        lamp('Amber pendant',(-27.3-x,2.96,33.1-z),(1,.47,.17),80,8)
     for x,z,c in [(-5,-13,(.22,.15,1)),(5,-13,(1,.06,.37)),(-8,0,(.33,.12,1)),(8,0,(.06,.52,1))]:
-        lamp('Stage wash',(x,4.4,z),c,160,16)
+        lamp('Stage wash',(x,4.4,z),c,190 if z==-13 else 115,16)
+    # Close exterior sightlines beyond the playable entry floor, leaving its approach open.
+    box('Entry end enclosure',indigo,-4.25,4.25,27.05,27.25,0,11.6)
+    for side in (-1,1):
+        x=side*4.16
+        box('Entry side enclosure',indigo,x-.12,x+.12,20.85,27.25,0,11.6)
     # Close the vista beyond the entrance without enclosing the entry corridor.
     for side in (-1,1):
         x=side*12.5
@@ -190,9 +290,8 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
         for j in range(8):
             zz=-19+j*4.9
             beam('Wall cornice',silver,(side*21.2,6.75,zz),(side*21.2,6.75,min(20.5,zz+4.7)),.11)
-        for j in range(19):
-            xx=side*(9.45+j*.56)
-            box('Deck fascia flutes',brass,xx-.047,xx+.047,-8.30,-8.22,3.64,3.98)
+        if side > 0:
+            continue
         # Side deck feature wall in the upper lounges.
         for j in range(6):
             xx=side*(10.4+j*1.7)
@@ -200,9 +299,9 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
             beam('Mezzanine chevrons',lamps[(j//2)%3],(xx-.55,5.5,-20.19),(xx+.5,6.75,-20.19),.05)
     for j in range(26):
         xx=-18.35+j*.35
-        box('Backbar arena face',brass,xx,xx+.035,13.55,13.62,.17,3.62)
+        bar_box('Backbar arena face',brass,xx,xx+.035,13.55,13.62,.17,3.62)
     for yy in [.28,3.45]:
-        beam('Backbar arena cornice',gold,(-18.5,yy,13.5),(-9.17,yy,13.5),.04)
+        bar_beam('Backbar arena cornice',gold,(-18.5,yy,13.5),(-9.17,yy,13.5),.04)
     # A perforated dark roof keeps the eye-level views inside the club.
     box('Ceiling',black,-23,23,-22,27,11.6,11.76)
     for j in range(32):
@@ -216,9 +315,6 @@ def scenery(materials, material, box, octagon, ring, beam, tri):
         for j in range(10):
             zz=10.25+j*.92
             box('Lobby brass joints',brass,side*2.85-.24,side*2.85+.24,zz,zz+.026,.022,.023)
-        for j in range(4):
-            xx=side*(7.1+.55*j)
-            beam('Proscenium wing diagonals',lamps[j%3],(xx,1.7,-16.9),(xx+side*2.1,6.3-j*.28,-17.3),.055)
     def terrazzo(x,y):
         # Fine aggregate, tile reveals and coloured bounce from the arena halo.
         wx=(x+.5)/768*46-23;wz=(y+.5)/768*48-22

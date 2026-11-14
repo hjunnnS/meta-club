@@ -1,0 +1,162 @@
+import {vipCommands,vipPersonalCommand} from './vip-personal-state.js';
+import {validAppearance,normalizeAppearance} from './character-appearance.js';
+import {nextParadeOpening} from './parade-plan.js';
+import {clubActivities,activityCommands,activityUsage,activityTrialRules} from './club-activities.js';
+import {validWandStyle,normalizeWandStyle} from './wand-customization.js';
+import {requestPodium,validPodiumArrival,beginPodium,clearPodium} from './podium-activity.js';
+import {playlistPosition,trackBeat} from './music.js';
+import {background,extraGuestPlaces} from './visitors.js';
+import {edmSeats,nearbyEdmSeats,nearbyEdmPole} from './edm-layout.js';
+import {dances} from './free-dance.js';
+import {performanceStatus} from './club-performances.js';
+import {effects} from '/stage/festival/events.js';
+import {blockedMessage} from './trial-message-filter.js';
+// Personal presentation adapter only. No sockets, database or shared identity.
+export class PersonalRoom {
+ constructor(tracks){
+  this.tracks=tracks;this.epoch=Date.now();this.musicStarted=false;this.sessionId=crypto.randomUUID();this.roomId='personal';this.handlers=new Map();
+  this.podiumClaims=new Map();
+  this.self={id:this.sessionId,ai:false,nickname:'체험자',avatar:'indigo',x:-1.8,y:.018,z:6.4,yaw:-.08,action:'idle',seat:null,table:null,wand:false};
+  this.reactive=[-1,1].map((side,i)=>({id:'ai-'+(i+3),ai:true,nickname:'AI 손님 '+(i+4),avatar:i?'rose':'teal',x:side*4,y:.018,z:1,yaw:side*.2,action:'groove',wand:true}));
+  this.extra=extraGuestPlaces.map((p,i)=>({id:'floor-dancer-'+i,ai:true,nickname:'AI 손님 '+(i+6),avatar:['teal','rose','gold','indigo'][i%4],...p}));
+  let trialStorage=null,trialIdentity=this.sessionId;
+  try{trialStorage=globalThis.localStorage;trialIdentity=trialStorage.getItem('club-activity-identity-v1')||crypto.randomUUID();trialStorage.setItem('club-activity-identity-v1',trialIdentity);}catch{}
+  this.activities=clubActivities({actors:()=>[this.self,...this.ai()],blockedMessage,
+   identity:id=>id===this.sessionId?trialIdentity:id,usage:activityUsage({storage:trialStorage}),
+   performances:()=>{const scheduled=this.musicStarted?performanceStatus(this.epoch,Date.now(),this.tracks):{active:null,next:null};return {...scheduled,active:scheduled.active||(this.preview?{...this.preview,seconds:effects[this.preview.kind]?.seconds}:null)};}});
+  this.timer=setInterval(()=>this.publish(),100);this.sequence=0;this.lastMove=0;this.preview=null;this.paradePreview=null;
+ }
+ startMusic(epoch){
+  if(this.musicStarted||!Number.isFinite(epoch))return;
+  this.musicStarted=true;this.epoch=epoch;
+  this.send('clock',Date.now());this.publish();
+ }
+ onMessage(type,fn){this.handlers.set(type,fn);}
+ onLeave(fn){this.onExit=fn;}
+ emit(type,value){this.handlers.get(type)?.(value);}
+ ai(){
+  const time=(Date.now()-this.epoch)/1000;
+  for(const a of this.reactive)if(a.until&&Date.now()>a.until){a.action='groove';delete a.until;}
+  // A route loop changes the pose, not the identity selected in the action menu.
+  return [...Array.from({length:3},(_,i)=>({...background(i,time),id:'ai-background-'+i})),...this.reactive,...this.extra];
+ }
+ snapshot(){
+  const now=Date.now(),show=this.musicStarted?performanceStatus(this.epoch,now,this.tracks):{active:null,next:null};
+  if(this.preview&&now>=this.preview.start+effects[this.preview.kind].seconds*1000)this.preview=null;
+  if(this.paradePreview&&now>=this.paradePreview.start+this.paradePreview.seconds*1000)this.paradePreview=null;
+  const activity=this.activities.snapshot(),parade=activity.parade||this.paradePreview;
+  const paradeOpeningAt=nextParadeOpening(now,at=>this.musicStarted?performanceStatus(this.epoch,at,this.tracks):{active:null,next:null});
+  return {actors:[{...this.self},...this.ai().map(a=>({...a}))],zones:['OPEN','OPEN'],
+   ...activity,parade,activityStatus:{...activity.activityStatus,paradeOpeningAt,paradePreview:Boolean(this.paradePreview),...(this.paradePreview?{paradeActiveUntil:this.paradePreview.start+this.paradePreview.seconds*1000}:{})},personalTrial:true,waitingForMusic:!this.musicStarted,trainLeader:null,stageEvent:this.preview||show.active,nextPerformance:show.next,performanceNow:now};
+ }
+ publish(){
+  if(this.self.action==='walk'&&Date.now()-this.lastMove>300)this.self.action='idle';
+  this.emit('snapshot',this.snapshot());
+ }
+ send(type,data){
+  const a=this.self;
+  if(vipCommands.includes(type)){
+   const result=vipPersonalCommand([a,...this.ai()],a,type,data);if(result.error)this.emit('notice',result.error);else this.emit('notice','');this.publish();return;
+  }
+  if(type==='clock'){const now=Date.now();this.emit('clock',{sent:Number.isFinite(data)?data:now,now,epoch:this.epoch,tracks:this.tracks});return;}
+  if(type==='occupancy'){this.emit('occupancy',{channelId:'personal',people:1,capacity:1});return;}
+  if(type==='activities-state'){this.emit('activities-state',{...this.activities.view(a.id),personalTrial:true});return;}
+  if(type==='vip-preview'){
+   if(this.activities.snapshot().parade||this.paradePreview){this.emit('activities-result',{kind:type,error:'퍼레이드가 진행 중입니다. 종료한 뒤 다시 확인해 주세요.'});return;}
+   this.paradePreview={id:'personal-parade-preview-'+crypto.randomUUID(),from:a.id,start:Date.now(),seconds:activityTrialRules.paradeSeconds,count:activityTrialRules.paradeCount,preview:true};
+   this.emit('activities-result',{kind:type,ok:true});this.publish();return;
+  }
+  if(type==='vip-start'&&this.paradePreview){this.emit('activities-result',{kind:type,error:'시험 퍼레이드가 끝난 뒤 정식 퍼레이드를 시작해 주세요.'});return;}
+  if(type==='activities-stop')this.paradePreview=null;
+  if(activityCommands.includes(type)){
+   const result=this.activities.command(a.id,type,data);
+   if(result.error)this.emit('notice',result.error);
+   this.emit('activities-result',{kind:type,...result});
+   if(result.notification?.to===a.id)this.emit('whisper-notification',result.notification);
+   this.emit('activities-state',{...this.activities.view(a.id),personalTrial:true});this.publish();return;
+  }
+  if(type==='whisper-demo-incoming'){
+   const guests=this.ai();
+   // A standalone trial button must not depend on having opened a conversation.
+   const distance=actor=>Math.hypot(actor.x-a.x,actor.z-a.z);
+   const nearby=this.reactive.slice().sort((left,right)=>distance(left)-distance(right));
+   const sender=guests.find(actor=>actor.id===data?.from)||nearby[0]||guests[0];
+   if(!sender){this.emit('notice','수신 체험을 보낼 AI 손님이 없습니다.');return;}
+   const result=this.activities.command(sender.id,'whisper-send',{to:a.id,text:'같이 춤출까요?',requestId:crypto.randomUUID(),simulated:true});
+   this.emit('notice',result.error||sender.nickname+'님의 체험 귓속말이 도착했습니다. 머리 위 말풍선과 오른쪽 수신 알림을 확인하세요.');
+   if(result.notification)this.emit('whisper-notification',result.notification);
+   this.emit('activities-state',{...this.activities.view(a.id),personalTrial:true});return;
+  }
+  if(type==='snapshot'){this.publish();this.emit('activities-state',{...this.activities.view(a.id),personalTrial:true});return;}
+  if(type==='move'){
+   if(a.seat!==null||!data||!['x','y','z','yaw'].every(k=>Number.isFinite(data[k])))return;
+   const anchor=['pole-dance','podium-dance'].includes(a.action)?this.poleAnchor:null;
+   if(anchor&&Math.hypot(data.x-anchor.x,data.z-anchor.z)<.08&&Math.abs(data.y-anchor.y)<.08){a.yaw=data.yaw;return;}
+   if(anchor){this.poleAnchor=null;clearPodium(a);}
+   const moved=Math.hypot(a.x-data.x,a.z-data.z)>.015;
+   Object.assign(a,{x:data.x,y:data.y,z:data.z,yaw:data.yaw});
+   if(moved){a.action='walk';this.lastMove=Date.now();}return;
+  }
+  if(type==='podium-request'){
+   const place=requestPodium(this.podiumClaims,[a,...this.ai()],a,data?.podium,Date.now());
+   if(!place){this.emit('notice','단상에 빈 자리가 없습니다. 다른 단상을 선택해 주세요.');return;}
+   clearPodium(a);a.action='idle';this.poleAnchor=null;this.publish();this.emit('podium-place',place);return;
+  }
+  if(type==='podium-cancel'){this.podiumClaims.delete(a.id);return;}
+  if(type==='podium-start'){
+   if(!validPodiumArrival(this.podiumClaims,a,data,Date.now()))return;
+   const position=playlistPosition(this.tracks,this.epoch,Date.now());
+   const beat=trackBeat(position,0)+(position?.cycle||0)*(position?.track.duration||0)*(position?.track.bpm||132)/60;
+   beginPodium(this.podiumClaims,a,data,beat);this.poleAnchor={x:a.x,y:a.y,z:a.z};this.publish();return;
+  }
+  if(type==='pole-grip'){
+   if(a.seat!==null||a.trainSlot!=null||!data||!['x','y','z','yaw'].every(k=>Number.isFinite(data[k]))||!nearbyEdmPole({...a,...data},.95)||Math.hypot(data.x-a.x,data.y-a.y,data.z-a.z)>.5)return;
+   Object.assign(a,{x:data.x,y:data.y,z:data.z,yaw:data.yaw,action:'pole-dance'});
+   this.poleAnchor={x:a.x,y:a.y,z:a.z};this.publish();return;
+  }
+  if(type==='action'&&data==='pole-dance'){
+   if(!nearbyEdmPole(a,.95)){this.emit('notice','단상 위 봉 가까이에서 시작해 주세요.');return;}
+   this.poleAnchor={x:a.x,y:a.y,z:a.z};a.action=data;this.publish();return;
+  }
+  if(type==='action'&&a.seat===null&&(['idle','wave','dance'].includes(data)||dances.has(data))){clearPodium(a);this.podiumClaims.delete(a.id);a.action=data;this.publish();return;}
+  if(type==='character-style'){
+   if(data!==null&&!validAppearance(data))return;
+   a.appearance=data===null?null:normalizeAppearance(data);this.publish();return;
+  }
+  if(type==='wand-style'){
+   if(!validWandStyle(data))return;
+   a.wandStyle=normalizeWandStyle(data);this.publish();return;
+  }
+  if(type==='wand'&&typeof data==='boolean'){
+   if(data&&!a.wand)for(const ai of this.reactive)if(Math.hypot(ai.x-a.x,ai.z-a.z)<4){ai.action='disco-point';ai.until=Date.now()+2400;}
+   if(data)a.danceProp=null;
+   a.wand=data;this.publish();return;
+  }
+  if(type==='seat'||type==='stand'){
+   // Standing is idempotent: a repeated click must never sit down again.
+   if(type==='stand'&&a.seat==null){this.emit('place',{...a});this.publish();return;}
+   if(a.seat!==null){
+    const exit=edmSeats[a.seat]?.exit||this.preSeat;if(!exit)return;
+    Object.assign(a,exit,{seat:null,table:null,action:'idle'});delete a.seatMotion;this.preSeat=null;
+   }else{
+    if(data!==undefined&&!Number.isInteger(data))return;
+    const found=nearbyEdmSeats(a).find(s=>data===undefined||s.index===data);
+    if(!found){this.emit('notice','가까운 빈 의자 앞에서 앉기를 눌러 주세요.');return;}
+    this.preSeat={x:a.x,y:a.y,z:a.z,yaw:a.yaw};
+    if(found.seat.table||found.seat.balcony)a.seatMotion={from:{...this.preSeat},at:Date.now(),seat:found.index};
+    clearPodium(a);this.podiumClaims.delete(a.id);this.poleAnchor=null;
+    const {exit,label,balcony,area,...pose}=found.seat;Object.assign(a,pose,{seat:found.index,table:pose.table??null,action:'sit'});
+   }
+   delete a.vipTowerSeat;this.emit('place',{...a});this.publish();return;
+  }
+  if(type==='preview-event'){
+   if(data?.kind==='stop'){this.preview=null;this.publish();return;}
+   if(!data||!Object.hasOwn(effects,data.kind))return;
+   const message=String(data.message||'').trim();
+   if(data.kind==='led'&&(!message||message.length>80||/[\p{Cc}\p{Cf}]/u.test(message)||blockedMessage(message))){this.emit('notice','전광판 문구를 확인해 주세요.');return;}
+   this.preview={id:'personal-'+ ++this.sequence,kind:data.kind,start:Date.now(),bpm:this.tracks[0]?.bpm||132,message,nickname:'개인 체험'};
+   this.publish();return;
+  }
+ }
+ leave(){this.activities.leave(this.sessionId);clearInterval(this.timer);}
+}

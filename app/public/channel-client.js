@@ -1,24 +1,44 @@
+import {clubInterface} from './club-interface.js';
+import {vipPersonalUI} from './vip-personal-ui.js';
+import {characterCustomization} from './character-customization.js';
+import {clubActionsUI} from './club-actions-ui.js';
+import {wandCustomization} from './wand-customization.js';
+import {rhythmGame} from './rhythm-game.js';
+import { nearbyEdmSeats, edmSeats, nearbyEdmPole } from './edm-layout.js';
 import { dances, danceButtons } from './free-dance.js';
 import { initShop } from './shop.js';
 import { musicPlayer } from './music.js';
 const el = (id) => document.getElementById(id),
   map = document.querySelector('iframe');
+let rhythm,interfaceUI;
+let audibleTrack = null;
+let loginRequired = false;
+function showMusic(id) {
+  audibleTrack = id;
+  el('music').textContent = id ? '음악 재생 중' : '음악 시작';
+  el('music').classList.toggle('awaiting', ready && !id);
+  if(id&&el('notice').dataset.kind==='music-start')note('');
+  if (ready) frame('audible-track', id);
+}
 const music = musicPlayer(
   (s) => (el('track').textContent = s),
-  () => guide('music'),
-  firstVisitFailure,
+  id => { showMusic(id); guide('music'); },
+  reason => { showMusic(null); firstVisitFailure(reason); },
 );
+let visitOrigin;
 let needsPlace = true,
   room,
   snapshot,
   ready = false,
+  sceneLoaded = false,
   joining = false,
   manual = false,
   retryTimer,
   attempts = 0,
   memberId;
-function note(message) {
+function note(message,kind='') {
   el('notice').textContent = message;
+  el('notice').dataset.kind=message?kind:'';
 }
 function firstVisitFailure(reason) {
   try {
@@ -32,6 +52,15 @@ function firstVisitFailure(reason) {
 }
 const frame = (kind, data) => map.contentWindow?.postMessage({ kind, data }, location.origin);
 const shop = initShop(frame);
+const activities=clubActionsUI({root:el('character-actions'),dialog:el('whisper-dialog'),shoutRoot:el('shout-actions'),vipRoot:el('vip-actions'),alertButton:el('whisper-alert'),send:(kind,data)=>room?.send(kind,data),frame});
+const wandStyles=wandCustomization(el('wand-customization'),(kind,data)=>room?.send(kind,data),frame);
+const characterStyles=characterCustomization(el('character-customization'),(kind,data)=>room?.send(kind,data),frame);
+const vipPersonal=vipPersonalUI(el('vip-personal-controls'),(kind,data)=>room?.send(kind,data));
+let guideOpened = false;
+function showGuide(open) {
+  el('guide').hidden = !open;
+  el('show-guide').setAttribute('aria-expanded', String(open));
+}
 function guide(step) {
   try {
     const key = 'edm-first-visit',
@@ -40,34 +69,67 @@ function guide(step) {
       log[step] = Date.now();
       localStorage.setItem(key, JSON.stringify(log));
     }
-    el('guide').hidden = Boolean(log.dismissed || log.exit);
+    if (step === 'entry') showGuide(guideOpened);
   } catch {
-    el('guide').hidden = true;
+    if (step === 'entry') showGuide(guideOpened);
   }
 }
 function display(data) {
   snapshot = data;
+  const names = {fountain:'분수 불꽃 시험',confetti:'종이조각 · 안에서 밖','confetti-down':'종이조각 · 위에서 아래','confetti-in':'종이조각 · 밖에서 안',laser:'레이저 쇼',phoenix:'불사조',whale:'대형 고래',dragon:'네온 용',jellyfish:'우주 해파리',butterflies:'나비 군집'};
+  const next = data.nextPerformance;
+  const seconds = next ? Math.max(0, Math.ceil((next.start - data.performanceNow) / 1000)) : 0;
+  const countdown = next ? '다음 ' + names[next.kind] + ' · ' + Math.floor(seconds/60) + ':' + String(seconds%60).padStart(2,'0') : '';
+  el('performance').textContent = data.stageEvent && data.stageEvent.kind !== 'led'
+    ? names[data.stageEvent.kind] + ' 공연 중' + (countdown ? ' · ' + countdown : '') : countdown;
   if (data.zones) {
     const labels = { CLOSED: '닫힘', OPENING: '준비 중', OPEN: '열림', DRAINING: '퇴장 대기' };
     el('zones').textContent =
       '사이드존 ' + labels[data.zones[0]] + ' · 발코니 ' + labels[data.zones[1]];
   }
   const self = data.actors.find((a) => a.id === room.sessionId);
+  activities.update({...data,self:room.sessionId},ready&&memberId?.startsWith('local-test:'));
+  vipPersonal.update(self,ready&&memberId?.startsWith('local-test:'));
+  characterStyles.update(self,ready&&memberId?.startsWith('local-test:'));
+  wandStyles.update(self,ready&&memberId?.startsWith('local-test:'));
   el('wand').textContent = self?.wand ? '무드봉 내리기' : '무드봉 들기';
   el('wand').setAttribute('aria-pressed', String(Boolean(self?.wand)));
   const riding = self?.trainSlot != null;
-  el('train-start').hidden = Boolean(data.trainLeader);
+  el('train-hint').hidden = Boolean(data.personalTrial);
   el('train-join').hidden = !data.trainLeader || riding;
   el('train-leave').hidden = !riding;
   el('train-leave').textContent = data.trainLeader === self?.id ? '기차 종료' : '기차 내리기';
+  const trainHint = data.personalTrial ? '' : !data.trainLeader ? '아직 운행 전입니다.'
+    : !riding ? (self?.seat != null ? '자리에서 일어나면 합류할 수 있습니다.' : '운행 중입니다. 합류하면 선두를 따라갑니다.')
+    : data.trainLeader === self?.id ? '선두입니다. 플로어 밖으로 나가려면 기차 종료를 누르세요.' : '탑승 중입니다. 원할 때 내릴 수 있습니다.';
+  if (el('train-hint').textContent !== trainHint) el('train-hint').textContent = trainHint;
+  el('train-join').disabled = !memberId || self?.seat != null;
+  const occupied = new Set(data.actors.filter(a=>!a.ai).map(a=>a.seat));
+  const nearest = nearbyEdmSeats(self).find(({index})=>!occupied.has(index));
+  const sitting = self?.seat != null;
+  el('seat').hidden = !sitting && (!nearest || riding);
+  const sittingLabel=sitting?edmSeats[self.seat]?.label:null;
+  el('seat').textContent = sitting ? (sittingLabel?sittingLabel+' 일어나기':self.table ? self.table+'번 테이블 일어나기' : '일어나기')
+    : nearest?.seat.label ? nearest.seat.label+' 앉기' : nearest?.seat.table ? nearest.seat.table+'번 테이블 앉기' : '바 의자 앉기';
+  el('seat').dataset.seat = nearest ? String(nearest.index) : '';
   el('seat').disabled = riding;
+  // Keep the exit reachable even when the one-line activity bar overflows.
+  el('seat').parentElement.style.order = sitting ? '-1' : '';
+  el('seat').dataset.sitting = String(sitting);
+  const poleActive=['pole-dance','podium-dance'].includes(self?.action);
+  el('pole-dance').hidden=!poleActive&&!nearbyEdmPole(self);
+  el('pole-dance').disabled=!self||sitting||riding;
+  el('pole-dance').textContent=poleActive?'단상 춤 멈추기':'단상에서 춤추기';
+  el('pole-dance').setAttribute('aria-pressed',String(poleActive));
   selectDance(self?.action, self?.seat != null || riding);
+  interfaceUI?.update(self,ready&&memberId?.startsWith('local-test:'));
   if (self?.action === 'dance' || dances.has(self?.action)) guide('dance');
   if (ready) {
     frame('actors', { ...data, self: room.sessionId });
     if (needsPlace) {
       const self = data.actors.find((a) => a.id === room.sessionId);
       if (self) {
+        visitOrigin = { x: self.x, z: self.z };
         frame('place', self);
         needsPlace = false;
       }
@@ -75,20 +137,34 @@ function display(data) {
   }
 }
 function disconnected(message, reconnect) {
+  rhythm?.interrupt('연결이 끊겨 라운드를 중단했습니다.');
   firstVisitFailure(message);
   shop.channel(null);
   el('event-controls').hidden = true;
+  el('particle-tests').hidden = true;
   music.reset();
   room = undefined;
   snapshot = null;
   ready = false;
-  map.hidden = true;
-  map.removeAttribute('src');
+  showMusic(null);
+  // Keep the last rendered club visible during a temporary channel outage.
+  activities.update(null,false);
+  wandStyles.update(null,false);characterStyles.update(null,false);vipPersonal.update(null,false);
+  frame('connection-state', false);
+  frame('audible-track', null);
+  if (!sceneLoaded) map.hidden = true;
+  el('seat').hidden = true;interfaceUI?.update(null,false);
+  for (const id of ['train-join', 'train-leave']) el(id).hidden = true;
+  el('train-hint').textContent = '채널 연결을 기다리는 중입니다.';
+  el('performance').textContent = '';
   el('population').textContent = message;
   el('retry').hidden = false;
-  if (reconnect && !manual && attempts < 4) {
+  el('retry').textContent = loginRequired ? '시험 회원 다시 로그인' : '다시 입장';
+  if (reconnect && !loginRequired && !manual && attempts < 4) {
     clearTimeout(retryTimer);
-    retryTimer = setTimeout(() => enter(), 1000 * ++attempts);
+    retryTimer = setTimeout(() => enter(), 1000 * 2 ** attempts++);
+  } else if (reconnect && attempts >= 4) {
+    el('population').textContent = '연결을 복구하지 못했습니다. 다시 입장을 눌러 주세요.';
   }
 }
 async function list() {
@@ -121,7 +197,16 @@ async function enter(channelId) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ channelId }),
     });
-    if (!res.ok) throw Error('입장 가능한 자리가 없거나 세션이 만료됐습니다.');
+    if (!res.ok) {
+      const failure = await res.json().catch(() => ({}));
+      loginRequired = res.status === 401;
+      if (loginRequired)
+        throw Error('로그인 정보가 만료되었거나 유효하지 않습니다. 다시 로그인해 주세요.');
+      if (res.status === 403) throw Error('현재 접속 주소에서 입장 요청이 허용되지 않았습니다.');
+      if (res.status === 409) throw Error('선택한 채널에 입장할 수 없습니다. 자동 입장으로 다시 시도해 주세요.');
+      throw Error('입장 요청 실패 (HTTP ' + res.status + (failure.error ? ' · ' + failure.error : '') + ')');
+    }
+    loginRequired = false;
     const a = await res.json();
     if (a.status === 'already_joined' && old?.roomId === a.channelId) return;
     if (a.status !== 'reserved')
@@ -138,6 +223,7 @@ async function enter(channelId) {
     needsPlace = true;
     snapshot = null;
     attempts = 0;
+    showMusic(null);
     music.reset();
     note('');
     next.onMessage('occupancy', ({ channelId, people, capacity }) => {
@@ -151,6 +237,10 @@ async function enter(channelId) {
     next.onMessage('place', (m) => {
       if (room === next && ready) frame('place', m);
     });
+    next.onMessage('podium-place',m=>{if(room===next&&ready)frame('podium-place',m);});
+    next.onMessage('activities-state',m=>{if(room===next)activities.state(m);});
+    next.onMessage('activities-result',m=>{if(room===next){activities.result(m);if(m.ok)note('');}});
+    next.onMessage('whisper-notification',m=>{if(room===next)activities.notification(m);});
     next.onMessage('notice', note);
     next.onMessage('clock', (m) => {
       if (room === next) {
@@ -168,15 +258,22 @@ async function enter(channelId) {
     next.send('occupancy');
     next.send('snapshot');
     next.send('clock', Date.now());
-    map.src = '/stage/festival/index.html?live';
+    if (!sceneLoaded) map.src = '/stage/festival/index.html?live';
+    else {
+      ready = true;frame('connection-state', true);
+      el('event-controls').hidden = !memberId?.startsWith('local-test:');
+      el('particle-tests').hidden = !memberId?.startsWith('local-test:');
+      if (memberId?.startsWith('local-test:')) shop.channel(room.roomId, memberId);
+    }
     map.hidden = false;
+    el('guide-guest').hidden = Boolean(memberId);
     guide('entry');
     list().catch(() => {});
   } catch (error) {
     if (old && room === old) {
       firstVisitFailure(error.message);
       note(error.message);
-    } else disconnected(error.message, false);
+    } else disconnected(error.message === 'Failed to fetch' ? '서버에 다시 연결하는 중입니다.' : error.message, error instanceof TypeError);
   } finally {
     joining = false;
   }
@@ -184,20 +281,43 @@ async function enter(channelId) {
 window.addEventListener('message', (event) => {
   if (!room || event.source !== map.contentWindow || event.origin !== location.origin) return;
   const { kind, data } = event.data || {};
+  if (kind === 'gate-notice') note(data);
+  if(kind==='action-target'&&ready)activities.select(data);
+  if (kind === 'seat-request' && ready && Number.isInteger(data)) room.send('seat',data);
+  if (kind === 'scene-error') {
+    sceneLoaded = false;
+    ready = false;
+    needsPlace = true;
+    note('공간을 불러오지 못했습니다. 화면의 ‘장면 다시 열기’를 눌러 주세요. ' + String(data));
+  }
   if (kind === 'scene-ready') {
+    sceneLoaded = true;
+    frame('connection-state', true);
+    frame('game-active',Boolean(rhythm?.active));
+    note('');
     ready = true;
+    showMusic(audibleTrack);
+    const observe=new URLSearchParams(location.search).get('view');
+    if(observe==='speakers')frame('speaker-view');
+    if(['bartender','dj'].includes(observe))frame('staff-view',observe);
+    const floor = map.contentDocument?.querySelector('canvas');
+    floor?.addEventListener('pointerdown', () => el('music').click(), { once: true });
     el('event-controls').hidden = !memberId?.startsWith('local-test:');
+    el('particle-tests').hidden = !memberId?.startsWith('local-test:');
     if (memberId?.startsWith('local-test:')) shop.channel(room.roomId, memberId);
     room.send('snapshot');
     room.send('clock', Date.now());
     if (snapshot) display(snapshot);
     frame('fast-flash', el('fast-flash').checked);
     frame('quality', el('quality').value);
-    frame('other-wands', el('other-wands').checked);
+    frame('other-wands', el('other-wands').checked);wandStyles.resume();characterStyles.resume();activities.resume();room.send('activities-state');
   }
+  if(['podium-request','podium-start','podium-cancel'].includes(kind)&&ready)room.send(kind,data);
+  if(kind==='pole-grip'&&ready)room.send('pole-grip',data);
+  if(kind==='pole-action'&&ready&&['pole-dance','idle'].includes(data))room.send('action',data);
   if (kind === 'move' && ready) {
     room.send('move', data);
-    if (Math.hypot(data.x, data.z - 25) > 0.5) guide('move');
+    if (visitOrigin && Math.hypot(data.x - visitOrigin.x, data.z - visitOrigin.z) > 0.5) guide('move');
   }
   if (kind === 'render-info') {
     el('info').textContent =
@@ -217,11 +337,26 @@ window.addEventListener('message', (event) => {
     } catch {}
   }
 });
-el('event-controls').onclick = event => {
+el('particle-tests').onclick = el('event-controls').onclick = event => {
+  const moving=event.target.closest('[data-moving-preview]');
+  if(ready&&moving){frame('moving-preview',moving.dataset.movingPreview);return;}
+  const accent=event.target.closest('[data-accent-preview]');
+  if(ready&&accent){frame('accent-preview',accent.dataset.accentPreview);return;}
+  const effect=event.target.closest('[data-peripheral-preview]');
+  if(ready&&effect){frame('peripheral-preview',effect.dataset.peripheralPreview);return;}
+  const strobe = event.target.closest('[data-strobe-preview]');
+  if (ready && strobe) {
+    frame('strobe-preview', strobe.dataset.strobePreview);
+    return;
+  }
   const kind = event.target.closest('[data-event]')?.dataset.event;
   if (kind && ready) room?.send('preview-event', { kind, message: el('event-message').value });
 };
 el('retry').onclick = () => {
+  if (loginRequired) {
+    location.assign('/auth/signin?callbackUrl=' + encodeURIComponent('/clubs/edm'));
+    return;
+  }
   attempts = 0;
   enter();
 };
@@ -234,19 +369,40 @@ el('music').onclick = () => {
 };
 el('fast-flash').onchange = e => frame('fast-flash', e.target.checked);
 el('quality').onchange = (e) => frame('quality', e.target.value);
-for (const action of ['start','join','leave'])
+for (const action of ['join','leave'])
   el('train-' + action).onclick = () => room?.send('train', action);
+el('pole-dance').onclick=()=>frame('pole-dance-request');
 el('wand').onclick = () => room?.send('wand', el('wand').getAttribute('aria-pressed') !== 'true');
 el('other-wands').onchange = e => frame('other-wands', e.target.checked);
-el('seat').onclick = () => room?.send('seat');
+el('seat').onclick = () => {
+  if(el('seat').dataset.sitting === 'true') room?.send('stand');
+  else room?.send('seat', el('seat').dataset.seat === '' ? undefined : Number(el('seat').dataset.seat));
+};
 const selectDance = danceButtons(el('dance-options'), (action) => {
+  frame('cancel-pole-approach');
   room?.send('action', action);
   map.contentDocument?.querySelector('canvas')?.focus();
 });
 for (const b of document.querySelectorAll('[data-action]'))
-  b.onclick = () => room?.send('action', b.dataset.action);
+  b.onclick = () => {frame('cancel-pole-approach');room?.send('action', b.dataset.action);};
 document.querySelector('a[href="/lobby"]').onclick = () => guide('exit');
-el('dismiss').onclick = () => guide('dismissed');
+el('show-guide').onclick = () => {
+  if (!el('guide').hidden) return el('dismiss').click();
+  guideOpened = true;
+  showGuide(true);
+  el('music').focus();
+};
+el('dismiss').onclick = () => {
+  guideOpened = false;
+  guide('dismissed');
+  showGuide(false);
+  el('show-guide').focus();
+};
+rhythm=rhythmGame({music,
+  startMusic:async()=>{if(room)room.send('clock',Date.now());await music.start();},
+  canPlay:()=>Boolean(memberId&&room&&ready),
+  lock:active=>frame('game-active',active)});
+el('rhythm-open').onclick=()=>rhythm.open();
 function resume() {
   if (document.hidden || manual) return;
   frame('resume');
@@ -276,4 +432,10 @@ setInterval(() => {
   }
 }, 5000);
 setInterval(() => music.tick(), 200);
+setInterval(() => { if (ready && !document.hidden) {
+  frame('music-spectrum', music.spectrum());
+  const status=music.status();
+  frame('music-output-clock',{playing:status.playing,id:status.track?.id,time:status.time,sentAt:Date.now()});
+} }, 50);
+interfaceUI=clubInterface();
 enter(new URLSearchParams(location.search).get('channel') || undefined);

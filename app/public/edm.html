@@ -56,15 +56,18 @@
       height: 100%;
       border: 0;
     }
-    #guide {
-      position: absolute;
-      top: 0.5rem;
-      left: 0.5rem;
-      max-width: 85%;
-      background: #21192bee;
-      padding: 0.6rem;
-      border-radius: 0.5rem;
-    }
+    .rhythm-dialog{width:min(660px,94vw);max-height:94dvh;overflow:auto;margin:auto;border:1px solid #706784;border-radius:14px;background:#111422;color:#f4f7ff;padding:12px}
+    .rhythm-dialog::backdrop{background:#080b1455}
+    .rhythm-dialog header{position:sticky;top:-12px;z-index:1;background:#111422;padding:8px 0;justify-content:space-between}
+    .rhythm-dialog header p{margin:3px 0;font-size:12px;color:#bbc5df}
+    .rhythm-dialog canvas{width:100%;height:min(58dvh,490px);display:block;border-radius:6px;touch-action:none}
+    .rhythm-meters,.rhythm-actions{display:flex;gap:12px;justify-content:space-between;padding:8px 0;flex-wrap:wrap}
+    .rhythm-status{min-height:1.5em;margin:8px 0;font-size:13px}
+    .rhythm-help{font-size:12px;line-height:1.5;color:#bcc4db;margin-bottom:0}
+    .rhythm-keys button{margin:3px}
+    #guide { background: #21192b; padding: .55rem .8rem; }
+    #guide p { margin: .25rem 0 0; }
+    #train-hint { font-size: .85rem; }
     #orientation {
       display: none;
     }
@@ -105,32 +108,166 @@
     #shop-dialog li {
       line-height: 1.5;
     }
+    header, nav, aside { padding-inline: clamp(.6rem, 2vw, 1.6rem); }
+    header { background: #110d20; }
+    #guide { background: #181324; padding: .4rem clamp(.6rem, 2vw, 1.6rem); }
+    #guide strong { font-size: .94rem; }
+    #guide p { display: inline; margin-left: .5rem; }
+    nav button, header button { border: 1px solid #514360; border-radius: 1rem; padding: .34rem .75rem; cursor: pointer; }
+    #music { background: #b9f4e7; color: #101920; font-weight: 700; }
+    #music.awaiting {
+      position: absolute; z-index: 1; bottom: calc(100% + .85rem); left: 50%; transform: translateX(-50%);
+      padding: .7rem 1.4rem; border: 2px solid #d6fff4; border-radius: 2rem;
+      background: #9df4db; color: #102524; font-size: 1.05rem; box-shadow: 0 2px 12px #100d20;
+    }
+    #music.awaiting::before { content: "▶"; margin-right: .55rem; }
+    body:has(#guide:not([hidden]), .extras[open]) #music.awaiting { position: static; transform: none; }
+    #guide { position: absolute; left: .75rem; bottom: .75rem; max-width: min(32rem, 90%); border-radius: .5rem; }
+    footer, #first-actions { display: flex; align-items: center; gap: .55rem; }
+    footer { position: relative; justify-content: space-between; background: #110d20; padding: .25rem .75rem; }
+    footer > nav { min-width: 0; overflow-x: auto; flex-wrap: nowrap; padding: .2rem 0; }
+    #first-actions, footer summary { white-space: nowrap; }
+    #track:not(:empty) { display:inline-block; max-width: 13ch; overflow:hidden; text-overflow:ellipsis; vertical-align:middle; }
+    .extra-panel { position: absolute; z-index: 2; right: .75rem; bottom: 100%; background:#21192b; max-height:60vh; overflow:auto; width:min(34rem,95vw); }
+    details:not([open]) > .extra-panel { display:none; }
+    .extras > summary { margin: .35rem clamp(.6rem, 2vw, 1.6rem); cursor: pointer; color: #d3bfdc; }
+    #notice:not(:empty) { padding: .3rem 1rem; }
   button[data-dance][aria-pressed="true"]{font-weight:700;box-shadow:inset 0 -3px currentColor}
+  .wand-style-panel{padding:1rem;line-height:1.5}
+  .wand-style-panel p{margin:.4rem 0 .8rem;color:#d3bfdc}
+  .wand-style-panel label{display:flex;align-items:center;gap:.6rem}
+  .wand-style-panel select{flex:1;min-width:0}
+  .wand-style-actions{display:flex;flex-wrap:wrap;gap:.5rem;margin:.8rem 0}
+  .wand-style-panel output{display:block;font-size:.85rem;color:#d3bfdc}
+  .activity-panel{padding:1rem;line-height:1.5;width:min(30rem,95vw)}
+  .activity-panel p{margin:.55rem 0;color:#d3bfdc}
+  .activity-panel label{display:flex;align-items:center;gap:.5rem;margin:.65rem 0}
+  .activity-panel select,.activity-panel input{min-width:0;flex:1}
+  .activity-buttons{display:flex;flex-wrap:wrap;gap:.5rem}
+  .activity-panel output{display:block;margin-top:.65rem;font-size:.85rem}
+  #whisper-alert{position:fixed;right:1rem;top:3.5rem;z-index:6;background:#533c70}
+  #whisper-dialog{width:min(28rem,92vw);border:1px solid #706080;border-radius:.6rem;background:#21192b;color:#f4edff;padding:1rem}
+  #whisper-dialog::backdrop{background:#09071055}
+  #whisper-dialog header{padding:0;justify-content:space-between}
+  #whisper-dialog p{font-size:.85rem;color:#d3bfdc}
+  #whisper-dialog [data-whisper-log]{height:12rem;overflow:auto;border:1px solid #514360;padding:.5rem;margin:.7rem 0;overflow-wrap:anywhere}
+  #whisper-dialog form{display:flex;gap:.4rem}#whisper-dialog input{min-width:0;flex:1}
+  #whisper-dialog output{display:block;font-size:.85rem;margin-top:.6rem}
 </style>
+<link rel="stylesheet" href="/clubs/edm/club-interface.css">
   <header>
     <h1>EDM 클럽</h1>
-    <output id="zones"></output><output id="population">채널 배정 중…</output><button id="retry" hidden>다시 입장</button
+    <output id="performance" aria-live="off"></output>
+    <span id="particle-tests" hidden aria-label="공연 효과 시험">
+      <button data-moving-preview="start">무빙 조명 시험 · 16마디 / 약 29초</button>
+      <button data-moving-preview="stop">무빙 조명 시험 종료</button>
+      <button data-strobe-preview="normal">평소 싸이키 시험 · 약 10.9초</button>
+      <button data-strobe-preview="transition">큰 전환 싸이키 시험 · 약 14.5초</button>
+      <button data-peripheral-preview="smoke">위로 솟는 연기 시험 · 6초</button>
+      <button data-peripheral-preview="laser">가는 레이저 시험 · 4초</button>
+      <button data-peripheral-preview="wash">넓은 조명·싸이키 시험 · 4초</button>
+      <button data-accent-preview="curtain">양쪽 벽 레이저 커튼 시험 · 약 10.9초</button>
+      <button data-accent-preview="fan">객석 위 부채꼴 빛 시험 · 약 14.5초</button>
+      <button data-accent-preview="gobo">회전 무늬 조명 시험 · 약 10.9초</button>
+      <button data-event="fountain">분수 불꽃 시험 · 7초</button>
+      <button data-event="confetti">종이조각 · 안에서 밖</button>
+      <button data-event="confetti-down">종이조각 · 위에서 아래</button>
+      <button data-event="confetti-in">종이조각 · 밖에서 안</button>
+    </span>
+    <button id="show-guide" aria-expanded="false" aria-controls="guide first-actions">첫 방문 안내</button>
+    <output id="population">채널 배정 중…</output><button id="retry" hidden>다시 입장</button
     ><a href="/lobby">로비로 돌아가기</a>
   </header>
   <div id="orientation">가로로 돌리면 공간을 넓게 볼 수 있습니다.</div>
   <main>
     <iframe title="EDM 클럽 공간" hidden></iframe>
-    <div id="guide" hidden>
-      음악 시작을 누른 뒤 WASD·드래그 또는 이동 패드로 공간을 둘러보세요. 춤을 춰 보고 위의
-      로비 링크로 퇴장하세요. <button id="dismiss">닫기</button>
-    </div>
+  <section id="guide" aria-label="EDM 첫 방문 안내" hidden>
+    <strong>EDM에서 처음 놀기</strong> <button id="dismiss">안내 닫기</button>
+    <p>음악을 켜고 춤을 고르세요. 무드봉을 들거나 운행 중인 기차에 합류할 수 있습니다. 바닥을 클릭하거나 WASD로 걷고, 드래그로 둘러보세요. 오른쪽 1~6번 테이블의 소파를 클릭하면 가까이 걸어가 앉습니다. 가까운 자리에서는 앉기 버튼도 사용할 수 있습니다. 일어나기 버튼으로 통로에 나올 수 있습니다. 2층 소파도 클릭하면 경사로를 거쳐 올라가 앉을 수 있습니다. 리듬 게임 버튼으로 7키 연습을 시작할 수 있습니다.</p>
+    <p id="train-hint" aria-live="polite"></p>
+    <p id="guide-guest" hidden>춤·무드봉·기차는 <a href="/auth/signin?callbackUrl=%2Fclubs%2Fedm">회원 로그인</a> 후 이용할 수 있습니다.</p>
+  </section>
   </main>
-  <nav>
-    <button id="shop-open" hidden>EDM 상품</button>
+  <footer>
+  <nav aria-label="EDM 활동">
+    <div id="first-actions">
+      <div><button id="music">음악 시작</button> <output id="track"></output></div>
+      <div><span id="dance-options"></span> <button id="pole-dance" hidden aria-pressed="false">단상에서 춤추기</button></div>
+      <div><button id="wand" aria-pressed="false">무드봉 들기</button></div>
+      <div><button id="rhythm-open">리듬 게임 · 7키</button></div>
+      <div><button id="seat" hidden>앉기</button></div>
+      <div>
+        <button id="train-join" hidden>기차 합류</button><button id="train-leave" hidden>기차 내리기</button>
+      </div>
+    </div>
+  </nav>
+  <button id="whisper-alert" hidden aria-live="polite"></button>
+  <details id="character-actions" class="extras" hidden>
+    <summary>캐릭터 행동</summary>
+    <div class="extra-panel activity-panel">
+      <strong>선택한 캐릭터와 함께</strong>
+      <details class="user-list-fallback"><summary>화면 밖 사용자 찾기</summary><button data-action-pick aria-pressed="false">캐릭터로 선택</button><label>사용자 목록 <select aria-label="행동 대상 사용자"><option value="">사용자 목록에서 선택</option></select></label></details>
+      <p data-action-target>캐릭터 또는 목록에서 대상을 선택하세요.</p>
+      <div class="activity-buttons greeting-buttons"><button data-greeting="wave">손 흔들기</button><button data-greeting="bow">가볍게 인사</button><button data-greeting="heart">손하트</button><button data-greeting="clap">응원 박수</button></div>
+      <div class="activity-buttons">
+        <button data-gift="heart" disabled>하트 선물 보내기</button><button data-gift="bouquet" disabled>꽃다발 보내기</button>
+        <button data-gift="cake" disabled>케이크 보내기</button><button data-open-whisper disabled>귓속말 보내기</button>
+      </div>
+      <output aria-live="polite">결제 없이 즐기는 클럽 활동 체험입니다.</output>
+    </div>
+  </details>
+  <details id="shout-actions" class="extras" hidden>
+    <summary>외치기</summary><div class="extra-panel activity-panel">
+      <strong>양옆 전광판에 외치기</strong><form><label>문구 <input aria-label="외치기 문구" maxlength="20" required placeholder="20자 이내"></label><button type="submit">전광판에 표시</button></form>
+      <p>양옆에 5초 · 30초마다 사용 · 대기 최대 3건 · 기존 문구 필터 적용</p><p data-shout-state aria-live="polite"></p><output aria-live="polite"></output>
+    </div>
+  </details>
+  <details id="vip-actions" class="extras" hidden>
+    <summary>VIP 이벤트</summary><div class="extra-panel activity-panel">
+      <strong>병 불꽃 퍼레이드</strong><p>이벤트 전용 NPC가 병 불꽃을 들고 행진합니다. 사용자와 기존 손님은 움직이지 않습니다.</p>
+      <p data-vip-state aria-live="polite"></p><button data-vip-preview hidden>퍼레이드 바로 보기 · 시험</button><p data-vip-preview-note hidden>개인 화면 시험 · 지금 바로 45초 한 바퀴 · 재사용 시간 미소비 · 정기 공연은 그대로 재생됩니다.</p><button data-vip-start>퍼레이드 시작</button><button data-vip-stop>내 체험 이벤트 종료</button><output aria-live="polite"></output>
+      <section id="vip-personal-controls" hidden aria-label="VIP 개인 활동">
+        <hr><strong>VIP 개인 활동 · 체험</strong>
+        <p>본인 캐릭터의 춤과 소품입니다. 기존 공연은 그대로 이어집니다.</p>
+        <div class="activity-buttons"><button data-vip-solo aria-pressed="false">VIP 춤 · 문워크·턴</button><button data-vip-fan aria-pressed="false">LED 부채 들기</button></div>
+        <p data-vip-personal-status aria-live="polite"></p>
+      </section>
+    </div>
+  </details>
+  <details id="character-customization" class="extras" hidden>
+    <summary>캐릭터 꾸미기</summary>
+    <div class="extra-panel wand-style-panel">
+      <strong>내 캐릭터 꾸미기</strong>
+      <p>남성형: 짧은 머리·가르마·대머리 / 긴바지·반바지. 여성형: 단발·긴 머리·포니테일 / 미니스커트·핫팬츠·긴바지. 상의·안경·색상은 공통으로 선택하며 이번 접속에 적용됩니다.</p>
+      <div data-character-fields></div>
+      <div class="wand-style-actions">
+        <button data-character-preview>꾸미기 미리보기</button><button data-character-apply>캐릭터에 적용</button>
+        <button data-character-cancel>꾸미기 취소</button><button data-character-reset>기본 캐릭터 복귀</button>
+      </div>
+      <output aria-live="polite">모양과 색상을 선택한 뒤 미리보기 또는 적용하세요.</output>
+    </div>
+  </details>
+  <details id="wand-customization" class="extras" hidden>
+    <summary>무드봉 꾸미기</summary>
+    <div class="extra-panel wand-style-panel">
+      <strong>무드봉 꾸미기 체험</strong>
+      <p>결제 없이 골라 보세요. 선택은 이번 접속에만 적용됩니다.</p>
+      <label>컬러 테마 <select aria-label="무드봉 컬러 테마"></select></label>
+      <label>봉 끝 장식 <select data-wand-decoration aria-label="무드봉 끝 장식"></select></label>
+      <label>잔상 테마 <select data-wand-trail aria-label="무드봉 잔상 테마"></select></label>
+      <div class="wand-style-actions">
+        <button data-wand-preview>내 화면 미리보기</button><button data-wand-apply>적용하고 들기</button>
+        <button data-wand-cancel>미리보기 취소</button><button data-wand-reset>기본 꾸미기 복귀</button>
+      </div>
+      <output aria-live="polite">컬러·끝 장식·잔상을 함께 골라 볼 수 있습니다.</output>
+    </div>
+  </details>
+  <details class="extras"><summary>더 보기</summary><div class="extra-panel"><nav aria-label="추가 활동">
+    <output id="zones"></output><button id="shop-open" hidden>EDM 상품</button>
     <button id="shop-stop" hidden>미리보기 종료</button>
-    <button id="music">음악 시작</button><output id="track"></output
-    ><span id="dance-options"></span><button data-action="wave">인사</button
-    ><button data-action="idle">멈춤</button><button id="wand" aria-pressed="false">무드봉 들기</button>
+    <button data-action="wave">인사</button><button data-action="idle">멈춤</button>
     <label><input id="other-wands" type="checkbox" checked>다른 손님 무드봉</label>
-    <button id="train-start">중앙 플로어 기차 출발</button>
-    <button id="train-join" hidden>기차 합류</button><button id="train-leave" hidden>기차 내리기</button>
-    <button id="seat">앉기 / 일어나기</button
-    ><label><input id="fast-flash" type="checkbox">빠른 점멸 (0.1초)</label>
+    <label><input id="fast-flash" type="checkbox">빠른 점멸 (0.1초)</label>
     <label
       >화질
       <select id="quality">
@@ -141,17 +278,28 @@
     ><output id="info"></output>
   </nav>
   <details id="event-controls" hidden>
-    <summary>무대 이벤트 미리보기</summary>
+    <summary>공연 미리보기 · 시험 회원</summary>
     <label>전광판 문구 <input id="event-message" maxlength="80" value="오늘의 주인공을 축하해요!" /></label>
     <button data-event="led">LED 전광판</button>
-    <button data-event="laser">레이저 쇼</button><button data-event="phoenix">불사조 소환</button>
+    <button data-event="laser">레이저 쇼</button><button data-event="phoenix">불사조</button>
+    <button data-event="whale">대형 고래</button><button data-event="dragon">네온 용</button>
+    <button data-event="jellyfish">우주 해파리</button><button data-event="butterflies">나비 군집</button>
     <button data-event="stop">연출 중단</button>
   </details>
   <aside>
     <label>채널 <select id="channels"></select></label>
     <button id="switch">이동</button>
-    <output id="notice" aria-live="polite"></output>
+
   </aside>
+  </div></details></footer>
+  <dialog id="whisper-dialog" aria-label="귓속말 대화">
+    <header><strong data-whisper-title>귓속말</strong><button data-whisper-close>닫기</button></header>
+    <p data-whisper-mode></p><p data-whisper-cooldown aria-live="polite"></p><div data-whisper-log role="log" aria-live="polite"></div>
+    <form><input aria-label="귓속말 내용" maxlength="200" required autocomplete="off"><button type="submit" data-whisper-send>보내기</button></form>
+    <button data-whisper-block>이 상대 귓속말 차단</button><button data-whisper-demo hidden>귓속말 도착 알림 체험</button>
+    <p>체험 대화·차단은 현재 클럽의 임시 상태입니다.</p><output aria-live="polite"></output>
+  </dialog>
+  <output id="notice" aria-live="polite"></output>
   <dialog id="shop-dialog" aria-labelledby="shop-title">
     <h2 id="shop-title">EDM 상품</h2>
     <p id="shop-price"></p>

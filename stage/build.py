@@ -7,6 +7,7 @@ import struct
 import sys
 
 ROOT = Path(__file__).resolve().parent
+festival = "--festival" in sys.argv
 VERSION = "05a-2.v3"
 materials = []
 parts = {}
@@ -32,16 +33,17 @@ def tri(group, mat, a,b,c, surface=False):
     positions.extend([a,b,c]);normals.extend([[i/length for i in n]]*3)
     if surface: walkable.append((a,b,c))
 
-def slab(group, mat, outline, bottom, surface=False):
+def slab(group, mat, outline, bottom, surface=False, side_mat=None):
     # Outline runs counterclockwise in XZ as seen from above (+Y).
+    side_mat=mat if side_mat is None else side_mat
     base=[(x,bottom,z) for x,y,z in outline]
     for i in range(1,len(outline)-1):
         tri(group,mat,outline[0],outline[i],outline[i+1],surface)
         tri(group,mat,base[0],base[i+1],base[i])
     for i,a in enumerate(outline):
         j=(i+1)%len(outline)
-        tri(group,mat,a,base[i],base[j])
-        tri(group,mat,a,base[j],outline[j])
+        tri(group,side_mat,a,base[i],base[j])
+        tri(group,side_mat,a,base[j],outline[j])
 
 def rect(group,mat,x1,x2,z1,z2,y1,y2,bottom,surface=False):
     slab(group,mat,[(x1,y1,z1),(x1,y2,z2),(x2,y2,z2),(x2,y1,z1)],bottom,surface)
@@ -101,23 +103,39 @@ for x in [-3.85,3.85]:
 for z in (22.0,23,24,25,26):
     box("Entry threshold",ice,-3.45,3.45,z,z+.09,.002,.012)
 
-# Audience circle remains at grade. The performer platform is at the north end.
-slab("Dance floor",indigo,[polar(8.5,i*2*P/96,.018) for i in range(96)],.002,True)
-for r,mat,w in [(8.29,violet,.17),(8.53,ice,.055),(9.1,rim,.045)]:
-    ring("Dance floor perimeter",mat,r,r+w,0,2*P,.018,.034,96)
-for i in range(48):
-    angle=i*2*P/48
-    ring("Floor markers",violet if i%4==0 else rim,8.63,8.89,angle-.007,angle+.007,.002,.014,1)
+# Approved rectangular floor, reduced by 10% of area: 348.075 square metres.
+if festival:
+    fw,fd=17.5*math.sqrt(1.3*.9),17*math.sqrt(1.3*.9)
+    floor_back=-15.6+.825
+    floor_front=floor_back+fd
+    box('Dance floor',indigo,-fw/2,fw/2,floor_back,floor_front,.002,.018,True)
+    for x in [-fw/2,fw/2]:box('Dance floor perimeter',violet,x-.035,x+.035,floor_back,floor_front,.018,.034)
+    for z in [floor_back,floor_front]:box('Dance floor perimeter',violet,-fw/2,fw/2,z-.035,z+.035,.018,.034)
+else:
+    # Audience circle remains at grade. The performer platform is at the north end.
+    slab("Dance floor",indigo,[polar(8.5,i*2*P/96,.018) for i in range(96)],.002,True)
+    for r,mat,w in [(8.29,violet,.17),(8.53,ice,.055),(9.1,rim,.045)]:
+        ring("Dance floor perimeter",mat,r,r+w,0,2*P,.018,.034,96)
+    for i in range(48):
+        angle=i*2*P/48
+        ring("Floor markers",violet if i%4==0 else rim,8.63,8.89,angle-.007,angle+.007,.002,.014,1)
 # Short lines in the floor lead towards the main stage.
 for x in (-3.0,3.0):
     box("Processional lane",ice,x-.06,x+.06,8.7,20.7,.003,.021)
 
-octagon("DJ platform",deck,0,-14.2,15,8.4,1.15,-.03,1.35,True)
-rect("DJ access",deck,-2.0,2.0,-10.05,-7.6,1.35,0,-.01,True)
+if festival:
+    # Only the supporting deck behind the booth frontage remains.
+    # The audience floor abuts its front face without an apron or access wedge.
+    box('DJ platform',deck,-7.5,7.5,-18.4,-15.6+.825,-.03,1.35,True)
+else:
+    octagon("DJ platform",deck,0,-14.2,15,8.4,1.15,-.03,1.35,True)
+    rect("DJ access",deck,-2.0,2.0,-10.05,-7.6,1.35,0,-.01,True)
 for x1,x2 in [(-6.25,-2.2),(2.2,6.25)]:
-    box("Stage lip",pink,x1,x2,-10.13,-10.02,1.18,1.31)
-octagon("DJ booth",metal,0,-15.75,6.9,1.65,.45,1.35,2.45)
-box("Booth trim",ice,-3,3,-14.94,-14.90,2.32,2.43)
+    lip_z=-15.6+.825 if festival else -10.075
+    box("Stage lip",pink,x1,x2,lip_z-.055,lip_z+.055,1.18,1.31)
+booth_z = -15.6 if festival else -15.75
+octagon("DJ booth",metal,0,booth_z,6.9,1.65,.45,1.35,2.45)
+box("Booth trim",ice,-3,3,booth_z+.81,booth_z+.85,2.32,2.43)
 box("Stage backdrop",indigo,-6.8,6.8,-18.8,-18.45,1.35,8.0)
 for side in (-1,1):
     # Architectural fan frames, visible from the entry above the booth.
@@ -128,49 +146,118 @@ for side in (-1,1):
         beam("Pylon trim",violet,(side*x,1.1,-14.65),(side*(x+.65),h,-16.65),.09)
 
 for side, label in [(-1,"West"),(1,"East")]:
+    # The festival east side is an open floor, without the old raised dance pad.
+    if festival and side > 0:
+        continue
     x=side*14.6
-    octagon(label+" dance zone",deck,x,6,10.2,11,1.6,0,.045,True)
-    for dz in [-3.65,-1.85,0,1.85,3.65]:
-        box(label+" floor pattern",indigo,x-3.75,x+3.75,6+dz-.8,6+dz+.8,.046,.055)
-    # Distinct edges along the outside, leaving the centre-side entrance clear.
-    for z in [1.7,10.3]:
-        box(label+" threshold",violet,x-3.65,x+3.65,z,z+.13,.055,.07)
-    box(label+" zone edge",violet,x+side*4.65-.08,x+side*4.65+.08,2.6,9.4,.05,.09)
-    # Approach is behind each side zone. A broad opening connects to its upper deck.
-    rect(label+" deck ramp",deck,x-1.55,x+1.55,-8,0,4,0,-.01,True)
-    for edge in [x-1.5,x+1.5]:
-        beam(label+" ramp rail",violet,(edge,1,0),(edge,5,-8),.055)
+    # Keep the festival stair approach on the plain arena floor, without the old side pad.
+    if not festival:
+        octagon(label+" dance zone",deck,x,6,10.2,11,1.6,0,.045,True)
+        for dz in [-3.65,-1.85,0,1.85,3.65]:
+            box(label+" floor pattern",indigo,x-3.75,x+3.75,6+dz-.8,6+dz+.8,.046,.055)
+        # Distinct edges along the outside, leaving the centre-side entrance clear.
+        for z in [1.7,10.3]:
+            box(label+" threshold",violet,x-3.65,x+3.65,z,z+.13,.055,.07)
+        box(label+" zone edge",violet,x+side*4.65-.08,x+side*4.65+.08,2.6,9.4,.05,.09)
+    if festival:
+        continue
+    # EDM: move the west ramp into the reclaimed speaker footprint and extend the lounge forwards.
+    ramp_x=-17.9 if festival else x
+    top_z,bottom_z=(2,10) if festival else (-8,0)
+    rect(label+" deck ramp",deck,ramp_x-1.55,ramp_x+1.55,top_z,bottom_z,4,.045 if festival else 0,-.01,True)
+    for edge in [ramp_x-1.5,ramp_x+1.5]:
+        beam(label+" ramp rail",violet,(edge,1,bottom_z),(edge,5,top_z),.055)
         for i in range(5):
-            z=-2*i;y=i+.04
+            z=bottom_z-2*i;y=i+.04
             box(label+" ramp posts",metal,edge-.055,edge+.055,z-.055,z+.055,y,y+.95)
-    octagon(label+" upper deck",deck,x,-13.8,10.8,11.8,.8,3.64,4,True)
+    centre_z,depth,corner=-13.8,11.8,.8
+    octagon(label+" upper deck",deck,x,centre_z,10.8,depth,corner,3.64,4,True)
     inner=x-side*5.32;outer=x+side*5.32
+    front=-8.75
     for edge in (inner,outer):
-        beam(label+" deck handrail",ice,(edge,5,-18.9),(edge,5,-8.75),.06)
+        beam(label+" deck handrail",ice,(edge,5,-18.9),(edge,5,front),.06)
         for z in [-18.9,-16.5,-14.2,-11.8,-8.75]:
             box(label+" posts",metal,edge-.06,edge+.06,z-.06,z+.06,4,5)
     for xc in [x-4,x+4]:
-        for z in [-17.4,-9.4]:box(label+" supports",metal,xc-.21,xc+.21,z-.21,z+.21,0,3.64)
-    for lo,hi in [(x-4.5,x-1.65),(x+1.65,x+4.5)]:
-        beam(label+" deck handrail",ice,(lo,5,-8),(hi,5,-8),.06)
+        for z in [-17.4,-9.4]:
+            box(label+" supports",metal,xc-.21,xc+.21,z-.21,z+.21,0,3.64)
+    front_left,front_right=(x-5.0,x+5.0) if festival else (x-4.5,x+4.5)
+    for lo,hi in [(front_left,ramp_x-1.65),(ramp_x+1.65,front_right)]:
+        if hi-lo>.1:beam(label+" deck handrail",ice,(lo,5,-8 if festival else top_z),(hi,5,-8 if festival else top_z),.06)
     beam(label+" deck handrail",ice,(x-4.5,5,-19.6),(x+4.5,5,-19.6),.06)
+
+if festival:
+    def gallery(x1,x2,z1,z2):box('U lounge floor',deck,x1,x2,z1,z2,3.64,4,True)
+    def guard(a,b):
+        beam('U lounge rail',ice,a,b,.035)
+        length=math.dist(a,b);count=max(1,math.ceil(length/2.5))
+        for j in range(count+1):
+            t=j/count;x,y,z=[a[i]+(b[i]-a[i])*t for i in range(3)]
+            box('U lounge post',metal,x-.035,x+.035,z-.035,z+.035,y-1,y)
+    for side in [-1,1]:
+        def span(a,b):return sorted([side*a,side*b])
+        def gal(a,b,z1,z2):
+            x1,x2=span(a,b);gallery(x1,x2,z1,z2)
+        # Continuous inside gallery and a real opening above both stair flights.
+        gal(15.8,17.6,-12.2,18.4)
+        gal(17.6,20.8,-12.2,4.2)
+        gal(17.6,20.8,8.8,18.4)
+        gal(15.8,21.4,-12.2,-6.4)
+        # Two return flights, with a 2m-high landing at the outer turn.
+        x1,x2=span(17.6,18.95)
+        rect('U lounge stair',deck,x1,x2,5.4,8.8,2,0,-.01,True)
+        x1,x2=span(19.45,20.8)
+        rect('U lounge stair',deck,x1,x2,5.4,8.8,2,4,1.65,True)
+        x1,x2=span(17.6,20.8)
+        box('U lounge stair',deck,x1,x2,4.2,5.4,1.65,2,True)
+        # Ground approach and upper exit face the central circulation aisle.
+        x1,x2=span(15.8,18.95)
+        box('U lounge stair',deck,x1,x2,8.8,10.1,-.04,0,True)
+        for inner,y1,y2 in [(17.65,3,1),(18.90,3,1),(19.50,3,5),(20.75,3,5)]:
+            guard((side*inner,y1,5.4),(side*inner,y2,8.8))
+        guard((side*17.65,3,4.25),(side*20.75,3,4.25))
+        # Upper guard is open at the exit bridge; no rail across the route.
+        guard((side*17.6,5,4.2),(side*17.6,5,8.65))
+        guard((side*15.8,5,-6.4),(side*15.8,5,16.6))
+        guard((side*20.8,5,-6.4),(side*20.8,5,4.2))
+        guard((side*20.8,5,8.8),(side*20.8,5,18.4))
+        guard((side*15.8,5,-12.2),(side*15.8,5,-6.4))
+        guard((side*15.8,5,-12.2),(side*21.4,5,-12.2))
+        guard((side*21.4,5,-12.2),(side*21.4,5,-6.4))
+        guard((side*21.4,5,-6.4),(side*20.8,5,-6.4))
+        # Fine tread markings sit on the continuous walkable slopes.
+        for j in range(1,12):
+            z=5.4+j*3.4/12
+            for lo,hi,y in [(17.7,18.85,2*(8.8-z)/3.4),(19.55,20.7,2+2*(z-5.4)/3.4)]:
+                beam('Stair tread marks',rim,(side*lo,y+.005,z),(side*hi,y+.005,z),.009)
+    gallery(-20,20,16.6,20.2)
+    gallery(-4.2,4.2,14.8,20.2)
+    for a,b in [((-15.8,5,16.6),(-4.2,5,16.6)),((4.2,5,16.6),(15.8,5,16.6)),
+                ((-4.2,5,14.8),(4.2,5,14.8)),((-4.2,5,14.8),(-4.2,5,16.6)),((4.2,5,14.8),(4.2,5,16.6)),
+                ((-20,5,20.2),(20,5,20.2))]:guard(a,b)
+    for x,z in [(-19.5,12),(-19.5,16),(19.8,-6.8),(-6.3,19.9),(6.3,19.9)]:
+        box('U lounge support',metal,x-.12,x+.12,z-.12,z+.12,0,3.64)
 
 # Frame the side rooms on their outer edges; their inner thresholds stay open.
 for side in (-1,1):
     x=side*19.6
-    for z in [2.6,5.0,7.4,9.8]:
-        box("Side room fins",metal,x-.20,x+.20,z-.20,z+.20,0,2.2)
-    beam("Side room header",violet,(x,2.2,2.6),(x,2.2,9.8),.13)
-    box("Side room parapet",wall,x-.12,x+.12,2.6,9.8,.05,.82)
-    for z in [2.6,9.8]:
-        beam("Side room return",rim,(x,2.2,z),(x-side*2.4,1.45,z),.13)
-    for r in [9.5,10.1]:
+    # The east lounge stays open; retain its floor and route inlays below.
+    if not festival:
+        for z in [2.6,5.0,7.4,9.8]:
+            box("Side room fins",metal,x-.20,x+.20,z-.20,z+.20,0,2.2)
+        beam("Side room header",violet,(x,2.2,2.6),(x,2.2,9.8),.13)
+        box("Side room parapet",wall,x-.12,x+.12,2.6,9.8,.05,.82)
+        for z in [2.6,9.8]:
+            beam("Side room return",rim,(x,2.2,z),(x-side*2.4,1.45,z),.13)
+    for r in ([] if festival else [9.5,10.1]):
         start=-.9 if side==1 else P-.9
         ring("Arena apron",violet,r,r+.12,start,start+1.8,.002,.028,32)
     # The two approach walls converge on the audience floor.
     beam("Lobby wings",metal,(side*3.9,1.0,20.7),(side*8.4,1.3,15.5),.27)
     beam("Lobby wing trim",ice,(side*3.9,1.25,20.7),(side*8.4,1.55,15.5),.08)
-    for z in [-18,-15,-12,-9]:
+    if festival and side > 0:
+        continue
+    for z in ([] if festival else [-18,-15,-12,-9]):
         box("Upper deck fascia",violet,side*14.6-4.5,side*14.6+4.5,z,z+.07,4.002,4.018)
 # Proscenium brackets distinguish the elevated stage from the two audience decks.
 for side in (-1,1):
@@ -179,31 +266,76 @@ for side in (-1,1):
     beam("Stage surround trim",ice,(side*7.4,7.55,-17.52),(side*4.8,8.6,-17.52),.07)
 beam("Stage surround",metal,(-4.8,8.55,-17.85),(4.8,8.55,-17.85),.26)
 
-festival = '--festival' in sys.argv
 images, lights = {}, []
 if festival:
     from festival.interior import scenery
-    VERSION = 'EDM v3 · festival interior'
+    VERSION = 'EDM rectangular layout · approved clearance plan'
     images, lights = scenery(materials, material, box, octagon, ring, beam, tri)
+    # Match edmStage.booth: move the original deck/mixer and front display with the booth.
+    for (group,mat),(positions,normals) in list(parts.items()):
+        if group=='Booth equalizer' or (group.startswith('DJ ') and group not in {'DJ booth','DJ platform','DJ access','DJ focus fixture body','DJ focus fixture lens','DJ focus fixture suspension'}):
+            parts[(group,mat)]=([(x,y,z-2.7) for x,y,z in positions],normals)
+    # Retire the old decorative frame behind the enlarged screen, preserving backdrop/rear wall.
+    obsolete={'Stage fan','Stage pylons','Pylon trim','Stage surround','Stage surround trim'}
+    for key in list(parts):
+        if key[0] in obsolete:del parts[key]
+
+# Two public podiums shifted west, with no ramps or step structures.
+if festival:
+    podium_top=material('Auxiliary podium · charcoal top',(.055,.065,.078))
+    materials[podium_top]['pbrMetallicRoughness'].update(metallicFactor=.20,roughnessFactor=.46)
+    podium_side=material('Auxiliary podium · matte dark side',(.022,.027,.033))
+    materials[podium_side]['pbrMetallicRoughness'].update(metallicFactor=.02,roughnessFactor=.94)
+    podium_pole=material('Auxiliary podium · dark silver pole',(.19,.21,.24))
+    materials[podium_pole]['pbrMetallicRoughness'].update(metallicFactor=.85,roughnessFactor=.38)
+    podium_colors=[]
+    for name,rgb in [('sky 1',(.18,.70,.85)),('sky 2',(.18,.70,.85))]:
+        index=material('Auxiliary podium rim '+name,rgb)
+        materials[index]['emissiveFactor']=[v*.12 for v in rgb]
+        podium_colors.append(index)
+    for cz,accent in zip([-8.8,-1.6],podium_colors):
+        cx=-15.3
+        slab('Auxiliary dance podium',podium_top,
+             [(cx+1.7*math.cos(i*2*P/64),.5,cz-1.7*math.sin(i*2*P/64)) for i in range(64)],0,True,side_mat=podium_side)
+        for j in range(64):
+            a=(j+.04)*2*P/64;b=(j+.96)*2*P/64
+            slab('Auxiliary podium rim',accent,
+                 [(cx+r*math.cos(t),.502,cz-r*math.sin(t))
+                  for r,t in [(1.655,a),(1.7,a),(1.7,b),(1.655,b)]],.47)
+        # A slender continuous pole, anchored into the existing ceiling slab.
+        beam('Auxiliary podium pole',podium_pole,(cx,.5,cz),(cx,11.6,cz),.055)
+        beam('Auxiliary podium pole mounts',metal,(cx,.5,cz),(cx,.54,cz),.13)
+        beam('Auxiliary podium pole mounts',metal,(cx,11.54,cz),(cx,11.61,cz),.13)
 
 route=[(0,0,25),(0,0,12),(0,.018,0),(0,.018,-7.6),(0,1.35,-10.05),(0,1.35,-13),
        (0,1.35,-10.05),(0,.018,-7.6),(0,.018,0),(-14.6,.045,6),(0,.018,0),
        (14.6,.045,6),(14.6,0,0),(14.6,4,-8),(14.6,4,-13),(10.1,4,-13)]
 stops=dict(entry=0,floor=2,stage=5,west=9,east=11,balcony=15)
-def ground(x,z):
+if festival:
+    # Stop in front of the relocated booth, keeping the approach and return clear.
+    route[4] = route[6] = (0,.018,-10.05)
+    route[5] = (0,.018,-14.0)
+    route[9:] = [(-14.6,0,6),(0,.018,0),(14.6,0,6),
+                  (-16.7,0,9.5),(-18.275,0,9.5),(-18.275,0,8.8),(-18.275,2,5.4),(-18.275,2,5.0),
+                  (-20.125,2,5.0),(-20.125,2,5.4),(-20.125,4,8.8),(-20.125,4,9.5),(-16.7,4,9.5),(-16.7,4,-5.5),(-17.0,4,-7.9)]
+    stops.update(west=9,east=11,balcony=len(route)-1)
+def ground(x,z,foot):
     top=-999
     for (ax,ay,az),(bx,by,bz),(cx,cy,cz) in walkable:
         det=(bz-cz)*(ax-cx)+(cx-bx)*(az-cz)
         if abs(det)<1e-10:continue
         u=((bz-cz)*(x-cx)+(cx-bx)*(z-cz))/det
         v=((cz-az)*(x-cx)+(ax-cx)*(z-cz))/det
-        if min(u,v,1-u-v)>=-1e-6:top=max(top,u*ay+v*by+(1-u-v)*cy)
+        if min(u,v,1-u-v)>=-1e-6:
+            height=u*ay+v*by+(1-u-v)*cy
+            # U-shaped gallery overlaps the ground route; choose its own level.
+            if abs(height-foot)<abs(top-foot):top=height
     return top
 # Allow small trim and threshold transitions.
 for a,b in zip(route,route[1:]):
     for j in range(101):
         x,y,z=[a[i]+(b[i]-a[i])*j/100 for i in range(3)]
-        assert abs(ground(x,z)-y)<.07,(x,y,z,ground(x,z))
+        assert abs(ground(x,z,y)-y)<.07,(x,y,z,ground(x,z,y))
 buf=bytearray();views=[];access=[];meshes=[];nodes=[]
 def attr(points):
     offset=len(buf)
@@ -250,4 +382,4 @@ if festival:
 else:
     (ROOT/'edm-empty.glb').write_bytes(glb)
     (ROOT/'review.html').write_text((ROOT/'review.template').read_text().replace('__GLB__',base64.b64encode(glb).decode()))
-print(VERSION,len(glb),'bytes;',len(route),'waypoints; route support verified')
+print(VERSION,len(glb),'bytes;',len(route),'waypoints; asset generated')

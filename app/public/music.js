@@ -6,7 +6,7 @@ export function playlistPosition(tracks, epoch, now) {
   const age = Math.max(0, (now - epoch) / 1000);
   let time = age % duration;
   for (const track of valid) {
-    if (time < track.duration) return { track, time, cycle: Math.floor(age / duration) };
+    if (time < track.duration) return { track, time, phraseTime: time, cycle: Math.floor(age / duration) };
     time -= track.duration;
   }
   return null;
@@ -18,8 +18,38 @@ export function trackBeat(position, fallbackSeconds) {
   return (time - (track.firstBeat || 0)) * (track.bpm || 120) / 60;
 }
 
-export function musicPlayer(notice, playing, failed) {
-  let ctx,
+export function musicDynamics(position) {
+  const sections=position?.track.energySections;
+  if(!sections?.length)return {level:1,bass:1};
+  const beat=Math.max(0,trackBeat(position,0)),index=Math.min(sections.length-1,Math.floor(beat/16));
+  const progress=Math.min(1,(beat%16)/2),mix=progress*progress*(3-2*progress),previous=sections[Math.max(0,index-1)],current=sections[index];
+  const level=previous[0]+(current[0]-previous[0])*mix;
+  return {level,bass:previous[1]+(current[1]-previous[1])*mix};
+}
+
+// Build an in-memory, whole-phrase loop; the supplied source file stays untouched.
+export function prepareTrackBuffer(ctx,decoded,track) {
+  if(Math.abs(decoded.duration-(track.sourceDuration??track.duration))>.1)throw Error('Unexpected source duration');
+  if(track.loopStart===undefined)return decoded;
+  const start=Math.round(track.loopStart*decoded.sampleRate),end=Math.round(track.loopEnd*decoded.sampleRate);
+  if(!Number.isFinite(start)||!Number.isFinite(end)||start<0||end>decoded.length||end<=start||
+    Math.abs((end-start)/decoded.sampleRate-track.duration)>.01)throw Error('Invalid music loop range');
+  const buffer=ctx.createBuffer(decoded.numberOfChannels,end-start,decoded.sampleRate);
+  // A 3ms cosine edge prevents a waveform click without adding a silent outro.
+  const edge=Math.min(Math.round(decoded.sampleRate*.003),Math.floor(buffer.length/2));
+  for(let c=0;c<decoded.numberOfChannels;c++){
+    const samples=buffer.getChannelData(c);samples.set(decoded.getChannelData(c).subarray(start,end));
+    for(let i=0;i<edge;i++){
+      const gain=(1-Math.cos(Math.PI*i/Math.max(1,edge-1)))/2;
+      samples[i]*=gain;samples[samples.length-1-i]*=gain;
+    }
+  }
+  return buffer;
+}
+
+export function musicPlayer(notice, playing, failed, {personalTimeline=false,onStart=()=>{},countdownSeconds=0,onCountdown=()=>{}}={}) {
+  let personalStarted=false,countdownPending=false;
+  let ctx, analyser, frequencies,
     source,
     started = 0,
     offset = 0,
@@ -42,6 +72,7 @@ export function musicPlayer(notice, playing, failed) {
     correctionEnd = 0;
   const cache = new Map();
   function stop() {
+    if(countdownPending){countdownPending=false;onCountdown(null);}
     generation++;
     pendingId = null;
     current = null;
@@ -62,7 +93,7 @@ export function musicPlayer(notice, playing, failed) {
     return playlistPosition(tracks, epoch, now);
   }
   async function sync() {
-    if (!enabled || !epoch) return;
+    if (!enabled || !epoch || countdownPending) return;
     const next = target();
     if (!next) {
       if (current || pendingId) stop();
@@ -74,6 +105,11 @@ export function musicPlayer(notice, playing, failed) {
       return;
     }
     if (current === next.track.id && source) {
+      if (lastFailure) {
+        lastFailure = null;
+        notice(next.track.title);
+        playing(current);
+      }
       // A one-track loop wraps in the audio device, without restarting the buffer.
       const length = source.buffer.duration,
         now = ctx.currentTime;
@@ -101,12 +137,15 @@ export function musicPlayer(notice, playing, failed) {
       if (!buffer) {
         const res = await fetch(next.track.url);
         if (!res.ok) throw Error();
-        buffer = await ctx.decodeAudioData(await res.arrayBuffer());
+        const decoded = await ctx.decodeAudioData(await res.arrayBuffer());
         if (ticket !== generation) return;
-        if (Math.abs(buffer.duration - next.track.duration) > 0.1) throw Error();
+        buffer = prepareTrackBuffer(ctx,decoded,next.track);
         cache.set(id, buffer);
       }
       if (ticket !== generation) return;
+      const firstPersonalStart=personalTimeline&&!personalStarted;
+      // Decode first. Independent trials start at the beginning, not at page-load time.
+      if(firstPersonalStart){epoch=Date.now();clockOffset=0;}
       const actual = target();
       if (!actual || actual.track.id !== id) {
         pendingId = null;
@@ -115,8 +154,9 @@ export function musicPlayer(notice, playing, failed) {
       source = ctx.createBufferSource();
       source.buffer = buffer;
       source.loop = true;
-      source.connect(ctx.destination);
-      started = correctionEnd = ctx.currentTime;
+      source.connect(analyser);
+      const lead=firstPersonalStart?Math.max(0,countdownSeconds):0;
+      started = correctionEnd = ctx.currentTime+lead;
       offset = actual.time;
       rate = 1;
       source.start(started, offset % buffer.duration);
@@ -127,8 +167,18 @@ export function musicPlayer(notice, playing, failed) {
       current = id;
       pendingId = null;
       lastFailure = null;
+      if(firstPersonalStart){
+        const audioEpoch=Date.now()+lead*1000+Math.max(0,ctx.outputLatency||ctx.baseLatency||0)*1000;
+        if(lead>0){
+          countdownPending=true;onCountdown({endsAt:audioEpoch,seconds:lead});
+          await new Promise(resolve=>setTimeout(resolve,Math.max(0,audioEpoch-Date.now())));
+          if(ticket!==generation)return;
+          countdownPending=false;onCountdown(null);
+        }
+        personalStarted=true;epoch=audioEpoch;onStart(epoch);
+      }
       notice(actual.track.title);
-      playing();
+      playing(id);
     } catch {
       if (ticket === generation) {
         stop();
@@ -138,15 +188,33 @@ export function musicPlayer(notice, playing, failed) {
     }
   }
   return {
-    async start() {
+    async start({automatic=false}={}) {
       try {
         ctx ??= new AudioContext();
-        await ctx.resume();
+        if (!analyser) {
+          analyser = ctx.createAnalyser();
+          analyser.fftSize = 512;
+          analyser.smoothingTimeConstant = .72;
+          frequencies = new Uint8Array(analyser.frequencyBinCount);
+          analyser.connect(ctx.destination);
+        }
+        const resuming=ctx.resume();
+        if(automatic){
+          // An unattended resume may remain pending under the browser autoplay policy.
+          await Promise.race([resuming,new Promise(resolve=>setTimeout(resolve,200))]);
+          if(ctx.state!=='running')return false;
+        }else await resuming;
         enabled = true;
         await sync();
+        return ctx.state==='running'&&Boolean(source);
       } catch {
+        if(automatic)return false;
         unavailable('음악을 시작하지 못했습니다. 다시 눌러 주세요.');
       }
+    },
+    followTimeline(nextEpoch) {
+      if(!personalTimeline||!Number.isFinite(nextEpoch))return;
+      personalStarted=true;epoch=nextEpoch;clockOffset=0;
     },
     clock(m) {
       clockOffset = m.now - (Date.now() + m.sent) / 2;
@@ -155,8 +223,37 @@ export function musicPlayer(notice, playing, failed) {
       sync();
     },
     tick: sync,
+    spectrum() {
+      const bands = Array(12).fill(0);
+      if (!source || !current || ctx?.state !== 'running' || lastFailure) return bands;
+      analyser.getByteFrequencyData(frequencies);
+      // Logarithmic bands from bass through treble, measured from the audible source.
+      const edges = [1,2,3,5,8,12,18,27,40,60,90,140,256];
+      for (let i=0;i<12;i++) {
+        let energy=0;
+        for(let j=edges[i];j<edges[i+1];j++) energy+=frequencies[j];
+        bands[i]=energy/((edges[i+1]-edges[i])*255);
+      }
+      return bands;
+    },
+    status(at = performance.now()) {
+      const next=target();
+      if(countdownPending||!source||!next||current!==next.track.id||ctx?.state!=='running'||lastFailure)return {playing:false};
+      const stamp=ctx.getOutputTimestamp?.();
+      const audible=stamp&&stamp.contextTime>0
+        ? stamp.contextTime+(at-stamp.performanceTime)/1000
+        : ctx.currentTime-(ctx.outputLatency||ctx.baseLatency||0)+(at-performance.now())/1000;
+      if(audible<started)return {playing:false};
+      const raw=position(Math.max(0,Math.min(ctx.currentTime,audible))),length=source.buffer.duration;
+      const time=((raw%length)+length)%length;
+      const expected=next.cycle*next.track.duration+next.time;
+      const totalTime=time+Math.round((expected-time)/length)*length;
+      return {playing:true,track:next.track,time,totalTime,
+        beat:(totalTime-(next.track.firstBeat||0))*(next.track.bpm||120)/60};
+    },
     beat: () => trackBeat(target(), (Date.now() + clockOffset - epoch) / 1000),
     reset() {
+      personalStarted=false;
       stop();
       epoch = 0;
       tracks = [];
