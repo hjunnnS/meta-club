@@ -54,6 +54,20 @@ export function clubInterface(){
  const contextTray=make('div','context-tray'),seatLabel=make('span','seat-context');contextTray.id='context-tray';contextTray.hidden=true;contextTray.append(quickDance,seatLabel,by('seat'),by('train-join'),by('train-leave'));main.append(contextTray);
  const rhythm=by('rhythm-open');rhythm.classList.add('rhythm-shortcut');rhythm.textContent='리듬게임';
  const rhythmItem=make('div','play-menu');rhythmItem.append(rhythm);
+ // Small labelled icons keep the existing menu controls and their listeners.
+ const paths=[
+  '<circle cx="14" cy="4" r="2"/><path d="m10 10 4-3 4 3 3-2M14 7l-2 7-5 3-3-1m8-2 5 3 1 4M10 10l-4-1-2 3"/>',
+  '<path d="m6 21 9-12 3 2-9 12M15 3v3m5 0-2 2M9 6l3 2m8 7-3-1"/>',
+  '<path d="m8 4 4 2 4-2 6 4-3 5-3-2v11H8V11l-3 2-3-5Z"/>',
+  '<rect x="3" y="9" width="18" height="12" rx="2"/><path d="M2 9h20v-4H2Zm10-4v16M12 5C5 5 5 0 8 1c2 0 4 4 4 4Zm0 0c7 0 7-5 4-4-2 0-4 4-4 4Z"/>',
+  '<path d="M4 7h16v14H4ZM8 7v14m4-14v14m4-14v14M7 2v2m5-3v3m5-2v2"/>'
+ ];
+ const dockControls=[...menus.map(menu=>menu.querySelector('summary')),rhythm];
+ dockControls.forEach((control,index)=>{
+  const label=control.textContent,icon=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  icon.setAttribute('viewBox','0 0 24 24');icon.setAttribute('aria-hidden','true');icon.setAttribute('focusable','false');icon.classList.add('dock-icon');icon.innerHTML=paths[index];
+  control.replaceChildren(icon,make('span','dock-label',label));control.setAttribute('aria-label',label);control.title=label;
+ });
  first.replaceChildren(...menus,rhythmItem);first.setAttribute('aria-label','클럽 메뉴');first.setAttribute('role','navigation');footer.replaceChildren(first);
  // Native disclosure events continue to cancel cosmetic previews when a menu closes.
  for(const [category,root]of [[appearance,by('character-customization')],[props,by('wand-customization')]]){

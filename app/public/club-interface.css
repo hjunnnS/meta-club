@@ -86,3 +86,14 @@
 .context-actions [data-open-whisper]{background:#b9f4e7;color:#152a25;font-weight:700}
 
 .play-interface .context-actions>.extra-panel{max-height:min(400px,calc(100dvh - 160px))}
+
+/* Compact icon dock; panels, commands and the club scene stay unchanged. */
+.play-interface > footer{min-height:82px;padding:8px 12px;background:transparent;border-top:0;overflow:visible}
+.play-interface #first-actions{box-sizing:border-box;width:min(440px,100%);gap:4px;padding:5px;background:#15131ee8;border:1px solid #69607155;border-radius:19px}
+.play-interface .play-menu>summary,.play-interface .rhythm-shortcut{box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;width:100%;height:62px;min-height:62px;padding:6px 4px;border:1px solid transparent;border-radius:13px;background:transparent;font-size:12px;font-weight:600;line-height:1.2;color:#d6cfdf}
+.play-interface .dock-icon{display:block;width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;color:#d4bbf0}
+.play-interface .dock-label{white-space:nowrap}
+.play-interface .play-menu>summary:hover,.play-interface .rhythm-shortcut:hover{background:#51405b66;color:#fff}
+.play-interface .play-menu[open]>summary{background:#b9f4e715;border-color:#b9f4e766;color:var(--ui-accent)}
+.play-interface .play-menu[open]>summary .dock-icon{color:var(--ui-accent)}
+@media(max-width:480px){.play-interface > footer{padding:6px 8px}.play-interface #first-actions{gap:2px}.play-interface .play-menu>summary,.play-interface .rhythm-shortcut{font-size:11px;padding:6px 2px}}
