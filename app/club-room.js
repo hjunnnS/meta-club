@@ -303,7 +303,7 @@ export class EdmRoom extends Room {
       before.delete(actor.id);
       const { tier, group } = edmArea(this.train.riders.has(actor.id) ? this.train.pose(actor.id) : actor);
       if (!this.zones.move('ai', actor.id, this.zones.location('ai', actor.id), tier, group)) {
-        Object.assign(actor, { x: 0, y: 0.018, z: 0, action: 'dance' });
+        Object.assign(actor, actor.fallback || { x: 0, y: 0.018, z: 0, action: 'dance' });
         this.zones.move('ai', actor.id, this.zones.location('ai', actor.id), 0, 'dancefloor');
       }
     }

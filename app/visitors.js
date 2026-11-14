@@ -66,20 +66,22 @@ export function background(slot, seconds) {
 // one per group per round so smaller crowds still occupy different areas.
 // The centre aisle, DJ ramp, stool row and sofa entrances stay clear.
 const groups = [
-  { y: .018, spots: [[-4.9, -4.6, -.8], [-3.2, -4.1, .4], [-4.4, -2.8, .1]] },
-  { y: .018, spots: [[4.0, -3.4, .7], [5.7, -2.8, .2], [4.4, -1.5, -.4]] },
-  { y: 0, spots: [[-16.8, 12.4, -.5], [-14.0, 11.9, .5]] }, // visible in front of the rotated bar
-  { y: 0, spots: [[-8.8, 12.5, -.9], [-7.1, 13.2, .6]] }, // bar approach
-  { y: 0, spots: [[10.4, 12.1, -.7], [12.1, 12.0, .2], [13.7, 12.5, .9]] }, // east open floor
-  { y: 0, spots: [[5.2, 10.7, -.4], [6.0, 12.2, .8]] }, // beside the east approach
+  { y: .018, spots: [[-4.8, -10.0, -.35], [-6.3, -7.0, .30], [-3.8, -5.2, -.15]] },
+  { y: .018, spots: [[4.8, -9.3, .35], [6.0, -6.1, -.25], [4.2, -3.5, .15]] },
+  { y: 0, spots: [[-13.4, -7.1, -.75], [-13.4, .1, -.40]] }, // beside the podiums, not on their slots
+  { y: 0, spots: [[-16.8, 12.4, -.5], [-14.0, 11.9, .5]] }, // open area in front of the bar
+  { y: 0, spots: [[19.0, 6.4, -Math.PI/2], [19.0, -6.8, -Math.PI/2]] }, // gaps between booth groups, clear of seat exits
+  { y: 4.02, action: 'groove', spots: [[-17.75, -11.65, Math.PI/2], [17.75, -11.65, -Math.PI/2], [0, 18.5, Math.PI]],
+    fallbacks: [[-7.3, -11.6], [7.3, -11.6], [7.1, .4]] }, // viewing pockets, clear of stairs, sofas and the U-shaped route
 ];
 export const extraGuestPlaces = [0, 1, 2].flatMap(index =>
-  groups.flatMap(({y, spots}, groupIndex) => {
+  groups.flatMap(({y, spots, action, fallbacks}, groupIndex) => {
     if (index >= spots.length) return [];
     const [x, z, yaw] = spots[index];
     // Keep each anchor fixed. Vary just the choreography within each group.
     const style = (groupIndex + index) % 3;
     return [{x, y, z, yaw, danceStyle: style,
-      action: ['side-step', 'disco-point', 'groove'][(groupIndex + 2 * index) % 3]}];
+      action: action || ['side-step', 'disco-point', 'groove'][(groupIndex + 2 * index) % 3],
+      ...(fallbacks?{fallback:{x:fallbacks[index][0],y:.018,z:fallbacks[index][1],yaw,action:'groove'}}:{})}];
   })
 );
