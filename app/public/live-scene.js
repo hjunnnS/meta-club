@@ -204,7 +204,7 @@ export function startLiveScene({
     for (const a of actors) {
       let model = models.get(a.id);
       if (!model) {
-        model = make(a, a.id === wandGuest);
+        model = make(a, a.id === wandGuest, true);
         if(!a.ai){
           model.appearance=characterAppearance(B,scene,model);model.vipProps=vipPersonalProps(B,scene,model);
           const dispose=model.dispose.bind(model);model.dispose=()=>{model.vipProps.dispose();model.appearance.dispose();dispose();};

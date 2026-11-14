@@ -2,8 +2,10 @@ import {wandOrnament} from './wand-ornament.js';
 import {wandTheme,normalizeWandStyle} from './wand-customization.js';
 import {createWandTrail} from './wand-trail.js';
 import {edmStage,edmSeats} from './edm-layout.js';
+import {toyAvatarFactory} from './toy-avatar.js';
 const colors = { indigo: '#8973F2', teal: '#49C8B1', rose: '#F28BAB', gold: '#FFCC55' };
 export function avatarFactory(B, scene, glow) {
+  const toy = toyAvatarFactory(B, scene);
   const materials = new Map();
   for (const [name, hex] of Object.entries(colors)) {
     const m = new B.StandardMaterial(name, scene);
@@ -72,7 +74,7 @@ export function avatarFactory(B, scene, glow) {
     mesh.isPickable = false;
     return mesh;
   }
-  return function make(actor, featuredWand = false) {
+  return function make(actor, featuredWand = false, roundedVisitor = false) {
     const root = new B.TransformNode(actor.id, scene);
     const near = new B.TransformNode('detail', scene);
     near.parent = root;
@@ -89,9 +91,11 @@ export function avatarFactory(B, scene, glow) {
       return mesh;
     };
     const shirt = materials.get(actor.avatar) || materials.get('indigo');
-    const torso = actor.ai ? guestPart(near, 'block torso', .50, .61, .30, 1.06, shirt)
+    const female=actor.appearance?.body==='female'||(actor.ai&&[...actor.id].reduce((sum,c)=>sum+c.charCodeAt(0),0)%2===0);
+    const torso = roundedVisitor ? toy.torso(near,shirt,actor.ai,female) : actor.ai ? guestPart(near, 'block torso', .50, .61, .30, 1.06, shirt)
       : capsule(near, 'torso', 0.23, 0.72, 1.04, shirt);
-    if (actor.ai) guestPart(near, 'block head', .34, .33, .32, 1.55, face);
+    if (roundedVisitor) toy.head(near,face,actor.ai,female);
+    else if (actor.ai) guestPart(near, 'block head', .34, .33, .32, 1.55, face);
     else capsule(near, 'head', 0.15, 0.32, 1.55, face);
     const limbs = [];
     for (const sign of [-1, 1]) {
@@ -99,7 +103,10 @@ export function avatarFactory(B, scene, glow) {
         const joint = new B.TransformNode('joint', scene);
         joint.parent = near;
         joint.position.set(sign * (arm ? 0.25 : 0.115), arm ? 1.33 : 0.79, 0);
-        if (actor.ai) {
+        if (roundedVisitor) {
+          if(actor.ai)joint.position.x=sign*(arm?.32:.13);
+          toy.limb(joint,arm,shirt,leg,face,actor.ai,female);
+        } else if (actor.ai) {
           joint.position.x = sign * (arm ? .32 : .13);
           guestPart(joint, arm ? 'block arm' : 'block leg', arm ? .15 : .2,
             arm ? .55 : .73, arm ? .18 : .26, arm ? -.25 : -.34, arm ? shirt : leg);

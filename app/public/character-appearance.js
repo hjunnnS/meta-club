@@ -38,7 +38,7 @@ export function characterAppearance(B,scene,model){
  function paint(mesh,material){remember(mesh);mesh.material=material;}
  return {
   set(value){
-   const style=value?normalizeAppearance(value):null,key=JSON.stringify(style);if(signature===key)return;signature=key;clear();if(!style)return;
+   const style=normalizeAppearance(value),key=JSON.stringify(style);if(signature===key)return;signature=key;clear();
    const hair=ink('hair',style.hairColor),top=ink('top',style.topColor),bottom=ink('bottom',style.bottomColor),frame=ink('glasses',style.glassesColor);
    const head=model.near.getChildMeshes().find(m=>m.name==='head'),skin=head?.material;
    paint(model.torso,top);
@@ -76,7 +76,7 @@ export function characterAppearance(B,scene,model){
    }
    if(style.hair!=='bald')ball('hair crown',.37,.18,.35,[0,1.73,-.018],hair);
    if(style.hair==='short'){
-    box('short fringe',.29,.075,.055,[0,1.68,.145],hair);
+    ball('short fringe',.29,.09,.10,[0,1.68,.115],hair);
     for(const side of [-1,1])ball('short side',.075,.16,.20,[side*.155,1.64,-.025],hair);
    }else if(style.hair==='bob'){
     for(const side of [-1,1])tube('bob side',.073,.40,[side*.175,1.53,-.025],hair);
