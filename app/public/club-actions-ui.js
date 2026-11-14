@@ -51,7 +51,7 @@ export function clubActionsUI({root,dialog,shoutRoot,vipRoot,alertButton,send,fr
   }
   function openWhisper(id){
     if(!target(id))return;peer=id;root.open=false;renderConversation();
-    if(!dialog.open)dialog.showModal();frame('chat-active',true);input.focus();
+    if(!dialog.open)dialog.show();input.focus();
     if(lastNotice?.from===id){lastNotice=null;alertButton.hidden=true;}
   }
   // These panels share one fixed screen area: opening one must not cover another.
@@ -65,6 +65,9 @@ export function clubActionsUI({root,dialog,shoutRoot,vipRoot,alertButton,send,fr
   dialog.querySelector('form').onsubmit=event=>{event.preventDefault();if(!input.value.trim()||input.disabled)return;request('whisper-send',{to:peer,text:input.value});};
   dialog.querySelector('[data-whisper-close]').onclick=()=>dialog.close();
   dialog.addEventListener('close',()=>frame('chat-active',false));
+  dialog.addEventListener('focusin',()=>frame('chat-active',true));
+  dialog.addEventListener('focusout',()=>queueMicrotask(()=>frame('chat-active',dialog.contains(document.activeElement))));
+  dialog.addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();dialog.close();}});
   dialog.querySelector('[data-whisper-block]').onclick=()=>send(privateState.blockedIds.includes(peer)?'whisper-unblock':'whisper-block',{to:peer});
   whisperDemo.onclick=()=>send('whisper-demo-incoming',{from:peer});
   alertButton.onclick=()=>{if(lastNotice)openWhisper(lastNotice.from);};
@@ -85,14 +88,15 @@ export function clubActionsUI({root,dialog,shoutRoot,vipRoot,alertButton,send,fr
       activityStatus=snapshot.activityStatus||{};
       renderConversation();
     },
-    state(value){privateState=value;stateAt=performance.now();self=value.self||self;personal=value.personalTrial??personal;if(lastNotice&&value.blockedIds.includes(lastNotice.from)){lastNotice=null;alertButton.hidden=true;}renderConversation();},
+    state(value){privateState=value;stateAt=performance.now();self=value.self||self;personal=value.personalTrial??personal;if(lastNotice&&value.blockedIds.includes(lastNotice.from)){lastNotice=null;alertButton.hidden=true;frame('whisper-clear');}renderConversation();},
     notification(value){
-      if(privateState.blockedIds.includes(value.from))return;
+      if(value.to!==self||value.from===self||privateState.blockedIds.includes(value.from))return;
       lastNotice=value;alertButton.textContent=value.sender+'님에게 귓속말이 왔습니다'+(value.simulated?' · 체험':'');alertButton.hidden=false;
+      frame('whisper-received',{from:value.from,text:value.text,sender:value.sender,personal:value.simulated===true});
     },
     result(value){
       const text=value.error||({ 'gift-send':'선물을 보냈습니다. 받는 사람을 확인하세요.','shout-send':value.queued?'외치기를 접수했습니다. 공연·앞선 표시가 끝나면 양옆에 5초 표시됩니다.':'양옆 전광판에 5초 표시합니다.','vip-preview':'개인 화면에서 퍼레이드 시험을 시작했습니다.','vip-start':'병 불꽃 퍼레이드를 시작했습니다.','activities-stop':'내 체험 이벤트를 종료했습니다.','whisper-block':'이 상대의 귓속말을 차단했습니다.','whisper-unblock':'귓속말 차단을 해제했습니다.','whisper-send':'귓속말을 보냈습니다.'})[value.kind]||'';
-      if(value.kind==='whisper-send'&&value.ok){input.value='';frame('whisper-sent',{to:value.notification?.to,personal});}
+      if(value.kind==='whisper-send'&&value.ok)input.value='';
       if(value.kind?.startsWith('whisper'))resultText(dialog.querySelector('output'),text);
       else if(value.kind==='shout-send')resultText(shoutRoot.querySelector('output'),text);
       else if(value.kind==='vip-start'||value.kind==='vip-preview'||value.kind==='activities-stop')resultText(vipRoot.querySelector('output'),text);

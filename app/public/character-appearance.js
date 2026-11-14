@@ -12,7 +12,7 @@ export const defaultAppearance=Object.freeze({body:'male',hair:'short',top:'tee'
 const keys=Object.keys(defaultAppearance);
 export const bodyAppearanceOptions={
  male:{hair:['short','parted','bald'],bottom:['trousers','shorts']},
- female:{hair:['bob','long','ponytail'],bottom:['miniskirt','hotpants']},
+ female:{hair:['bob','long','ponytail'],bottom:['miniskirt','hotpants','trousers']},
 };
 export function appearanceChoices(body,key){const allowed=bodyAppearanceOptions[body]?.[key];return allowed?appearanceOptions[key].filter(([id])=>allowed.includes(id)):appearanceOptions[key]||appearanceColors;}
 export function validAppearance(value){

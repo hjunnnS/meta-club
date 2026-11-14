@@ -27,7 +27,7 @@ let sequence=0;const request=extra=>({requestId:String(++sequence),...extra});
 test('private whisper isolation, notifications, filtering, duplicates, blocking and reconnect identity',()=>{
  let now=1000,actors=roster();const activity=clubActivities({now:()=>now,actors:()=>actors,identity:id=>actors.find(a=>a.id===id)?.identity,blockedMessage:t=>t.includes('금지')});
  const input=request({to:'b',text:'안녕하세요',from:'c'}),reply=activity.command('a','whisper-send',input);
- assert.equal(reply.notification.to,'b');assert.equal(reply.notification.from,'a');assert.equal(activity.command('a','whisper-send',input).duplicate,true);
+ assert.equal(reply.notification.to,'b');assert.equal(reply.notification.from,'a');assert.equal(reply.notification.text,'안녕하세요');assert.equal(activity.command('a','whisper-send',input).duplicate,true);
  assert.equal(activity.view('a').messages.length,1);assert.equal(activity.view('b').messages.length,1);assert.equal(activity.view('c').messages.length,0);
  assert(!JSON.stringify(activity.snapshot()).includes('안녕하세요'));
  for(const text of ['','금지','bad\ntext','x'.repeat(201)])assert(activity.command('a','whisper-send',request({to:'b',text})).error);
@@ -124,11 +124,11 @@ test('new shout artwork pulses within its own plane; parcel gifts and both parad
   render.stop();assert(!scene.getMeshByName('VIP beer bottle'));
  }finally{scene.dispose();engine.dispose();}
 });
-test('private whisper receipt tracks only its local target and is removed after 2.8s',async()=>{
- const {privateWhisperFeedback}=await import('../app/public/private-whisper-feedback.js');const engine=new B.NullEngine(),scene=new B.Scene(engine),models=new Map([['recipient',model(scene,'recipient',3,0,2)]]);
- let personalValue;const feedback=privateWhisperFeedback(B,scene,null,{balloonFactory:personal=>{personalValue=personal;return B.MeshBuilder.CreatePlane('test private receipt',{},scene);}});
- try{feedback.show('recipient',true,1000);feedback.render(1200,models);assert.equal(personalValue,true);const balloon=scene.getMeshByName('test private receipt');assert.equal(balloon.position.x,3);assert(balloon.position.y>2);
-  models.get('recipient').root.position.set(5,4,2);feedback.render(1300,models);assert.equal(balloon.position.x,5);assert(balloon.position.y>6);feedback.render(3800,models);assert(!feedback.active());assert(!scene.getMeshByName('test private receipt'));
+test('private whisper receipt follows the sender in the receiving view and expires after 2.8s',async()=>{
+ const {privateWhisperFeedback}=await import('../app/public/private-whisper-feedback.js');const engine=new B.NullEngine(),scene=new B.Scene(engine),models=new Map([['sender',model(scene,'sender',3,0,2)],['recipient',model(scene,'recipient',-8,0,2)]]);
+ let content;const feedback=privateWhisperFeedback(B,scene,null,{balloonFactory:(personal,text,sender)=>{content={personal,text,sender};return B.MeshBuilder.CreatePlane('test private receipt',{},scene);}});
+ try{feedback.show('sender',true,1000,'안녕하세요','A');feedback.render(1200,models);assert.deepEqual(content,{personal:true,text:'안녕하세요',sender:'A'});const balloon=scene.getMeshByName('test private receipt');assert.equal(balloon.position.x,3);assert(balloon.position.y>2);
+  models.get('sender').root.position.set(5,4,2);feedback.render(1300,models);assert.equal(balloon.position.x,5);assert(balloon.position.y>6);feedback.render(3800,models);assert(!feedback.active());assert(!scene.getMeshByName('test private receipt'));
  }finally{scene.dispose();engine.dispose();}
 });
 

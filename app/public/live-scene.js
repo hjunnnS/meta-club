@@ -373,7 +373,8 @@ export function startLiveScene({
     if (kind === 'fast-flash') fastFlash = data === true;
     if (kind === 'led-preview') showPreview(data);
     if (kind === 'actors') onSnapshot(data);
-    if(kind==='whisper-sent')whisperReceipt.show(data?.to,data?.personal===true,Date.now()+offset);
+    if(kind==='whisper-received'&&data?.from!==own)whisperReceipt.show(data?.from,data?.personal===true,Date.now()+offset,data?.text,data?.sender);
+    if(kind==='whisper-clear')whisperReceipt.clear();
     if(kind==='chat-active'){chatActive=data===true;lockInput(gameActive||chatActive);cancelWalk();}
     if(kind==='game-active'){gameActive=data===true;if(gameActive)actionPicking=false;lockInput(gameActive||chatActive);cancelWalk();}
     if (kind === 'connection-state') {

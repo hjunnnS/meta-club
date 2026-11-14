@@ -14,8 +14,12 @@ export function characterCustomization(root,send,frame){
   };
  }
  function sync(){
-  for(const key of ['hair','bottom']){const select=selects[key];select.replaceChildren();for(const [id,label]of appearanceChoices(draft.body,key))select.append(new Option(label,id));}
-  for(const [key,select]of Object.entries(selects))select.value=draft[key];
+  for(const key of ['hair','bottom']){
+   const select=selects[key],choices=appearanceChoices(draft.body,key);
+   if([...select.options].map(o=>o.value).join('|')!==choices.map(([id])=>id).join('|'))
+    select.replaceChildren(...choices.map(([id,label])=>new Option(label,id)));
+  }
+  for(const [key,select]of Object.entries(selects))if(select.value!==draft[key])select.value=draft[key];
  }
  sync();
  const cancel=()=>{preview=false;frame('character-preview',null);};

@@ -43,7 +43,8 @@ export function clubInterface(){
  by('wand-customization').querySelector('summary').textContent='무드봉 색·장식·잔상';
  appearance.panel.append(by('character-customization'));
  const chooseUser=make('button',null,'사용자 선택 · 선물·귓속말');chooseUser.onclick=()=>{closeAll(context);context.open=true;};events.panel.append(chooseUser,by('shout-actions'),vip);
- vip.querySelector('#vip-personal-controls > strong').textContent='테이블 이벤트';vip.querySelector('#vip-personal-controls > p').textContent='테이블에 앉으면 미니 샴페인 타워를 켤 수 있습니다.';
+ // Dance and fan already live in their own menus; no retired table-event panel.
+ vip.querySelector('#vip-personal-controls').remove();
  const quickDance=make('div','quick-dance'),danceName=make('span','current-dance'),quickStop=make('button','quick-dance-stop','멈춤');
  quickDance.hidden=true;danceName.setAttribute('role','status');danceName.setAttribute('aria-live','polite');quickStop.type='button';quickStop.setAttribute('aria-label','현재 춤 멈추기');
  const existingStop=document.querySelector('[data-action="idle"]');
@@ -52,7 +53,8 @@ export function clubInterface(){
  danceLabels.set('dance','그루브');danceLabels.set('vip-solo','VIP 춤');danceLabels.set('pole-dance','봉 잡고 춤');danceLabels.set('podium-dance','보조 단상 춤');
  const contextTray=make('div','context-tray'),seatLabel=make('span','seat-context');contextTray.id='context-tray';contextTray.hidden=true;contextTray.append(quickDance,seatLabel,by('seat'),by('train-join'),by('train-leave'));main.append(contextTray);
  const rhythm=by('rhythm-open');rhythm.classList.add('rhythm-shortcut');rhythm.textContent='리듬게임';
- first.replaceChildren(...menus,rhythm);first.setAttribute('aria-label','클럽 메뉴');first.setAttribute('role','navigation');footer.replaceChildren(first);
+ const rhythmItem=make('div','play-menu');rhythmItem.append(rhythm);
+ first.replaceChildren(...menus,rhythmItem);first.setAttribute('aria-label','클럽 메뉴');first.setAttribute('role','navigation');footer.replaceChildren(first);
  // Native disclosure events continue to cancel cosmetic previews when a menu closes.
  for(const [category,root]of [[appearance,by('character-customization')],[props,by('wand-customization')]]){
   category.menu.addEventListener('toggle',()=>{root.open=category===appearance&&category.menu.open;});

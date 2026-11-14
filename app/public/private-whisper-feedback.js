@@ -1,20 +1,26 @@
-// A local receipt only: never included in room snapshots or sent to other viewers.
-function makeBalloon(B,scene,personal){
- const texture=new B.DynamicTexture('private whisper receipt',{width:768,height:192},scene,false),ctx=texture.getContext();
- ctx.clearRect(0,0,768,192);ctx.fillStyle='#231838';ctx.fillRect(8,8,752,144);ctx.strokeStyle='#a5f5e8';ctx.lineWidth=5;ctx.strokeRect(8,8,752,144);
- ctx.beginPath();ctx.moveTo(335,149);ctx.lineTo(382,184);ctx.lineTo(425,149);ctx.closePath();ctx.fill();
- ctx.font='bold 54px sans-serif';ctx.fillStyle='#e5fff8';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(personal?'체험 · 귓속말 보냄':'귓속말 보냈어요',384,80,700);
+// Incoming only, local to the recipient: never put private text in public snapshots.
+function makeBalloon(B,scene,personal,text,sender){
+ const texture=new B.DynamicTexture('private whisper receipt',{width:768,height:320},scene,false),ctx=texture.getContext();
+ ctx.clearRect(0,0,768,320);ctx.fillStyle='#231838';ctx.fillRect(8,8,752,264);ctx.strokeStyle='#a5f5e8';ctx.lineWidth=5;ctx.strokeRect(8,8,752,264);
+ ctx.beginPath();ctx.moveTo(335,269);ctx.lineTo(382,312);ctx.lineTo(425,269);ctx.closePath();ctx.fill();
+ ctx.fillStyle='#a5f5e8';ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='bold 32px sans-serif';
+ ctx.fillText((personal?'체험 · ':'')+(sender||'상대')+'님의 귓속말',384,46,700);
+ ctx.font='bold 42px sans-serif';ctx.fillStyle='#e5fff8';
+ const message=String(text||'귓속말이 도착했습니다.'),lines=[];let line='';
+ for(const char of message){if(ctx.measureText(line+char).width>680){lines.push(line);line='';}line+=char;}
+ if(line)lines.push(line);
+ for(let i=0;i<Math.min(3,lines.length);i++)ctx.fillText(lines[i]+(i===2&&lines.length>3?'…':''),384,112+i*52,700);
  texture.update();
  const material=new B.StandardMaterial('private whisper receipt',scene);material.disableLighting=true;material.diffuseTexture=texture;material.emissiveTexture=texture;texture.hasAlpha=true;material.useAlphaFromDiffuseTexture=true;material.backFaceCulling=false;
- const mesh=B.MeshBuilder.CreatePlane('private whisper receipt',{width:2.5,height:.625},scene);mesh.material=material;mesh.billboardMode=B.Mesh.BILLBOARDMODE_ALL;mesh.isPickable=false;return mesh;
+ const mesh=B.MeshBuilder.CreatePlane('private whisper receipt',{width:2.5,height:1.04},scene);mesh.material=material;mesh.billboardMode=B.Mesh.BILLBOARDMODE_ALL;mesh.isPickable=false;return mesh;
 }
-export function privateWhisperFeedback(B,scene,glow,{balloonFactory=personal=>makeBalloon(B,scene,personal)}={}){
+export function privateWhisperFeedback(B,scene,glow,{balloonFactory=(personal,text,sender)=>makeBalloon(B,scene,personal,text,sender)}={}){
  let target=null,until=0,balloon=null;
  function clear(){if(balloon){glow?.removeExcludedMesh(balloon);const ink=balloon.material,texture=ink?.emissiveTexture;balloon.dispose();ink?.dispose();texture?.dispose();}balloon=null;target=null;}
  scene.onDisposeObservable.addOnce(clear);
  return {
-  show(id,personal,now){if(typeof id!=='string'||!id)return;clear();target=id;until=now+2800;balloon=balloonFactory(personal);glow?.addExcludedMesh(balloon);},
-  render(now,models){const model=models.get(target);if(!balloon)return;if(now>=until||!model){clear();return;}balloon.setEnabled(model.root.isEnabled());balloon.position.copyFrom(model.root.position);balloon.position.y+=2.32+(model.actor.seat!=null?-.28:0);balloon.visibility=Math.min(1,(until-now)/250);},
+  show(id,personal,now,text,sender){if(typeof id!=='string'||!id)return;clear();target=id;until=now+2800;balloon=balloonFactory(personal,text,sender);glow?.addExcludedMesh(balloon);},
+  render(now,models){const model=models.get(target);if(!balloon)return;if(now>=until||!model){clear();return;}balloon.setEnabled(model.root.isEnabled());balloon.position.copyFrom(model.root.position);balloon.position.y+=2.55+(model.actor.seat!=null?-.28:0);balloon.visibility=Math.min(1,(until-now)/250);},
   clear,
   active(){return Boolean(balloon);},
  };

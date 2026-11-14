@@ -41,7 +41,10 @@
 .play-panel .wand-style-panel p,.play-panel .activity-panel p{font-size:12px;line-height:1.6;color:var(--ui-muted)}
 .play-panel .activity-buttons{gap:8px}
 .play-panel output{font-size:12px;line-height:1.6;color:var(--ui-accent)}
-.play-interface .rhythm-shortcut{flex:0 0 auto;border:1px solid var(--ui-line);background:transparent;border-radius:12px;font-size:12px;color:var(--ui-muted);padding:10px;cursor:pointer;white-space:nowrap}
+.play-interface .rhythm-shortcut{display:block;box-sizing:border-box;width:100%;border:1px solid var(--ui-line);background:#28203188;border-radius:12px;font-size:14px;font-weight:650;color:#eee8f8;padding:12px 20px;cursor:pointer;white-space:nowrap}
+.play-interface #whisper-dialog{position:fixed;inset:70px 16px auto auto;margin:0;width:min(350px,calc(100vw - 32px));max-height:calc(100dvh - 160px);overflow:auto;z-index:20;box-shadow:0 16px 48px #0007}
+.play-interface #whisper-dialog [data-whisper-log]{height:min(12rem,28dvh)}
+@media(max-width:900px){.play-interface .rhythm-shortcut{padding:12px}}
 .play-settings{flex-shrink:0;position:relative}
 .play-settings>summary{font-size:12px;padding:8px 12px}
 .play-settings>.settings-panel{top:calc(100% + 14px);bottom:auto;right:0;width:min(330px,calc(100vw - 32px))}

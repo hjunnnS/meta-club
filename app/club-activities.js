@@ -66,7 +66,7 @@ export function clubActivities({actors,blockedMessage=()=>false,identity=id=>id,
     remember();mark(who,'whisperUntil',rules.whisperCooldown);
     const message={id:'whisper-'+ ++sequence,from:who,to:target.id,sender:sender.nickname,recipient:target.nickname,text:input.text.trim(),at:now(),simulated:input.simulated===true};
     messages.push(message);while(messages.length>200)messages.shift();
-    return {ok:true,notification:{to:target.id,from:who,sender:sender.nickname,simulated:message.simulated}};
+    return {ok:true,notification:{to:target.id,from:who,sender:sender.nickname,text:message.text,simulated:message.simulated}};
    }
    if(type==='shout-send'){
     if(!safe(input.text,rules.shoutMaxLength)||!safe(sender.nickname,40))return {error:'외치기는 20자 이내의 허용 문구를 입력해 주세요.'};
