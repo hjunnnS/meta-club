@@ -76,9 +76,14 @@ export class PersonalRoom {
    this.emit('activities-state',{...this.activities.view(a.id),personalTrial:true});this.publish();return;
   }
   if(type==='whisper-demo-incoming'){
-   const sender=this.ai().find(actor=>actor.id===data?.from);if(!sender)return;
+   const guests=this.ai();
+   // A standalone trial button must not depend on having opened a conversation.
+   const distance=actor=>Math.hypot(actor.x-a.x,actor.z-a.z);
+   const nearby=this.reactive.slice().sort((left,right)=>distance(left)-distance(right));
+   const sender=guests.find(actor=>actor.id===data?.from)||nearby[0]||guests[0];
+   if(!sender){this.emit('notice','수신 체험을 보낼 AI 손님이 없습니다.');return;}
    const result=this.activities.command(sender.id,'whisper-send',{to:a.id,text:'같이 춤출까요?',requestId:crypto.randomUUID(),simulated:true});
-   if(result.error)this.emit('notice',result.error);
+   this.emit('notice',result.error||sender.nickname+'님의 체험 귓속말이 도착했습니다. 머리 위 말풍선과 오른쪽 수신 알림을 확인하세요.');
    if(result.notification)this.emit('whisper-notification',result.notification);
    this.emit('activities-state',{...this.activities.view(a.id),personalTrial:true});return;
   }

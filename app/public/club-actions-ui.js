@@ -69,7 +69,11 @@ export function clubActionsUI({root,dialog,shoutRoot,vipRoot,alertButton,send,fr
   dialog.addEventListener('focusout',()=>queueMicrotask(()=>frame('chat-active',dialog.contains(document.activeElement))));
   dialog.addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();dialog.close();}});
   dialog.querySelector('[data-whisper-block]').onclick=()=>send(privateState.blockedIds.includes(peer)?'whisper-unblock':'whisper-block',{to:peer});
-  whisperDemo.onclick=()=>send('whisper-demo-incoming',{from:peer});
+  whisperDemo.onclick=()=>{
+    if(!personal||!enabled)return;
+    send('whisper-demo-incoming',{from:target(peer)?.ai?peer:target(selected)?.ai?selected:undefined});
+    const developer=document.getElementById('developer-panel');if(developer)developer.hidden=true;
+  };
   alertButton.onclick=()=>{if(lastNotice)openWhisper(lastNotice.from);};
   shoutRoot.querySelector('form').onsubmit=event=>{event.preventDefault();const text=shoutRoot.querySelector('input').value;request('shout-send',{text});};
   vipPreview.onclick=()=>request('vip-preview');

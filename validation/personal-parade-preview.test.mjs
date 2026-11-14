@@ -5,7 +5,7 @@ import {performanceStatus} from '../app/club-performances.js';
 import {activityCommands,activityTrialRules} from '../app/club-activities.js';
 import {nextParadeOpening,paradePlan} from '../app/parade-plan.js';
 registerHooks({resolve(specifier,context,next){
- const routes={'./club-activities.js':'../app/club-activities.js','./parade-plan.js':'../app/parade-plan.js','./wand-customization.js':'../app/public/wand-customization.js','./podium-activity.js':'../app/podium-activity.js','./music.js':'../app/public/music.js','./visitors.js':'../app/visitors.js','./edm-layout.js':'../app/edm-layout.js','./free-dance.js':'../app/public/free-dance.js','./club-performances.js':'../app/club-performances.js','./trial-message-filter.js':'../app/message-filter.js'};
+ const routes={'./character-appearance.js':'../app/public/character-appearance.js','./vip-personal-state.js':'../app/vip-personal-state.js','./club-activities.js':'../app/club-activities.js','./parade-plan.js':'../app/parade-plan.js','./wand-customization.js':'../app/public/wand-customization.js','./podium-activity.js':'../app/podium-activity.js','./music.js':'../app/public/music.js','./visitors.js':'../app/visitors.js','./edm-layout.js':'../app/edm-layout.js','./free-dance.js':'../app/public/free-dance.js','./club-performances.js':'../app/club-performances.js','./trial-message-filter.js':'../app/message-filter.js'};
  if(context.parentURL?.includes('/sites-preview/local-room.js')&&routes[specifier])return {url:new URL(routes[specifier],import.meta.url).href,shortCircuit:true};
  if(specifier==='/stage/festival/events.js')return {url:new URL('../stage/festival/events.js',import.meta.url).href,shortCircuit:true};
  if(specifier==='/clubs/edm/edm-layout.js')return {url:new URL('../app/edm-layout.js',import.meta.url).href,shortCircuit:true};
@@ -32,4 +32,13 @@ test('preview is unavailable during an active regular parade and has no service 
  try{room.startMusic(now);now=nextParadeOpening(now,t=>performanceStatus(room.epoch,t,tracks));room.send('vip-start',{requestId:'normal-start'});assert(results.at(-1).ok);const normal=room.snapshot().parade;assert(!normal.preview);assert(room.activities.view(room.sessionId).cooldowns.paradeUntil>now);
   room.send('vip-preview',{requestId:'during-normal'});assert(results.at(-1).error);assert.equal(room.snapshot().parade.id,normal.id);assert(!activityCommands.includes('vip-preview'));
  }finally{room.leave();Date.now=realNow;}
+});
+
+test('incoming whisper trial works without a selected peer and reports blocked attempts',()=>{
+ const room=new PersonalRoom(tracks),notifications=[],notices=[];
+ room.onMessage('whisper-notification',m=>notifications.push(m));room.onMessage('notice',m=>notices.push(m));
+ try{room.send('whisper-demo-incoming',{});assert.equal(notifications.length,1);
+  const incoming=notifications[0];assert.equal(incoming.to,room.self.id);assert.equal(incoming.simulated,true);assert.equal(incoming.text,'같이 춤출까요?');assert(room.reactive.some(a=>a.id===incoming.from));assert(notices.at(-1).includes('도착했습니다'));
+  room.send('whisper-block',{to:incoming.from});room.send('whisper-demo-incoming',{from:incoming.from});assert.equal(notifications.length,1);assert(notices.at(-1).includes('주고받을 수 없습니다'));
+ }finally{room.leave();}
 });
