@@ -1,5 +1,27 @@
 // Cosmetic shells only. Shoulder/hip pivots and the 0.525m hand grip remain unchanged.
 // Templates share geometry; AI merge their colored details into the original six parts.
+const readableMaterials = new WeakSet();
+// Bound only visitor materials, leaving every club light, cue and staff material intact.
+export function characterMaterial(B, material) {
+  if(readableMaterials.has(material))return material;
+  readableMaterials.add(material);
+  material.specularColor.set(0,0,0);
+  class Readability extends B.MaterialPluginBase {
+    constructor(){super(material,'CharacterReadability',200,{},true,true);}
+    getClassName(){return 'CharacterReadability';}
+    isCompatible(language){return language===0;}
+    getCustomCode(type,language=0){
+      if(type!=='fragment'||language!==0)return null;
+      return {CUSTOM_FRAGMENT_BEFORE_FOG:`
+        vec3 characterAlbedo=clamp(diffuseColor*baseColor.rgb,vec3(0.0),vec3(1.0));
+        float characterFill=0.30+0.12*max(0.0,dot(normalize(normalW),normalize(vec3(0.3,0.8,0.5))));
+        color.rgb=clamp(color.rgb,characterAlbedo*characterFill,characterAlbedo*1.10+vec3(0.015));
+      `};
+    }
+  }
+  new Readability();
+  return material;
+}
 export function toyAvatarFactory(B, scene) {
   const templates = new Map();
   const dark = new B.StandardMaterial('toy face details', scene);
@@ -8,6 +30,7 @@ export function toyAvatarFactory(B, scene) {
   const white = new B.StandardMaterial('toy crowd vertex palette', scene);
   white.diffuseColor = B.Color3.White();
   white.specularColor.set(.08,.08,.08);
+  characterMaterial(B,dark);characterMaterial(B,white);
   const skin = '#ddb194', hair = '#604238', shoe = '#a59cb5', sole = '#e5e2eb';
   const color = hex => B.Color3.FromHexString(hex);
   function sphere(w,h,d,x,y,z,ink) {

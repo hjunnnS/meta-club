@@ -1,3 +1,4 @@
+import {characterMaterial} from './toy-avatar.js';
 // Cosmetic geometry only: existing rig, movement, dances and lighting stay in control.
 export const appearanceOptions={
  body:[['male','남성형'],['female','여성형']],
@@ -30,7 +31,7 @@ export function characterAppearance(B,scene,model){
  const torsoVisible=model.torso.isVisible;
  const remember=mesh=>{if(mesh&&!originals.has(mesh))originals.set(mesh,mesh.material);};
  function clear(){model.torso.isVisible=torsoVisible;for(const mesh of parts)mesh.dispose();parts=[];for(const [mesh,material]of originals)if(!mesh.isDisposed())mesh.material=material;originals.clear();for(const ink of inks)ink.dispose();inks=[];}
- function ink(name,color){const m=new B.StandardMaterial('character outfit '+name,scene);m.diffuseColor=B.Color3.FromHexString(appearanceColors.find(([id])=>id===color)[2]);m.emissiveColor=m.diffuseColor.scale(.08);m.specularColor.set(.08,.08,.08);inks.push(m);return m;}
+ function ink(name,color){const m=new B.StandardMaterial('character outfit '+name,scene);m.diffuseColor=B.Color3.FromHexString(appearanceColors.find(([id])=>id===color)[2]);m.emissiveColor=m.diffuseColor.scale(.08);characterMaterial(B,m);inks.push(m);return m;}
  function piece(name,kind,options,pos,material,parent=model.near){const mesh=B.MeshBuilder[kind]('character outfit '+name,options,scene);mesh.parent=parent;mesh.position.set(...pos);mesh.material=material;mesh.isPickable=false;mesh.checkCollisions=false;parts.push(mesh);return mesh;}
  const box=(name,w,h,d,pos,material,parent)=>piece(name,'CreateBox',{width:w,height:h,depth:d},pos,material,parent);
  const ball=(name,w,h,d,pos,material,parent)=>{const m=piece(name,'CreateSphere',{diameter:1,segments:12},pos,material,parent);m.scaling.set(w,h,d);return m;};
@@ -45,11 +46,11 @@ export function characterAppearance(B,scene,model){
    // Replace only the visible torso shell. Its existing pivot still drives every dance.
    model.torso.isVisible=false;
    const female=style.body==='female',shoulder=female?.225:.28;
-   const profile=female?[[.215,-.34],[.18,-.20],[.155,-.07],[.20,.14],[shoulder,.26],[.14,.34]]:[[.21,-.34],[.22,-.20],[.23,.06],[.26,.18],[shoulder,.26],[.16,.34]];
+   // One continuous garment contour replaces the two protruding chest spheres.
+   const profile=female?[[.215,-.34],[.19,-.24],[.164,-.12],[.162,-.055],[.18,.025],[.205,.11],[.218,.19],[shoulder,.26],[.14,.34]]:[[.21,-.34],[.22,-.20],[.23,.06],[.26,.18],[shoulder,.26],[.16,.34]];
    const body=piece('fitted torso','CreateLathe',{shape:profile.map(([r,y])=>new B.Vector3(r,y,0)),tessellation:16,cap:B.Mesh.CAP_ALL},[0,0,0],top,model.torso);
    body.scaling.z=female?.77:.80;
    ball('clothed hips',female?.49:.44,.20,.32,[0,.80,0],bottom);
-   if(female)for(const side of [-1,1])ball('fitted upper chest',.22,.20,.16,[side*.105,.16,.12],top,model.torso);
 
    for(const i of [0,2])for(const mesh of model.limbs[i].getChildMeshes()){
     if(mesh.name!=='arm')continue;paint(mesh,style.top==='jacket'?top:skin||mesh.material);
