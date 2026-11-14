@@ -97,3 +97,16 @@
 .play-interface .play-menu[open]>summary{background:#b9f4e715;border-color:#b9f4e766;color:var(--ui-accent)}
 .play-interface .play-menu[open]>summary .dock-icon{color:var(--ui-accent)}
 @media(max-width:480px){.play-interface > footer{padding:6px 8px}.play-interface #first-actions{gap:2px}.play-interface .play-menu>summary,.play-interface .rhythm-shortcut{font-size:11px;padding:6px 2px}}
+
+/* Give the small dock a clearer silhouette without enlarging the controls. */
+.play-interface #first-actions{background:#181323ed;border-color:#b79cd94d;box-shadow:0 6px 24px #0005,inset 0 1px #e8d9ff12}
+.play-interface .play-menu>summary,.play-interface .rhythm-shortcut{position:relative;color:#e9e1f3;letter-spacing:.01em;transition:background-color .16s,border-color .16s,color .16s}
+.play-interface .dock-icon{width:24px;height:24px;stroke-width:1.85;color:#d9c1fa}
+.play-interface .play-menu:nth-child(2) .dock-icon{color:#a9e4e8}
+.play-interface .play-menu:nth-child(3) .dock-icon{color:#ebc5e8}
+.play-interface .play-menu:nth-child(4) .dock-icon{color:#e8d3ab}
+.play-interface .play-menu:nth-child(5) .dock-icon{color:#c9c6f5}
+.play-interface .play-menu[open]>summary{background:#b9f4e71c;border-color:#b9f4e75c;color:#ddfff5}
+.play-interface .play-menu[open]>summary::after{content:'';position:absolute;bottom:3px;left:calc(50% - 9px);width:18px;height:2px;border-radius:2px;background:#b9f4e7}
+.play-interface .play-menu[open]>summary .dock-icon{color:#b9f4e7}
+@media(prefers-reduced-motion:reduce){.play-interface .play-menu>summary,.play-interface .rhythm-shortcut{transition:none}}
