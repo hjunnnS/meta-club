@@ -124,11 +124,11 @@ test('new shout artwork pulses within its own plane; parcel gifts and both parad
   render.stop();assert(!scene.getMeshByName('VIP beer bottle'));
  }finally{scene.dispose();engine.dispose();}
 });
-test('private whisper receipt follows the sender in the receiving view and expires after 2.8s',async()=>{
+test('private whisper receipt follows the sender in the receiving view and stays for eight seconds',async()=>{
  const {privateWhisperFeedback}=await import('../app/public/private-whisper-feedback.js');const engine=new B.NullEngine(),scene=new B.Scene(engine),models=new Map([['sender',model(scene,'sender',3,0,2)],['recipient',model(scene,'recipient',-8,0,2)]]);
  let content;const feedback=privateWhisperFeedback(B,scene,null,{balloonFactory:(personal,text,sender)=>{content={personal,text,sender};return B.MeshBuilder.CreatePlane('test private receipt',{},scene);}});
  try{feedback.show('sender',true,1000,'안녕하세요','A');feedback.render(1200,models);assert.deepEqual(content,{personal:true,text:'안녕하세요',sender:'A'});const balloon=scene.getMeshByName('test private receipt');assert.equal(balloon.position.x,3);assert(balloon.position.y>2);
-  models.get('sender').root.position.set(5,4,2);feedback.render(1300,models);assert.equal(balloon.position.x,5);assert(balloon.position.y>6);feedback.render(3800,models);assert(!feedback.active());assert(!scene.getMeshByName('test private receipt'));
+  models.get('sender').root.position.set(5,4,2);feedback.render(1300,models);assert.equal(balloon.position.x,5);assert(balloon.position.y>6);feedback.render(5000,models);assert(feedback.active());feedback.render(9000,models);assert(!feedback.active());assert(!scene.getMeshByName('test private receipt'));
  }finally{scene.dispose();engine.dispose();}
 });
 
