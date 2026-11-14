@@ -43,7 +43,7 @@ export function startLiveScene({
   const social=socialEffects(B,scene,glow);
   const whisperReceipt=privateWhisperFeedback(B,scene,glow);
   const whisperOutgoing=privateWhisperFeedback(B,scene,glow);
-  const greetings=greetingMotion(B,scene);
+  const greetings=greetingMotion(B,scene,glow);
   const activitiesRenderer=clubEventRenderer(B,scene,glow,make);
   const renderCeiling = ceilingLights(B,scene);
   const renderSpeakers = musicSpeakers(B,scene);
