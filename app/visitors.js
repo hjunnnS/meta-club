@@ -70,7 +70,7 @@ const groups = [
   { y: .018, spots: [[4.8, -9.3, .35], [6.0, -6.1, -.25], [4.2, -3.5, .15]] },
   { y: 0, spots: [[-13.4, -7.1, -.75], [-13.4, .1, -.40]] }, // beside the podiums, not on their slots
   { y: 0, spots: [[-16.8, 12.4, -.5], [-14.0, 11.9, .5]] }, // open area in front of the bar
-  { y: 0, spots: [[19.0, 6.4, -Math.PI/2], [19.0, -6.8, -Math.PI/2]] }, // gaps between booth groups, clear of seat exits
+  { y: 0, spots: [[14.2, 3.2, -Math.PI/2], [19.0, -6.8, -Math.PI/2]] }, // first guest stands inward of the east stair/rails; the other stays in the booth gap
   { y: 4.02, action: 'groove', spots: [[-17.75, -11.65, Math.PI/2], [17.75, -11.65, -Math.PI/2], [0, 18.5, Math.PI]],
     fallbacks: [[-7.3, -11.6], [7.3, -11.6], [7.1, .4]] }, // viewing pockets, clear of stairs, sofas and the U-shaped route
 ];
