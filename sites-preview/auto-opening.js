@@ -21,7 +21,7 @@ export function automaticOpening({music,getRoom,frame,showMusic,note,button}){
       button.disabled=false;
       const started=await music.start({automatic:true});
       if(disposed)return;
-      if(!started){showMusic(null);note('화면 연출은 진행 중입니다. 소리를 켜려면 음악 시작을 눌러 주세요.');}
+      if(!started&&!music.status().playing){showMusic(null);note('음악 시작을 눌러 소리를 켜세요.','music-start');}
     },Math.max(0,epoch-Date.now()));
   };
 }

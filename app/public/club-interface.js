@@ -44,12 +44,18 @@ export function clubInterface(){
  appearance.panel.append(by('character-customization'));
  const chooseUser=make('button',null,'사용자 선택 · 선물·귓속말');chooseUser.onclick=()=>{closeAll(context);context.open=true;};events.panel.append(chooseUser,by('shout-actions'),vip);
  vip.querySelector('#vip-personal-controls > strong').textContent='테이블 이벤트';vip.querySelector('#vip-personal-controls > p').textContent='테이블에 앉으면 미니 샴페인 타워를 켤 수 있습니다.';
- const contextTray=make('div','context-tray'),seatLabel=make('span','seat-context');contextTray.id='context-tray';contextTray.hidden=true;contextTray.append(seatLabel,by('seat'),by('train-join'),by('train-leave'));main.append(contextTray);
+ const quickDance=make('div','quick-dance'),danceName=make('span','current-dance'),quickStop=make('button','quick-dance-stop','멈춤');
+ quickDance.hidden=true;danceName.setAttribute('role','status');danceName.setAttribute('aria-live','polite');quickStop.type='button';quickStop.setAttribute('aria-label','현재 춤 멈추기');
+ const existingStop=document.querySelector('[data-action="idle"]');
+ quickStop.onclick=()=>{existingStop.click();dance.menu.querySelector('summary').focus();};quickDance.append(danceName,quickStop);
+ const danceLabels=new Map([...by('dance-options').querySelectorAll('[data-dance]')].map(button=>[button.dataset.dance,button.textContent]));
+ danceLabels.set('dance','그루브');danceLabels.set('vip-solo','VIP 춤');danceLabels.set('pole-dance','봉 잡고 춤');danceLabels.set('podium-dance','보조 단상 춤');
+ const contextTray=make('div','context-tray'),seatLabel=make('span','seat-context');contextTray.id='context-tray';contextTray.hidden=true;contextTray.append(quickDance,seatLabel,by('seat'),by('train-join'),by('train-leave'));main.append(contextTray);
  const rhythm=by('rhythm-open');rhythm.classList.add('rhythm-shortcut');rhythm.textContent='리듬게임';
  first.replaceChildren(...menus,rhythm);first.setAttribute('aria-label','클럽 메뉴');first.setAttribute('role','navigation');footer.replaceChildren(first);
  // Native disclosure events continue to cancel cosmetic previews when a menu closes.
  for(const [category,root]of [[appearance,by('character-customization')],[props,by('wand-customization')]]){
-  category.menu.addEventListener('toggle',()=>{root.open=category.menu.open;});
+  category.menu.addEventListener('toggle',()=>{root.open=category===appearance&&category.menu.open;});
   root.addEventListener('toggle',()=>{if(root.open&&!category.menu.open){category.menu.open=true;closeAll(category.menu);}});
  }
  const legacyMenus=[by('shout-actions'),vip];
@@ -64,7 +70,10 @@ export function clubInterface(){
   const sitting=Boolean(actor?.seat!=null),seat=by('seat');document.body.dataset.sitting=String(sitting);
   if(sitting){const full=seat.textContent;seatLabel.textContent=full.replace(/\s*일어나기$/,'');seat.textContent='일어나기';seat.setAttribute('aria-label',full);}
   else {seatLabel.textContent='';seat.removeAttribute('aria-label');}
-  contextTray.hidden=!actor||(seat.hidden&&by('train-join').hidden&&by('train-leave').hidden);chooseUser.disabled=!available;
+  const currentDance=available&&!sitting?danceLabels.get(actor?.action):null;
+  quickDance.hidden=!currentDance;
+  const danceText=currentDance?'현재 춤 · '+currentDance:'';if(danceName.textContent!==danceText)danceName.textContent=danceText;
+  contextTray.hidden=!actor||(!currentDance&&seat.hidden&&by('train-join').hidden&&by('train-leave').hidden);chooseUser.disabled=!available;
   document.querySelector('[data-vip-solo]').hidden=document.querySelector('[data-vip-fan]').hidden=!available;
  }};
 }

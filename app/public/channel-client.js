@@ -17,6 +17,7 @@ function showMusic(id) {
   audibleTrack = id;
   el('music').textContent = id ? '음악 재생 중' : '음악 시작';
   el('music').classList.toggle('awaiting', ready && !id);
+  if(id&&el('notice').dataset.kind==='music-start')note('');
   if (ready) frame('audible-track', id);
 }
 const music = musicPlayer(
@@ -35,8 +36,9 @@ let needsPlace = true,
   retryTimer,
   attempts = 0,
   memberId;
-function note(message) {
+function note(message,kind='') {
   el('notice').textContent = message;
+  el('notice').dataset.kind=message?kind:'';
 }
 function firstVisitFailure(reason) {
   try {

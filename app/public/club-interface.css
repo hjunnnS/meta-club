@@ -66,3 +66,12 @@
 .play-interface #notice:not(:empty){position:fixed;z-index:13;bottom:154px;left:50%;transform:translateX(-50%);max-width:min(600px,90vw);padding:10px 16px;border:1px solid var(--ui-line);border-radius:12px;background:#171320ee;color:#ddd5e8;font-size:12px;line-height:1.5;pointer-events:none}
 .play-interface #guide{z-index:11;bottom:88px;border:1px solid var(--ui-line);max-height:calc(100dvh - 190px);overflow:auto;padding:16px;border-radius:16px;background:var(--ui-surface)}
 @media(max-width:900px){.play-interface #track{display:none}.play-interface > header{padding:8px 12px;gap:8px}.play-interface #performance{max-width:26ch;overflow:hidden;text-overflow:ellipsis}.play-menu>summary{padding:12px}.play-interface .context-tray .seat-context{max-width:20ch}}
+
+/* Detail panels must not inherit the single-line navigation's nowrap rule. */
+.play-panel,.play-interface .context-actions>.extra-panel,.play-interface .developer-panel{white-space:normal;overflow-wrap:anywhere}
+.play-panel p,.play-panel output{max-width:100%;white-space:normal}
+.play-interface .context-tray{flex-wrap:wrap;justify-content:center;row-gap:8px}
+.play-interface .context-tray .seat-context:empty{display:none}
+.quick-dance{display:flex;align-items:center;gap:12px;white-space:normal}
+.current-dance{font-size:13px;font-weight:650;color:#e8e2f0;max-width:25ch}
+.play-interface .quick-dance-stop{cursor:pointer;min-height:40px;padding:9px 17px;border-radius:11px;background:#b9f4e7;color:#152a25;border:1px solid #dcfff5;font-weight:750;font-size:14px;white-space:nowrap}
