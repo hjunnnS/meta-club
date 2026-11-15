@@ -1,0 +1,11 @@
+import {mkdirSync,copyFileSync,chmodSync,writeFileSync} from 'node:fs';
+import {fileURLToPath} from 'node:url';
+import {join,resolve} from 'node:path';
+import {spawnSync} from 'node:child_process';
+const source=fileURLToPath(new URL('../',import.meta.url)),root=resolve(process.argv[2]||'');
+if(!process.argv[2]||root===source||root==='/')throw Error('Provide a separate persistent runtime directory outside Documents');
+for(const part of ['app','.local/tools','.local/shared-edm'])mkdirSync(join(root,part),{recursive:true,mode:0o700});
+for(const file of ['mac-shared-trial.mjs','mac-shared-trial-control.mjs'])copyFileSync(join(source,'app',file),join(root,'app',file));
+copyFileSync(join(source,'.local/tools/cloudflared'),join(root,'.local/tools/cloudflared'));chmodSync(join(root,'.local/tools/cloudflared'),0o755);
+mkdirSync(join(source,'.local'),{recursive:true});writeFileSync(join(source,'.local/mac-trial-runtime.json'),JSON.stringify({root}),{mode:0o600});
+const result=spawnSync(process.execPath,[join(root,'app/mac-shared-trial-control.mjs'),'start'],{stdio:'inherit'});process.exit(result.status??1);
