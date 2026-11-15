@@ -2,6 +2,7 @@ import { createHash, timingSafeEqual } from 'node:crypto';
 
 // Explicit, invite-only hosted trial; never relax the localhost-only test flag.
 export const sharedTrial = process.env.CLUB_SHARED_TRIAL === '1';
+export const sharedAutoEntry = sharedTrial && process.env.CLUB_SHARED_TRIAL_AUTO_ENTRY === '1';
 let hashes=[],expires=0;
 if(sharedTrial){
   const origin=new URL(process.env.AUTH_URL);
@@ -15,7 +16,11 @@ if(sharedTrial){
 const failures=new Map();
 export function sharedTrialExpiry(){return sharedTrial?expires:null;}
 export function sharedTrialActive(now=Date.now()){return sharedTrial&&now<expires;}
-export function sharedTrialMember(id){return typeof id==='string'&&/^local-test:shared-[123]$/.test(id);}
+export function sharedTrialMember(id){return typeof id==='string'&&(/^local-test:shared-[123]$/.test(id)||(sharedAutoEntry&&/^local-test:shared-auto-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(id)));}
+export function sharedTrialSlot(id){
+  if(!sharedTrialMember(id))return 0;
+  return /^local-test:shared-[123]$/.test(id)?Number(id.slice(-1)):1+createHash('sha256').update(id).digest().readUInt32BE(0)%3;
+}
 export function authorizeSharedTrial(input,now=Date.now()){
   if(!sharedTrialActive(now)||!input||!['1','2','3'].includes(input.tester)||typeof input.accessCode!=='string'||input.accessCode.length<16||input.accessCode.length>128)return null;
   const slot=Number(input.tester)-1,attempts=failures.get(slot)||{count:0,until:now+60000};

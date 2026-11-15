@@ -4,6 +4,7 @@ import { isOperator, requireOperator } from './operator.js';
 import { readSession } from './session.js';
 import { startChannels } from './channels.js';
 import { auth, origin } from './auth.js';
+import { sharedAutoEntryMiddleware } from './shared-auto-entry.js';
 
 import { localTest } from './local-test.js';
 import { sharedTrial, sharedTrialActive } from './shared-trial.js';
@@ -21,6 +22,7 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use(sharedAutoEntryMiddleware(auth.secret));
 app.use(/^\/auth\/(.+)$/, ExpressAuth(auth));
 
 function page(title, content) {

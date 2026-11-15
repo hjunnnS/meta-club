@@ -7,7 +7,7 @@ RUN npm install --prefix /srv/club/dance --no-save --package-lock=false --ignore
 COPY app ./app
 COPY stage/festival ./stage/festival
 RUN mkdir -p /data && chown -R node:node /data
-ENV NODE_ENV=production CLUB_SHARED_TRIAL=1 CLUB_LOCAL_TEST=0 CLUB_DB=/data/club.sqlite PORT=3000
+ENV NODE_ENV=production CLUB_SHARED_TRIAL=1 CLUB_SHARED_TRIAL_AUTO_ENTRY=1 CLUB_LOCAL_TEST=0 CLUB_DB=/data/club.sqlite PORT=3000
 USER node
 WORKDIR /srv/club/app
 EXPOSE 3000
