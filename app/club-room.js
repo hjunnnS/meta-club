@@ -6,7 +6,7 @@ import {requestPodium,validPodiumArrival,beginPodium,clearPodium} from './podium
 import { DanceTrain, onTrainFloor } from './dance-train.js';
 import { effects } from '../stage/festival/events.js';
 import { localTest } from './local-test.js';
-import { sharedTrial, sharedTrialSlot, sharedAutoEntry } from './shared-trial.js';
+import { sharedTrial, sharedAutoEntry } from './shared-trial.js';
 import { ManagedChannelZones } from './managed-channel-zones.js';
 import { edmArea, permittedPath, edmSeats as seats, nearbyEdmSeats, nearbyEdmPole } from './edm-layout.js';
 import { blockedMessage } from './message-filter.js';
@@ -418,9 +418,25 @@ export class EdmRoom extends Room {
       old.client.leave(4001);
     }
     const previous = recent.get(identity);
-    const entry=sharedTrial?{...floorEntry,x:floorEntry.x+(sharedTrialSlot(identity)-2)*1.6}:floorEntry;
+    const entry=floorEntry;
     let place = restore && previous?.room === this.roomId ? previous.place : entry;
-    if (!this.positionMember(client.sessionId, null, place)) {
+    if (sharedTrial) {
+      // Choose from currently empty positions, not a hashed identity slot:
+      // different browsers can hash to the same slot. onJoin assigns the chosen
+      // position to members synchronously before the next visitor is admitted.
+      const occupied = [...this.members.values(), ...this.ai];
+      const candidates = [place];
+      for (let row = 0; row < 6; row++) {
+        for (const column of [0,-1,1,-2,2,-3,3,-4,4,-5,5]) {
+          candidates.push({...entry,x:entry.x+column*2.2,z:entry.z+row*2.2});
+        }
+      }
+      place = candidates.find(candidate =>
+        !occupied.some(actor => Math.abs(actor.y-candidate.y)<.8 &&
+          Math.hypot(actor.x-candidate.x,actor.z-candidate.z)<2) &&
+        this.positionMember(client.sessionId,null,candidate));
+      if (!place) throw Error('입구에 빈 자리가 없습니다. 잠시 후 다시 입장해 주세요.');
+    } else if (!this.positionMember(client.sessionId, null, place)) {
       place = entry;
       this.positionMember(client.sessionId, null, place);
     }
