@@ -14,6 +14,27 @@ let rhythm,interfaceUI;
 let audibleTrack = null;
 let loginRequired = false;
 let sharedTrialSession=false;
+let openingKey=null,openingTimer=null;
+function beginSharedOpening(m){
+  if(!sharedTrialSession||!ready||!m.tracks?.length)return;
+  const key=room.roomId+':'+m.epoch;
+  if(openingKey===key)return;
+  openingKey=key;clearTimeout(openingTimer);
+  const delay=Math.max(0,m.epoch-m.now);
+  frame('visual-track',null);
+  if(delay>0){
+    frame('opening-countdown',{endsAt:Date.now()+delay,seconds:3});
+    el('music').disabled=true;el('music').textContent='3·2·1 준비 중';
+  }
+  openingTimer=setTimeout(async()=>{
+    if(!room||openingKey!==key)return;
+    frame('opening-countdown',null);
+    frame('visual-track',m.tracks[0].id);
+    el('music').disabled=false;
+    const started=await music.start({automatic:true});
+    if(!started&&!music.status().playing){showMusic(null);note('음악 시작을 눌러 소리를 켜세요.','music-start');}
+  },delay);
+}
 function showMusic(id) {
   audibleTrack = id;
   el('music').textContent = id ? '음악 재생 중' : '음악 시작';
@@ -152,6 +173,7 @@ function disconnected(message, reconnect) {
   el('event-controls').hidden = true;
   el('particle-tests').hidden = true;
   music.reset();
+  clearTimeout(openingTimer);openingKey=null;
   room = undefined;
   snapshot = null;
   ready = false;
@@ -263,6 +285,7 @@ async function enter(channelId) {
       if (room === next) {
         music.clock(m);
         if (ready) frame('clock', { offset: m.now - (Date.now() + m.sent) / 2, epoch: m.epoch, tracks: m.tracks });
+        beginSharedOpening(m);
       }
     });
     next.onLeave((code) => {
@@ -322,6 +345,7 @@ window.addEventListener('message', (event) => {
     el('event-controls').hidden = !memberId?.startsWith('local-test:');
     el('particle-tests').hidden = !memberId?.startsWith('local-test:');
     if (memberId?.startsWith('local-test:')&&!sharedTrialSession) shop.channel(room.roomId, memberId);
+    if(sharedTrialSession)room.send('music-ready');
     room.send('snapshot');
     room.send('clock', Date.now());
     if (snapshot) display(snapshot);

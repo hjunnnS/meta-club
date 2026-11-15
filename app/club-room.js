@@ -6,7 +6,7 @@ import {requestPodium,validPodiumArrival,beginPodium,clearPodium} from './podium
 import { DanceTrain, onTrainFloor } from './dance-train.js';
 import { effects } from '../stage/festival/events.js';
 import { localTest } from './local-test.js';
-import { sharedTrial, sharedTrialSlot } from './shared-trial.js';
+import { sharedTrial, sharedTrialSlot, sharedAutoEntry } from './shared-trial.js';
 import { ManagedChannelZones } from './managed-channel-zones.js';
 import { edmArea, permittedPath, edmSeats as seats, nearbyEdmSeats, nearbyEdmPole } from './edm-layout.js';
 import { blockedMessage } from './message-filter.js';
@@ -51,6 +51,7 @@ export class EdmRoom extends Room {
     this.preparing = [];
     this.eventTier = 0;
     this.epoch = Date.now();
+    this.musicOpeningStarted = !sharedAutoEntry;
     rooms.set(this.roomId, this);
     this.ai = Array.from({ length: 5 }, (_, i) => ({
       id: 'ai-' + i,
@@ -150,6 +151,13 @@ export class EdmRoom extends Room {
     });
     this.onMessage('occupancy', (c) => c.send('occupancy', this.population()));
     this.onMessage('snapshot', (c) => c.send('snapshot', this.snapshot()));
+    this.onMessage('music-ready', (c) => {
+      if(sharedAutoEntry && this.member(c) && !this.musicOpeningStarted){
+        this.musicOpeningStarted=true;
+        this.epoch=Date.now()+3000;
+        this.dirty=true;
+      }
+    });
     this.onMessage('clock', (c, sent) => {
       if (Number.isFinite(sent))
         c.send('clock', { sent, now: Date.now(), epoch: this.epoch, tracks: playlist() });
