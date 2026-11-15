@@ -25,8 +25,8 @@ export function greetingMotion(B,scene,glow){
   else{mesh.position.copyFrom(model.root.position);mesh.position.y+=1.85;}
   const camera=scene.activeCamera,engine=scene.getEngine();let scale=1;
   if(camera){const distance=B.Vector3.Distance(camera.globalPosition||camera.position,mesh.position);scale=Math.max(1,distance*2*Math.tan(camera.fov/2)*Math.min(190,engine.getRenderWidth()*.36)/Math.max(1,engine.getRenderHeight())/2.5);}
-  // Reduce both world size and the previous screen-size floor by exactly one third.
-  scale/=3;mesh.scaling.setAll(scale);mesh.position.y+=.16+.5*scale;
+  // Keep a readable middle size: 60% of the initial balloon, at every distance.
+  scale*=.6;mesh.scaling.setAll(scale);mesh.position.y+=.16+.5*scale;
   mesh.visibility=Math.min(1,(now-event.start)/120,(event.start+event.seconds*1000-now)/220);
  }
  const smooth=t=>t*t*(3-2*t);
