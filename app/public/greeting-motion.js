@@ -1,6 +1,31 @@
 // Short additive gestures: never replace an actor's authoritative dance or wand state.
 export function greetingMotion(B,scene,glow){
- let events=[],selected=null,ring=null,heartInk=null;const saved=new Map(),hearts=new Map();
+ let events=[],self=null,selected=null,ring=null,heartInk=null;const saved=new Map(),hearts=new Map(),balloons=new Map(),waves=new Map();
+ const labels={wave:'손 흔들기',bow:'가볍게 인사',heart:'손하트',clap:'응원 박수'};
+ function clearBalloon(id){const item=balloons.get(id);if(!item)return;glow?.removeExcludedMesh(item.mesh);item.mesh.dispose();item.ink.dispose();item.texture.dispose();balloons.delete(id);}
+ function showBalloon(event,model,target,now){
+  const incoming=event.to===self,heading=incoming?'나에게':target?String(target.actor.nickname||'상대')+'님에게':'인사';
+  const key=heading+'|'+event.kind;let item=balloons.get(event.id);
+  if(item&&item.key!==key){clearBalloon(event.id);item=null;}
+  if(!item){
+   const texture=new B.DynamicTexture('greeting balloon',{width:640,height:256},scene,false),ctx=texture.getContext();
+   ctx.clearRect(0,0,640,256);ctx.fillStyle=incoming?'#193638':'#231a35';ctx.strokeStyle=incoming?'#b9f4e7':'#d4bbf0';ctx.lineWidth=5;
+   ctx.beginPath();ctx.moveTo(28,8);ctx.lineTo(612,8);ctx.quadraticCurveTo(632,8,632,28);ctx.lineTo(632,196);ctx.quadraticCurveTo(632,216,612,216);ctx.lineTo(348,216);ctx.lineTo(320,248);ctx.lineTo(292,216);ctx.lineTo(28,216);ctx.quadraticCurveTo(8,216,8,196);ctx.lineTo(8,28);ctx.quadraticCurveTo(8,8,28,8);ctx.closePath();ctx.fill();ctx.stroke();
+   ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle=incoming?'#b9f4e7':'#d4bbf0';ctx.font='bold 34px sans-serif';ctx.fillText(heading,320,58,570);
+   ctx.fillStyle='#ffffff';ctx.font='bold 66px sans-serif';ctx.fillText(labels[event.kind],320,142,570);texture.update();texture.hasAlpha=true;
+   const ink=new B.StandardMaterial('greeting balloon',scene);ink.disableLighting=true;ink.diffuseTexture=ink.emissiveTexture=texture;ink.useAlphaFromDiffuseTexture=true;ink.backFaceCulling=false;ink.disableDepthWrite=true;ink.depthFunction=B.Constants.ALWAYS;
+   const mesh=B.MeshBuilder.CreatePlane('greeting balloon',{width:2.5,height:1},scene);mesh.material=ink;mesh.billboardMode=B.Mesh.BILLBOARDMODE_ALL;mesh.renderingGroupId=3;mesh.isPickable=false;mesh.checkCollisions=false;
+   glow?.addExcludedMesh(mesh);item={mesh,ink,texture,key};balloons.set(event.id,item);
+  }
+  const mesh=item.mesh;mesh.setEnabled(model.root.isEnabled());
+  const head=model.near?.getChildMeshes().find(part=>part.name==='head');
+  if(head){head.computeWorldMatrix(true);const bounds=head.getBoundingInfo();mesh.position.copyFrom(bounds.boundingSphere.centerWorld);mesh.position.y=bounds.boundingBox.maximumWorld.y;}
+  else{mesh.position.copyFrom(model.root.position);mesh.position.y+=1.85;}
+  const camera=scene.activeCamera,engine=scene.getEngine();let scale=1;
+  if(camera){const distance=B.Vector3.Distance(camera.globalPosition||camera.position,mesh.position);scale=Math.max(1,distance*2*Math.tan(camera.fov/2)*Math.min(190,engine.getRenderWidth()*.36)/Math.max(1,engine.getRenderHeight())/2.5);}
+  mesh.scaling.setAll(scale);mesh.position.y+=.16+.5*scale;
+  mesh.visibility=Math.min(1,(now-event.start)/120,(event.start+event.seconds*1000-now)/220);
+ }
  const smooth=t=>t*t*(3-2*t);
  function restore(){for(const [m,s]of saved){if(m.root.isDisposed())continue;m.root.rotation.copyFrom(s.root);m.near.rotation.copyFrom(s.near);m.torso.rotation.copyFrom(s.torso);m.limbs.forEach((j,i)=>j.rotation.copyFrom(s.limbs[i]));}saved.clear();}
  function clearHeart(id){const mesh=hearts.get(id);if(mesh){glow?.removeExcludedMesh(mesh);mesh.dispose();hearts.delete(id);}}
@@ -25,6 +50,19 @@ export function greetingMotion(B,scene,glow){
   mesh.position.copyFrom(at);mesh.position.y+=.12+.40*size;mesh.scaling.setAll(size*(.8+.2*gain));mesh.visibility=gain;
  }
  function render(now,models,reduced=false){
+  const liveBalloons=new Set(),targeted=new Set(events.map(event=>event.from));
+  for(const event of events){
+   const model=models.get(event.from),target=models.get(event.to);
+   if(!labels[event.kind]||!model||!target||event.from!==self&&event.to!==self||now<event.start||now>=event.start+event.seconds*1000||model.actor.action==='walk'||model.actor.seat!=null||['pole-dance','podium-dance'].includes(model.actor.action))continue;
+   showBalloon(event,model,target,now);liveBalloons.add(event.id);
+  }
+  // The existing untargeted dance-menu wave still gets a sender-side label.
+  for(const [id,model]of models){
+   if(id!==self||model.actor.action!=='wave'){waves.delete(id);continue;}
+   if(!waves.has(id))waves.set(id,{id:'wave-'+id+'-'+now,from:id,kind:'wave',start:now,seconds:3});
+   const event=waves.get(id);if(!targeted.has(id)&&now<event.start+3000){showBalloon(event,model,null,now);liveBalloons.add(event.id);}
+  }
+  for(const id of balloons.keys())if(!liveBalloons.has(id))clearBalloon(id);
   const liveHearts=new Set();
   if(selected&&models.has(selected)){
    if(!ring){ring=B.MeshBuilder.CreateTorus('selected club visitor',{diameter:.95,thickness:.025,tessellation:24},scene);const ink=new B.StandardMaterial('visitor selection',scene);ink.disableLighting=true;ink.emissiveColor=B.Color3.FromHexString('#b9f4e7');ring.material=ink;ring.isPickable=false;scene.onDisposeObservable.addOnce(()=>ink.dispose());}
@@ -51,6 +89,6 @@ export function greetingMotion(B,scene,glow){
   }
   for(const id of hearts.keys())if(!liveHearts.has(id))clearHeart(id);
  }
- scene.onDisposeObservable.addOnce(()=>{saved.clear();ring?.dispose();for(const id of hearts.keys())clearHeart(id);heartInk?.dispose();});
- return {set(value){events=Array.isArray(value)?value:[];},active(id,now){return events.some(g=>g.from===id&&now>=g.start&&now<g.start+g.seconds*1000);},select(id){selected=id;},restore,render};
+ scene.onDisposeObservable.addOnce(()=>{saved.clear();waves.clear();ring?.dispose();for(const id of balloons.keys())clearBalloon(id);for(const id of hearts.keys())clearHeart(id);heartInk?.dispose();});
+ return {set(value,viewer=self){events=Array.isArray(value)?value:[];self=viewer;},active(id,now){return events.some(g=>g.from===id&&now>=g.start&&now<g.start+g.seconds*1000);},select(id){selected=id;},restore,render};
 }
