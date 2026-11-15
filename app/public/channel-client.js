@@ -40,6 +40,13 @@ function note(message,kind='') {
   el('notice').textContent = message;
   el('notice').dataset.kind=message?kind:'';
 }
+function showClubPeople(people,personal=false){
+  const badge=el('club-people'),known=Number.isInteger(people)&&people>=0;
+  if(!badge)return;
+  badge.dataset.known=String(known);
+  el('club-people-value').textContent=personal?'개인 체험 · 나 1명':known?'실제 접속 '+people+'명':'접속 인원 확인 중';
+  badge.title=personal?'브라우저마다 독립된 개인 체험입니다. 다른 접속자와 공간을 공유하지 않습니다.':'현재 EDM 클럽 전체 채널 · 본인 포함 · AI 손님과 직원 NPC 제외';
+}
 function firstVisitFailure(reason) {
   try {
     const key = 'edm-first-visit',
@@ -137,6 +144,7 @@ function display(data) {
   }
 }
 function disconnected(message, reconnect) {
+  showClubPeople(null);
   rhythm?.interrupt('연결이 끊겨 라운드를 중단했습니다.');
   firstVisitFailure(message);
   shop.channel(null);
@@ -168,18 +176,25 @@ function disconnected(message, reconnect) {
   }
 }
 async function list() {
+  try {
   const res = await fetch('/api/lobby');
-  if (!res.ok) return;
+  if (!res.ok) throw Error('population_unavailable');
   const data = await res.json(),
     select = el('channels'),
     prev = select.value;
-  const channels = data.clubs.find((c) => c.id === 'edm').channels;
+  const club=data.clubs.find((c)=>c.id==='edm'),channels=club?.channels;
+  if(!Array.isArray(channels)||channels.some(c=>!Number.isInteger(c.people)||c.people<0))throw Error('population_unavailable');
+  showClubPeople(channels.reduce((total,channel)=>total+channel.people,0));
   select.replaceChildren(
     ...channels.map(
       (c) => new Option(c.channelId + ' (' + c.people + '/' + c.capacity + ')', c.channelId),
     ),
   );
   select.value = channels.some((c) => c.channelId === prev) ? prev : room?.roomId || '';
+  } catch {
+    // Occupancy refresh must never remove the map, controls or last channel list.
+    showClubPeople(null);
+  }
 }
 async function enter(channelId) {
   if (joining || manual) return;

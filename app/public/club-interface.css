@@ -87,6 +87,10 @@
 
 .play-interface .context-actions>.extra-panel{max-height:min(400px,calc(100dvh - 160px))}
 
+.play-interface .club-people{position:absolute;top:12px;left:12px;z-index:6;display:flex;align-items:center;gap:7px;max-width:calc(100% - 32px);padding:7px 11px;border:1px solid #b8a4d040;border-radius:18px;background:#171320de;color:#eee8f8;font-size:12px;line-height:1.25;pointer-events:none}
+.play-interface .club-people-dot{width:7px;height:7px;border-radius:50%;background:#b9f4e7;flex-shrink:0}
+.play-interface .club-people[data-known=false] .club-people-dot{background:#a49aae}
+
 /* Compact icon dock; panels, commands and the club scene stay unchanged. */
 .play-interface > footer{min-height:82px;padding:8px 12px;background:transparent;border-top:0;overflow:visible}
 .play-interface #first-actions{box-sizing:border-box;width:min(440px,100%);gap:4px;padding:5px;background:#15131ee8;border:1px solid #69607155;border-radius:19px}

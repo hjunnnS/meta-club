@@ -3,6 +3,8 @@ export function clubInterface(){
  const by=id=>document.getElementById(id),main=document.querySelector('main'),footer=document.querySelector('footer'),header=document.querySelector('body > header');
  const first=by('first-actions'),frame=document.querySelector('iframe'),menus=[];
  const make=(tag,className,text)=>{const node=document.createElement(tag);if(className)node.className=className;if(text)node.textContent=text;return node;};
+ const peopleBadge=make('div','club-people'),peopleDot=make('span','club-people-dot'),peopleValue=make('span',null,'접속 인원 확인 중');
+ peopleBadge.id='club-people';peopleBadge.dataset.known='false';peopleBadge.setAttribute('role','status');peopleBadge.setAttribute('aria-live','off');peopleDot.setAttribute('aria-hidden','true');peopleValue.id='club-people-value';peopleBadge.append(peopleDot,peopleValue);main.append(peopleBadge);
  function closeAll(except){
   for(const menu of menus)if(menu!==except)menu.open=false;
   if(except!==settings)settings.open=false;

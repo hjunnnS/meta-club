@@ -12,7 +12,7 @@ export function greetingMotion(B,scene,glow){
    const texture=new B.DynamicTexture('greeting balloon',{width:640,height:256},scene,false),ctx=texture.getContext();
    ctx.clearRect(0,0,640,256);ctx.fillStyle=incoming?'#193638':'#231a35';ctx.strokeStyle=incoming?'#b9f4e7':'#d4bbf0';ctx.lineWidth=5;
    ctx.beginPath();ctx.moveTo(28,8);ctx.lineTo(612,8);ctx.quadraticCurveTo(632,8,632,28);ctx.lineTo(632,196);ctx.quadraticCurveTo(632,216,612,216);ctx.lineTo(348,216);ctx.lineTo(320,248);ctx.lineTo(292,216);ctx.lineTo(28,216);ctx.quadraticCurveTo(8,216,8,196);ctx.lineTo(8,28);ctx.quadraticCurveTo(8,8,28,8);ctx.closePath();ctx.fill();ctx.stroke();
-   ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle=incoming?'#b9f4e7':'#d4bbf0';ctx.font='bold 76px sans-serif';ctx.fillText(heading,320,52,570);
+   ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle=incoming?'#b9f4e7':'#d4bbf0';ctx.font='bold 41.8px sans-serif';ctx.fillText(heading,320,52,570);
    ctx.font='bold 72px sans-serif';const labelWidth=Math.min(460,ctx.measureText(labels[event.kind]).width),emojiSize=126*.7,rowX=(640-emojiSize-18-labelWidth)/2;
    ctx.textAlign='left';ctx.font=emojiSize+'px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';ctx.fillText(emojis[event.kind],rowX,148);
    ctx.fillStyle='#ffffff';ctx.font='bold 72px sans-serif';ctx.fillText(labels[event.kind],rowX+emojiSize+18,148,460);texture.update();texture.hasAlpha=true;
