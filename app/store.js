@@ -1,6 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
+import { sharedTrial, sharedTrialMember } from './shared-trial.js';
 
 const file = resolve(process.env.CLUB_DB || 'data/club.sqlite');
 mkdirSync(dirname(file), { recursive: true });
@@ -17,10 +18,11 @@ db.exec(`
 
 export const avatars = ['indigo', 'teal', 'rose'];
 export function profile(account) {
+  const slot=sharedTrial&&sharedTrialMember(account)?Number(account.slice(-1)):0;
   return (
     db.prepare('SELECT nickname,avatar FROM profile WHERE account=?').get(account) ?? {
-      nickname: account.startsWith('guest:') ? '게스트' : '방문자',
-      avatar: avatars[0],
+      nickname: slot?'시험 회원 '+slot:account.startsWith('guest:') ? '게스트' : '방문자',
+      avatar: slot?avatars[slot-1]:avatars[0],
     }
   );
 }

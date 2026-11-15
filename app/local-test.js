@@ -1,6 +1,8 @@
-export const localTest = process.env.CLUB_LOCAL_TEST === '1';
+import { sharedTrial } from './shared-trial.js';
+const desktopTest = process.env.CLUB_LOCAL_TEST === '1';
+export const localTest = desktopTest || sharedTrial;
 
-if (localTest) {
+if (desktopTest) {
   const origin = new URL(process.env.AUTH_URL);
   const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(origin.hostname);
   if (process.env.NODE_ENV === 'production' || origin.protocol !== 'https:' || !loopback) {

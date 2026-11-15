@@ -13,6 +13,7 @@ const el = (id) => document.getElementById(id),
 let rhythm,interfaceUI;
 let audibleTrack = null;
 let loginRequired = false;
+let sharedTrialSession=false;
 function showMusic(id) {
   audibleTrack = id;
   el('music').textContent = id ? '음악 재생 중' : '음악 시작';
@@ -204,6 +205,7 @@ async function enter(channelId) {
   const old = room;
   try {
     const session = await (await fetch('/api/session')).json();
+    sharedTrialSession=session.sharedTrial===true;
     if (memberId && memberId !== session.user?.id)
       throw Error('로그인 세션이 바뀌었습니다. 로비에서 다시 입장해 주세요.');
     memberId = session.user?.id;
@@ -278,7 +280,7 @@ async function enter(channelId) {
       ready = true;frame('connection-state', true);
       el('event-controls').hidden = !memberId?.startsWith('local-test:');
       el('particle-tests').hidden = !memberId?.startsWith('local-test:');
-      if (memberId?.startsWith('local-test:')) shop.channel(room.roomId, memberId);
+      if (memberId?.startsWith('local-test:')&&!sharedTrialSession) shop.channel(room.roomId, memberId);
     }
     map.hidden = false;
     el('guide-guest').hidden = Boolean(memberId);
@@ -319,7 +321,7 @@ window.addEventListener('message', (event) => {
     floor?.addEventListener('pointerdown', () => el('music').click(), { once: true });
     el('event-controls').hidden = !memberId?.startsWith('local-test:');
     el('particle-tests').hidden = !memberId?.startsWith('local-test:');
-    if (memberId?.startsWith('local-test:')) shop.channel(room.roomId, memberId);
+    if (memberId?.startsWith('local-test:')&&!sharedTrialSession) shop.channel(room.roomId, memberId);
     room.send('snapshot');
     room.send('clock', Date.now());
     if (snapshot) display(snapshot);

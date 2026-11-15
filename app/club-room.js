@@ -6,6 +6,7 @@ import {requestPodium,validPodiumArrival,beginPodium,clearPodium} from './podium
 import { DanceTrain, onTrainFloor } from './dance-train.js';
 import { effects } from '../stage/festival/events.js';
 import { localTest } from './local-test.js';
+import { sharedTrial } from './shared-trial.js';
 import { ManagedChannelZones } from './managed-channel-zones.js';
 import { edmArea, permittedPath, edmSeats as seats, nearbyEdmSeats, nearbyEdmPole } from './edm-layout.js';
 import { blockedMessage } from './message-filter.js';
@@ -409,9 +410,10 @@ export class EdmRoom extends Room {
       old.client.leave(4001);
     }
     const previous = recent.get(identity);
-    let place = restore && previous?.room === this.roomId ? previous.place : floorEntry;
+    const entry=sharedTrial?{...floorEntry,x:floorEntry.x+(Number(identity.slice(-1))-2)*1.6}:floorEntry;
+    let place = restore && previous?.room === this.roomId ? previous.place : entry;
     if (!this.positionMember(client.sessionId, null, place)) {
-      place = floorEntry;
+      place = entry;
       this.positionMember(client.sessionId, null, place);
     }
     const m = {

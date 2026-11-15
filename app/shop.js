@@ -1,5 +1,6 @@
 import { connected } from './club-room.js';
 import { localTest } from './local-test.js';
+import { sharedTrial } from './shared-trial.js';
 import { blockedMessage } from './message-filter.js';
 import { mockOrder, requestMockOrder, finishMockRequest } from './store.js';
 
@@ -18,7 +19,7 @@ const led = {
 };
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 export function installShop(app) {
-  if (!localTest) return;
+  if (!localTest || sharedTrial) return;
   const path = '/api/account/edm-shop';
   app.use(path, (req, res, next) => {
     if (!res.locals.account.id.startsWith('local-test:')) return res.sendStatus(403);

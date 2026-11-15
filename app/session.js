@@ -1,4 +1,5 @@
 import { decode, getToken } from '@auth/core/jwt';
+import { sharedTrial, sharedTrialActive, sharedTrialMember } from './shared-trial.js';
 
 export const sessionCookie = '__Secure-authjs.session-token';
 
@@ -28,6 +29,7 @@ export async function readSession(req, secret) {
   if (!raw) return { status: 'guest', reason: 'login_required' };
   try {
     const token = await decodeSession({ token: raw, secret, salt: sessionCookie });
+    if(sharedTrial&&(!sharedTrialActive()||!sharedTrialMember(token.sub)))return {status:'guest',reason:'session_expired'};
     return {
       status: 'authenticated',
       user: { id: token.sub },

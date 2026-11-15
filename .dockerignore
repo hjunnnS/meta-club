@@ -1,0 +1,15 @@
+.git
+**/node_modules
+.local
+**/.env
+**/.env.*
+**/*.sqlite*
+**/*.pem
+**/*.key
+validation
+planning
+sites-preview
+deliverables
+**/evidence
+**/results
+**/recording

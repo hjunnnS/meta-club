@@ -6,10 +6,12 @@ import { startChannels } from './channels.js';
 import { auth, origin } from './auth.js';
 
 import { localTest } from './local-test.js';
+import { sharedTrial, sharedTrialActive } from './shared-trial.js';
 
 const app = express();
 app.disable('x-powered-by');
-app.set('trust proxy', 'loopback');
+app.set('trust proxy', sharedTrial?1:'loopback');
+app.get('/healthz',(_req,res)=>res.status(sharedTrial&&!sharedTrialActive()?503:200).json({status:sharedTrial&&!sharedTrialActive()?'trial_expired':'ok'}));
 app.use((req, res, next) => {
   if (req.get('host') !== origin.host || req.protocol !== 'https') {
     return res.sendStatus(400);
@@ -29,11 +31,12 @@ function page(title, content) {
 
 app.use(async (req, res, next) => {
   res.locals.session = await readSession(req, auth.secret);
+  if(sharedTrial&&!sharedTrialActive())return res.status(410).send('공동 시험 기간이 종료되었습니다.');
   next();
 });
 
 app.get('/api/session', (_req, res) => {
-  res.json(res.locals.session);
+  res.json({...res.locals.session,sharedTrial});
 });
 
 app.get('/', (_req, res) => {
@@ -42,7 +45,7 @@ app.get('/', (_req, res) => {
     const operatorLink = isOperator(session) ? '<p><a href="/operator">운영자 공간</a></p>' : '';
     return res.send(page('메타 클럽', '<p>로그인되었습니다.</p><p><a href="/lobby">클럽 로비</a></p>' + operatorLink + '<a href="/auth/signout">로그아웃</a>'));
   }
-  const label = localTest ? '시험 회원으로 입장' : 'Google 또는 Apple로 로그인';
+  const label = sharedTrial?'개별 코드로 공동 시험 입장':localTest ? '시험 회원으로 입장' : 'Google 또는 Apple로 로그인';
   res.send(page('메타 클럽', `<p><a href="/lobby">클럽 로비</a></p><a href="/auth/signin?callbackUrl=%2Flobby">${label}</a>`));
 });
 

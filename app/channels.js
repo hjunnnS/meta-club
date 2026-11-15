@@ -11,6 +11,7 @@ import { installShop } from './shop.js';
 import { installMusic } from './music.js';
 import express from 'express';
 import { localTest } from './local-test.js';
+import { sharedTrial, sharedTrialMember, sharedTrialExpiry } from './shared-trial.js';
 
 import { readSession } from './session.js';
 
@@ -57,9 +58,10 @@ function reserve(identity, channelId, expires) {
 }
 
 export async function startChannels(app, { origin, secret, port }) {
-  const hiphop = localTest ? await import('./hiphop-room.js') : null;
-  const social = localTest ? await import('./social-room.js') : null;
-  const retro = localTest ? await import('./retro-room.js') : null;
+  const otherClubs=localTest&&!sharedTrial;
+  const hiphop = otherClubs ? await import('./hiphop-room.js') : null;
+  const social = otherClubs ? await import('./social-room.js') : null;
+  const retro = otherClubs ? await import('./retro-room.js') : null;
   const serveFile = (relative) => (_req, res) =>
     res.sendFile(fileURLToPath(new URL(relative, import.meta.url)));
   app.use(express.json({ limit: '8kb' }));
@@ -104,7 +106,7 @@ export async function startChannels(app, { origin, secret, port }) {
   app.get('/lobby', serveFile('./public/lobby.html'));
   app.get('/lobby.js', serveFile('./public/lobby.js'));
   app.get('/api/lobby', (_req, res) => {
-    const testMember = localTest && res.locals.session.user;
+    const testMember = otherClubs && res.locals.session.user;
     const clubs = [
       { id: 'edm', name: 'EDM', open: true, channels: channelList(), capacity },
       ...Object.entries({ hiphop: '힙합', social: '소셜 라운지', retro: '레트로 디스코' }).map(
@@ -158,6 +160,7 @@ export async function startChannels(app, { origin, secret, port }) {
   app.post('/clubs/edm/admission', async (req, res) => {
     if (req.get('origin') !== origin.origin) return res.sendStatus(403);
     const session = res.locals.session;
+    if(sharedTrial&&!sharedTrialMember(session.user?.id))return res.status(401).json({error:'trial_login_required'});
     const guest = req.signedCookies[guestCookie];
     if (!session.user && !guest) return res.status(401).json({ error: 'open_club_first' });
     const identity = session.user?.id ?? 'guest:' + guest;
@@ -168,7 +171,7 @@ export async function startChannels(app, { origin, secret, port }) {
       return res.sendStatus(400);
     try {
       res.json(
-        await reserve(identity, target, session.expires ? Date.parse(session.expires) : null),
+        await reserve(identity, target, sharedTrial?Math.min(Date.parse(session.expires),sharedTrialExpiry()):session.expires ? Date.parse(session.expires) : null),
       );
     } catch {
       res.status(409).json({ error: 'channel_unavailable' });
@@ -238,6 +241,7 @@ export async function startChannels(app, { origin, secret, port }) {
     const request = { headers };
     const session = await readSession(request, secret);
     if (session.user) return session.user.id === identity;
+    if(sharedTrial)return false;
     if (session.reason !== 'login_required') return false;
     cookieParser(secret)(request, {}, () => {});
     const guest = request.signedCookies[guestCookie];
@@ -245,7 +249,7 @@ export async function startChannels(app, { origin, secret, port }) {
   };
   await matchMaker.setup();
   matchMaker.defineRoomType('edm', EdmRoom);
-  if (localTest) {
+  if (otherClubs) {
     for (const id of ['edm', 'hiphop', 'social', 'retro']) {
       app.get('/lobby-maps/' + id + '.webp', (_req, res, next) =>
         res.locals.session.user ? next() : res.sendStatus(401),
@@ -288,5 +292,5 @@ export async function startChannels(app, { origin, secret, port }) {
     }
   }
   await matchMaker.accept();
-  transport.listen(port, '127.0.0.1');
+  transport.listen(port, sharedTrial?'0.0.0.0':'127.0.0.1');
 }
