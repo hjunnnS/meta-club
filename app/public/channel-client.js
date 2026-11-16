@@ -1,4 +1,5 @@
 import {clubInterface} from './club-interface.js';
+import {tableMatchUI} from './table-match-ui.js';
 import {vipPersonalUI} from './vip-personal-ui.js';
 import {characterCustomization} from './character-customization.js';
 import {clubActionsUI} from './club-actions-ui.js';
@@ -14,6 +15,7 @@ let rhythm,interfaceUI;
 let audibleTrack = null;
 let loginRequired = false;
 let sharedTrialSession=false;
+let tableGame;
 let openingKey=null,openingTimer=null;
 function beginSharedOpening(m){
   if(!sharedTrialSession||!ready||!m.tracks?.length)return;
@@ -182,6 +184,7 @@ function disconnected(message, reconnect) {
   el('event-controls').hidden = true;
   el('particle-tests').hidden = true;
   music.reset();
+  tableGame?.update({available:false,game:null});
   clearTimeout(openingTimer);openingKey=null;
   room = undefined;
   snapshot = null;
@@ -266,6 +269,8 @@ async function enter(channelId) {
     const next = await new Colyseus.Client('wss://' + location.host).consumeSeatReservation(a.seat);
     shop.channel(null);
     room = next;
+    next.onMessage('table-game-state',data=>{if(room===next)tableGame?.update(data);});
+    next.onMessage('table-game-result',data=>{if(room===next)tableGame?.result(data);});
     el('retry').hidden = true;
     ready = false;
     needsPlace = true;
@@ -305,6 +310,7 @@ async function enter(channelId) {
         );
     });
     next.send('occupancy');
+    next.send('table-game-state');
     next.send('snapshot');
     next.send('clock', Date.now());
     if (!sceneLoaded) map.src = '/stage/festival/index.html?live';
@@ -491,4 +497,5 @@ setInterval(() => { if (ready && !document.hidden) {
   frame('music-output-clock',{playing:status.playing,id:status.track?.id,time:status.time,sentAt:Date.now()});
 } }, 50);
 interfaceUI=clubInterface();
+tableGame=tableMatchUI(data=>room?.send('table-game',data));
 enter(new URLSearchParams(location.search).get('channel') || undefined);

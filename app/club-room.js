@@ -15,6 +15,7 @@ import { performanceStatus } from './club-performances.js';
 import { playlistPosition,trackBeat } from './public/music.js';
 import { playlist } from './music.js';
 import { Room } from '@colyseus/core';
+import { tableMatch } from './table-match.js';
 import { profile } from './store.js';
 
 const sharedActivityUsage=activityUsage();
@@ -67,6 +68,15 @@ export class EdmRoom extends Room {
     this.refreshVisitors();
     this.dirty = false;
     if (localTest) {
+      this.tableMatch=tableMatch({actors:()=>[...this.members.values()]});
+      this.onMessage('table-game-state',client=>{
+        if(this.member(client))client.send('table-game-state',{...this.tableMatch.view(client.sessionId),serverNow:Date.now()});
+      });
+      this.onMessage('table-game',(client,input)=>{
+        if(!this.member(client)||!client.userData.identity.startsWith('local-test:'))return;
+        client.send('table-game-result',this.tableMatch.command(client.sessionId,input));
+        this.dirty=true;
+      });
       this.eventSequence = 0;
       this.activities=clubActivities({actors:()=>[...this.members.values(),...this.ai],blockedMessage,usage:sharedActivityUsage,
         performances:()=>{const scheduled=performanceStatus(this.epoch,Date.now(),playlist());return {...scheduled,active:scheduled.active||(this.stageEvent?{...this.stageEvent,seconds:effects[this.stageEvent.kind]?.seconds}:null)};},
@@ -231,6 +241,11 @@ export class EdmRoom extends Room {
     this.onMessage('seat', (c, requested)=>seatActivity(c,requested));
     this.onMessage('stand', c=>seatActivity(c,undefined,true));
     this.setSimulationInterval(() => {
+      if(this.tableMatch)for(const client of this.clients){
+        if(!this.member(client))continue;
+        const value=this.tableMatch.view(client.sessionId),key=JSON.stringify(value);
+        if(client.userData.tableGameView!==key){client.userData.tableGameView=key;client.send('table-game-state',{...value,serverNow:Date.now()});}
+      }
       if (this.dirty) {
         this.broadcast('snapshot', this.snapshot());
         this.dirty = false;

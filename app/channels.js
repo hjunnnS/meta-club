@@ -178,6 +178,7 @@ export async function startChannels(app, { origin, secret, port }) {
     }
   });
   app.get('/clubs/edm/club-interface.js', serveFile('./public/club-interface.js'));
+  app.get('/clubs/edm/table-match-ui.js', serveFile('./public/table-match-ui.js'));
   app.get('/clubs/edm/club-interface.css', serveFile('./public/club-interface.css'));
   app.get('/clubs/edm/client.js', serveFile('./public/channel-client.js'));
   app.get('/clubs/edm/podium-activity.js', serveFile('./podium-activity.js'));
