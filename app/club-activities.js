@@ -22,7 +22,7 @@ export function clubActivities({actors,blockedMessage=()=>false,identity=id=>id,
  const rules=activityTrialRules,gifts=socialTrial(actors,now),messages=[],blocks=new Map(),seen=new Map(),queue=[];
  const instanceId=crypto.randomUUID();
  const greetings=new Map();
- let shout=null,parade=null,sequence=0;
+ let shout=null,parade=null,waitingParade=null,sequence=0;
  const actor=id=>actors().find(a=>a.id===id),key=id=>identity(id)||id;
  const blocked=(recipient,sender)=>blocks.get(key(recipient))?.has(key(sender))===true;
  const safe=(value,max)=>typeof value==='string'&&value.trim()&&Array.from(value.trim()).length<=max&&!/[\p{Cc}\p{Cf}]/u.test(value)&&!blockedMessage(value.trim());
@@ -30,10 +30,15 @@ export function clubActivities({actors,blockedMessage=()=>false,identity=id=>id,
  function mark(who,kind,ms){usage.put(key(who),{...usage.get(key(who)),[kind]:now()+ms});usage.persist(now());}
  function showState(){const state=performances()||{},active=state.active;return {active:active&&mainShows.has(active.kind)&&now()>=active.start&&now()<active.start+active.seconds*1000?active:null,next:state.next};}
  function paradeEnd(at){if(!parade)return;const gate=usage.gate();if(gate.id===parade.id){usage.setGate({...gate,activeUntil:at,nextAt:at+rules.paradeClubCooldown});usage.persist(now());}parade=null;}
+ function beginParade(who){
+  mark(who,'paradeUntil',rules.paradeCooldown);
+  parade={id:'parade-'+instanceId+'-'+ ++sequence,from:who,start:now(),seconds:rules.paradeSeconds,count:rules.paradeCount};
+  usage.setGate({id:parade.id,activeUntil:now()+rules.paradeSeconds*1000,nextAt:now()+rules.paradeSeconds*1000+rules.paradeClubCooldown});usage.persist(now());
+ }
  function advance(){
   const time=now();
   if(parade&&(time>=parade.start+parade.seconds*1000||!actor(parade.from)))paradeEnd(Math.min(time,parade.start+parade.seconds*1000));
-  const show=showState(),busy=Boolean(show.active)||usage.gate().activeUntil>time;
+  const show=showState();let busy=Boolean(show.active)||usage.gate().activeUntil>time;
   if(shout&&!actor(shout.from))shout=null;
   // Scheduled starts are avoided below; an explicit show preview can still interrupt.
   // Preserve the unused display duration and resume it before later queued requests.
@@ -41,10 +46,14 @@ export function clubActivities({actors,blockedMessage=()=>false,identity=id=>id,
   if(shout&&!shout.paused&&time>=shout.start+shout.seconds*1000)shout=null;
   if(shout?.paused&&shout.remainingMs<=0)shout=null;
   const free=show.next?show.next.start-time:Infinity;
+  if(waitingParade&&!actor(waitingParade.from))waitingParade=null;
+  if(waitingParade&&!busy&&!shout&&usage.gate().nextAt<=time&&free>=rules.paradeClearance){
+   const who=waitingParade.from;waitingParade=null;beginParade(who);busy=true;
+  }
   if(shout?.paused&&!busy&&free>=shout.remainingMs){shout={...shout,start:time,seconds:shout.remainingMs/1000,paused:false};}
   while(!shout&&!busy&&free>=rules.shoutSeconds*1000&&queue.length){const next=queue.shift();if(actor(next.from))shout={...next,start:time,paused:false};}
  }
- function publicStatus(){const show=showState(),gate=usage.gate();return {showActive:Boolean(show.active),nextShowAt:show.next?.start??null,paradeSeconds:rules.paradeSeconds,paradeClearance:rules.paradeClearance,paradeActiveUntil:gate.activeUntil,paradeNextAt:gate.nextAt,shoutWaiting:queue.length,shoutActive:Boolean(shout&&!shout.paused)};}
+ function publicStatus(){const show=showState(),gate=usage.gate();return {paradeWaiting:Boolean(waitingParade),showActive:Boolean(show.active),nextShowAt:show.next?.start??null,paradeSeconds:rules.paradeSeconds,paradeClearance:rules.paradeClearance,paradeActiveUntil:gate.activeUntil,paradeNextAt:gate.nextAt,shoutWaiting:queue.length,shoutActive:Boolean(shout&&!shout.paused)};}
  function command(who,type,input={}){
   if(!input||typeof input!=='object'||Array.isArray(input))return {error:'요청 형식을 확인해 주세요.'};
   const sender=actor(who);if(!sender)return {error:'클럽에 다시 입장해 주세요.'};
@@ -84,11 +93,12 @@ export function clubActivities({actors,blockedMessage=()=>false,identity=id=>id,
    const gate=usage.gate();
    if(parade||gate.activeUntil>now())return {error:'퍼레이드가 진행 중입니다. 끝난 뒤 다시 이용해 주세요.'};
    if(gate.nextAt>now())return {error:'클럽 퍼레이드 준비 중 · '+Math.ceil((gate.nextAt-now())/1000)+'초 후 다시 이용해 주세요.',retryAfterMs:gate.nextAt-now()};
+   if(waitingParade)return {error:'퍼레이드 신청이 대기 중입니다. 출발 후 다시 이용해 주세요.'};
    const show=showState();
-   if(show.active||show.next&&show.next.start-now()<rules.paradeClearance)return {error:'정기 공연을 준비하거나 진행 중입니다. 공연 종료 후 다시 이용해 주세요.'};
-   if(shout&&!shout.paused)return {error:'외치기 표시가 끝난 뒤 다시 이용해 주세요.'};
-   remember();mark(who,'paradeUntil',rules.paradeCooldown);
-   parade={id:'parade-'+instanceId+'-'+ ++sequence,from:who,start:now(),seconds:rules.paradeSeconds,count:rules.paradeCount};usage.setGate({id:parade.id,activeUntil:now()+rules.paradeSeconds*1000,nextAt:now()+rules.paradeSeconds*1000+rules.paradeClubCooldown});usage.persist(now());return {ok:true};
+   if(show.active||show.next&&show.next.start-now()<rules.paradeClearance||shout&&!shout.paused){
+    remember();waitingParade={from:who};return {ok:true,queued:true};
+   }
+   remember();beginParade(who);return {ok:true};
   }
   if(type==='whisper-block'||type==='whisper-unblock'){
    if(!target||target.id===who)return {error:'차단할 상대를 선택해 주세요.'};
@@ -96,12 +106,12 @@ export function clubActivities({actors,blockedMessage=()=>false,identity=id=>id,
    if(type==='whisper-block')blocks.get(key(who)).add(key(target.id));else blocks.get(key(who)).delete(key(target.id));return {ok:true};
   }
   gifts.stop(who);for(let i=queue.length-1;i>=0;i--)if(queue[i].from===who)queue.splice(i,1);
-  if(shout?.from===who)shout=null;if(parade?.from===who)paradeEnd(now());advance();return {ok:true};
+  if(waitingParade?.from===who)waitingParade=null;if(shout?.from===who)shout=null;if(parade?.from===who)paradeEnd(now());advance();return {ok:true};
  }
  return {
   command,
   snapshot(){advance();for(const [id,g]of greetings)if(now()>=g.start+g.seconds*1000||!actor(g.from)||!actor(g.to))greetings.delete(id);return {greetings:[...greetings.values()].map(g=>({...g})),socialEvents:gifts.snapshot(),shout:shout&&!shout.paused?{...shout}:null,parade:parade?{...parade}:null,activityStatus:publicStatus()};},
   view(who){return {self:who,serverNow:now(),cooldowns:{...usage.get(key(who))},messages:messages.filter(m=>m.from===who||m.to===who).map(m=>({...m})),blockedIds:actors().filter(a=>blocked(who,a.id)).map(a=>a.id)};},
-  leave(who){gifts.stop(who);for(let i=queue.length-1;i>=0;i--)if(queue[i].from===who)queue.splice(i,1);if(parade?.from===who)paradeEnd(now());if(shout?.from===who)shout=null;},
+  leave(who){if(waitingParade?.from===who)waitingParade=null;gifts.stop(who);for(let i=queue.length-1;i>=0;i--)if(queue[i].from===who)queue.splice(i,1);if(parade?.from===who)paradeEnd(now());if(shout?.from===who)shout=null;},
  };
 }
