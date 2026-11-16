@@ -792,8 +792,18 @@ export function startLiveScene({
         target = new B.Vector3(a.x, a.y, a.z);
       if (a.id !== own || a.seat != null) {
         m.root.position = B.Vector3.Lerp(m.root.position, target, Math.min(1, dt / 90));
-        m.root.rotation.y = a.yaw;
+        const turn=Math.atan2(Math.sin(a.yaw-m.root.rotation.y),Math.cos(a.yaw-m.root.rotation.y));
+        m.root.rotation.y = a.action==='walk'?m.root.rotation.y+turn*(1-Math.exp(-Math.min(dt,100)/100)):a.yaw;
       }
+      // Drive walking from rendered travel, not the song clock. Keep phase
+      // continuous across network snapshots and ease down when movement stops.
+      const gait=m.walkGait??={x:m.root.position.x,z:m.root.position.z,phase:0,speed:0};
+      const travel=Math.hypot(m.root.position.x-gait.x,m.root.position.z-gait.z);
+      gait.x=m.root.position.x;gait.z=m.root.position.z;
+      const walking=a.action==='walk'&&travel<.6;
+      const speed=walking?Math.min(3.6,travel/Math.max(.001,dt/1000)):0;
+      gait.speed+=(speed-gait.speed)*(1-Math.exp(-Math.min(dt,100)/(walking?85:100)));
+      if(walking)gait.phase+=travel*Math.PI*2/1.65;
       if(!['pole-dance','podium-dance'].includes(a.action))releasePoleGrip(m);
       m.vipProps?.render(a,beats,calmBeats.matches);
       if(animateSeatDeparture(B,m,a,Date.now()+offset,calmBeats.matches)){m.showWand(wandVisible(a),true);detailed++;continue;}
@@ -864,6 +874,25 @@ export function startLiveScene({
           if(a.action==='hands-up')m.far.position.y=.79+.30*Math.max(0,Math.sin(phase));
           if(a.action==='shuffle-step')m.far.position.x=.15*Math.sin(phase);
         }
+        continue;
+      }
+      if(a.action==='walk'||a.action==='idle'&&gait.speed>.025){
+        const strength=Math.min(1,gait.speed/3),swing=Math.sin(gait.phase)*strength;
+        const ease=1-Math.exp(-Math.min(dt,100)/75);
+        const settle=(current,target)=>current+(target-current)*ease;
+        m.near.position.x=settle(m.near.position.x,.018*swing);
+        m.near.position.y=settle(m.near.position.y,.024*Math.abs(swing));
+        m.near.position.z=settle(m.near.position.z,0);
+        m.near.rotation.set(settle(m.near.rotation.x,0),settle(m.near.rotation.y,0),settle(m.near.rotation.z,.025*swing));
+        m.torso.rotation.set(settle(m.torso.rotation.x,.035*strength),settle(m.torso.rotation.y,-.035*swing),settle(m.torso.rotation.z,0));
+        m.limbs.forEach((joint,i)=>{
+          const arm=i%2===0,sign=i<2?-1:1;
+          joint.rotationQuaternion=null;joint.scaling.y=1;
+          joint.rotation.set(settle(joint.rotation.x,(arm?-.34:.51)*sign*swing),
+            settle(joint.rotation.y,0),settle(joint.rotation.z,arm?sign*.09:0));
+        });
+        m.far.position.x=0;m.far.position.y=.79+.024*Math.abs(swing);m.far.rotation.z=.025*swing;
+        if(articulated)detailed++;
         continue;
       }
       m.near.rotation.setAll(0);
