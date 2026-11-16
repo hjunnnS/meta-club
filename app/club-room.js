@@ -68,15 +68,16 @@ export class EdmRoom extends Room {
     this.dirty = false;
     if (localTest) {
       this.eventSequence = 0;
-      this.activities=clubActivities({actors:()=>[...this.members.values()],blockedMessage,usage:sharedActivityUsage,
+      this.activities=clubActivities({actors:()=>[...this.members.values(),...this.ai],blockedMessage,usage:sharedActivityUsage,
         performances:()=>{const scheduled=performanceStatus(this.epoch,Date.now(),playlist());return {...scheduled,active:scheduled.active||(this.stageEvent?{...this.stageEvent,seconds:effects[this.stageEvent.kind]?.seconds}:null)};},
         identity:id=>this.clients.find(c=>c.sessionId===id)?.userData?.identity||id});
       this.activitiesState=()=>{for(const c of this.clients)if(c.userData?.identity?.startsWith('local-test:'))c.send('activities-state',this.activities.view(c.sessionId));};
       this.onMessage('activities-state',client=>{if(this.member(client)&&client.userData.identity.startsWith('local-test:'))client.send('activities-state',this.activities.view(client.sessionId));});
       for(const kind of activityCommands)this.onMessage(kind,(client,input)=>{
         if(!this.member(client)||!client.userData.identity.startsWith('local-test:'))return;
-        if(input?.to&&!this.clients.some(c=>c.sessionId===input.to&&c.userData?.identity?.startsWith('local-test:')))return this.notice(client,'같은 클럽의 시험 회원을 선택해 주세요.');
-        const result=this.activities.command(client.sessionId,kind,{...input,simulated:false});
+        const aiTarget=this.ai.find(a=>a.id===input?.to);
+        if(input?.to&&!aiTarget&&!this.clients.some(c=>c.sessionId===input.to&&c.userData?.identity?.startsWith('local-test:')))return this.notice(client,'같은 클럽의 방문객을 선택해 주세요.');
+        const result=this.activities.command(client.sessionId,kind,{...input,simulated:Boolean(aiTarget)});
         if(result.error)this.notice(client,result.error);
         client.send('activities-result',{kind,...result});
         if(result.notification)this.clients.find(c=>c.sessionId===result.notification.to)?.send('whisper-notification',result.notification);
@@ -285,7 +286,7 @@ export class EdmRoom extends Room {
     const before = new Set(this.ai.map((a) => a.id));
     const elapsed = (Date.now() - this.epoch) / 1000;
     for (let i = 0; i < 3; i++) {
-      if (!this.train.riders.has(this.ai[i].id)) this.ai[i] = background(i, elapsed);
+      if (!this.train.riders.has(this.ai[i].id)) this.ai[i] = {...background(i, elapsed),id:'ai-background-'+i};
     }
     const extra = Math.min(extraGuestPlaces.length, extraVisitors, capacity - this.members.size);
     this.ai.length = 5 + extra;

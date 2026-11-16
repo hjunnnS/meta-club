@@ -138,7 +138,7 @@ export function startLiveScene({
     glow.isEnabled = !low;
     engine.setHardwareScalingLevel(low ? 1.5 : 1);
   }
-  let actionPicking=false,actionTrial=false,chatActive=false;
+  let actionPicking=false,chatActive=false;
   let wandPreview=null,characterPreview=null;
   const wandVisible=a=>Boolean(a.danceProp!=='fan'&&(a.wand||a.id===own&&wandPreview)&&(a.id===own||otherWands));
   let states = ['CLOSED', 'CLOSED'],
@@ -194,7 +194,6 @@ export function startLiveScene({
     greetings.set(greetingEvents,self);
     activitiesRenderer.set({shout,parade});
     social.set(socialEvents);
-    actionTrial=personalTrial;
     if(nextPerformance?.id==='scheduled-0'&&nextPerformance.kind==='laser')firstLaserAt=nextPerformance.start;
     if(movingPreview||activePeripheralPreview())stageEvents.stop();else stageEvents.set(stageEvent);
     if (zones) states = zones;
@@ -513,9 +512,6 @@ export function startLiveScene({
     const targetBounds=canvas.getBoundingClientRect();
     const selectedActor=actionTarget(e.clientX-targetBounds.left,e.clientY-targetBounds.top);
     if(selectedActor){
-      if(models.get(selectedActor)?.actor.ai&&!actionTrial){
-        send('gate-notice','AI 손님에게는 귓속말을 보낼 수 없습니다. 함께 접속한 실제 방문객을 선택해 주세요.');return;
-      }
       actionPicking=false;cancelWalk();canvas.style.cursor='grab';send('action-target',{id:selectedActor,x:(e.clientX-targetBounds.left)/targetBounds.width,y:(e.clientY-targetBounds.top)/targetBounds.height});return;
     }
     if(actionPicking){send('gate-notice','대상 선택 중입니다. 캐릭터를 클릭하거나 사용자 목록을 이용하세요.');return;}

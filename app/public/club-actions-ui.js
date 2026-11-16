@@ -30,7 +30,7 @@ export function clubActionsUI({root,dialog,shoutRoot,vipRoot,alertButton,send,fr
   }
   function renderConversation(){
     const actor=target(peer);dialog.querySelector('[data-whisper-title]').textContent=(actor?.nickname||'상대')+' · 귓속말';
-    dialog.querySelector('[data-whisper-mode]').textContent=personal?'개인 체험 · 실제 접속자와 연결되지 않습니다.':'같은 클럽의 상대에게만 전달됩니다.';
+    dialog.querySelector('[data-whisper-mode]').textContent=actor?.ai?'AI 손님 대상 체험 · 보낸 기록이 표시됩니다. 자동 답장은 없습니다.':personal?'개인 체험 · 실제 접속자와 연결되지 않습니다.':'같은 클럽의 상대에게만 전달됩니다.';
     const signature=JSON.stringify({peer,m:privateState.messages,b:privateState.blockedIds});
     if(conversation.dataset.signature!==signature){
       conversation.dataset.signature=signature;conversation.replaceChildren();
@@ -94,7 +94,7 @@ export function clubActionsUI({root,dialog,shoutRoot,vipRoot,alertButton,send,fr
     update(snapshot,available){
       enabled=Boolean(available);root.hidden=shoutRoot.hidden=vipRoot.hidden=!enabled;self=snapshot?.self||self;personal=Boolean(snapshot?.personalTrial);
       if(!enabled){resetPick();root.open=false;dialog.close();alertButton.hidden=true;return;}
-      roster=(snapshot.actors||[]).filter(a=>a.id!==self&&(personal||!a.ai));
+      roster=(snapshot.actors||[]).filter(a=>a.id!==self);
       const nextKey=JSON.stringify(roster.map(a=>[a.id,a.nickname,a.avatar]));
       if(key!==nextKey){key=nextKey;list.replaceChildren(new Option('사용자 목록에서 선택',''));
         for(const a of roster)list.append(new Option(a.nickname+(a.ai?' · 체험 손님':''),a.id));
