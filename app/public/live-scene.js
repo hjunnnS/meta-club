@@ -461,6 +461,12 @@ export function startLiveScene({
     lookId = null;
   };
   let seatTap = null,hoverAt=0;
+  function destinationAt(clientX,clientY){
+    const rect=canvas.getBoundingClientRect(),scaling=engine.getHardwareScalingLevel();
+    // Match actionTarget: scene.pick divides input coordinates by hardware scaling.
+    return pickDestination((clientX-rect.left)*engine.getRenderWidth()*scaling/rect.width,
+      (clientY-rect.top)*engine.getRenderHeight()*scaling/rect.height);
+  }
   function actionTarget(x,y){
     const candidates=new Map();
     for(const [id,model] of models)if(id!==own)
@@ -492,7 +498,7 @@ export function startLiveScene({
       const id=actionTarget(e.clientX-r.left,e.clientY-r.top);
       canvas.style.cursor=id?'pointer':'crosshair';canvas.title=id?models.get(id).actor.nickname+' · 행동 메뉴 열기':'선택할 캐릭터를 클릭하세요.';return;
     }
-    const hit=pickDestination((e.clientX-r.left)*engine.getRenderWidth()/r.width,(e.clientY-r.top)*engine.getRenderHeight()/r.height);
+    const hit=destinationAt(e.clientX,e.clientY);
     const selection=pickedSeat(hit),index=selection?.index??-1;
     const can=index>=0&&activeSeat===null&&!riding&&!speakerCamera&&connected&&!gameActive;
     const pole=pickedPole(hit),canPole=Boolean(pole)&&activeSeat===null&&!riding&&!speakerCamera&&connected&&!gameActive;
@@ -517,9 +523,7 @@ export function startLiveScene({
     if(actionPicking){send('gate-notice','대상 선택 중입니다. 캐릭터를 클릭하거나 사용자 목록을 이용하세요.');return;}
     if(activeSeat!==null||riding||speakerCamera||preview)return;
     if(poleApproaching){poleApproaching=false;poleApproach=null;cancelWalk();send('podium-cancel');}
-    const bounds=canvas.getBoundingClientRect();
-    const hit=pickDestination((e.clientX-bounds.left)*engine.getRenderWidth()/bounds.width,
-      (e.clientY-bounds.top)*engine.getRenderHeight()/bounds.height);
+    const hit=destinationAt(e.clientX,e.clientY);
     if(!hit?.hit)return;
     const point=hit.pickedPoint,names=[hit.pickedMesh.name,hit.pickedMesh.parent?.name];
     const pole=pickedPole(hit);
@@ -546,6 +550,14 @@ export function startLiveScene({
         const side=upper.x>0?1:-1,descent=edmStairRoute({x:0,y:0,z:0},side).reverse();
         route.push(...edmUpperRoute(upper,descent[0]),...descent,goal);
       }
+      const advance=()=>{const next=route.shift();if(!next){arrived?.();return;}if(!navigate(next,advance,permit))failed();};
+      advance();
+    }else if(selected>=0&&edmSeats[selected].table){
+      // Ground tables share the open aisle inside the return stairs. A single
+      // long search toward the wall can exhaust its budget detouring around
+      // the closed stair footprint. Approach along the known clear aisle first;
+      // navigate still checks every segment's furniture clearance and gates.
+      const route=[{x:14.8,y:0,z:cam.position.z},{x:14.8,y:0,z:goal.z},goal];
       const advance=()=>{const next=route.shift();if(!next){arrived?.();return;}if(!navigate(next,advance,permit))failed();};
       advance();
     }else if(!navigate(goal,arrived,permit))failed();
