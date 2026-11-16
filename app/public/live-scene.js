@@ -464,10 +464,13 @@ export function startLiveScene({
   let seatTap = null,hoverAt=0;
   function actionTarget(x,y){
     const candidates=new Map();
-    for(const [id,model] of models)if(id!==own&&(!model.actor.ai||actionTrial))
+    for(const [id,model] of models)if(id!==own)
       for(const mesh of model.root.getChildMeshes())candidates.set(mesh,id);
     const rect=canvas.getBoundingClientRect();
-    const hit=scene.pick(x*engine.getRenderWidth()/rect.width,y*engine.getRenderHeight()/rect.height,mesh=>mesh.isEnabled()&&mesh.isVisible&&
+    // Babylon applies hardware scaling inside scene.pick. Supply input pixels,
+    // compensating once so low-quality rendering still hits the visible actor.
+    const scaling=engine.getHardwareScalingLevel();
+    const hit=scene.pick(x*engine.getRenderWidth()*scaling/rect.width,y*engine.getRenderHeight()*scaling/rect.height,mesh=>mesh.isEnabled()&&mesh.isVisible&&
       (candidates.has(mesh)||mesh.checkCollisions||mesh.name.startsWith('wall/')));
     return hit?.hit?candidates.get(hit.pickedMesh):null;
   }
@@ -509,7 +512,12 @@ export function startLiveScene({
     if(!tap||tap.id!==e.pointerId||tap.drag||!connected||gameActive||chatActive)return;
     const targetBounds=canvas.getBoundingClientRect();
     const selectedActor=actionTarget(e.clientX-targetBounds.left,e.clientY-targetBounds.top);
-    if(selectedActor){actionPicking=false;cancelWalk();canvas.style.cursor='grab';send('action-target',{id:selectedActor,x:(e.clientX-targetBounds.left)/targetBounds.width,y:(e.clientY-targetBounds.top)/targetBounds.height});return;}
+    if(selectedActor){
+      if(models.get(selectedActor)?.actor.ai&&!actionTrial){
+        send('gate-notice','AI 손님에게는 귓속말을 보낼 수 없습니다. 함께 접속한 실제 방문객을 선택해 주세요.');return;
+      }
+      actionPicking=false;cancelWalk();canvas.style.cursor='grab';send('action-target',{id:selectedActor,x:(e.clientX-targetBounds.left)/targetBounds.width,y:(e.clientY-targetBounds.top)/targetBounds.height});return;
+    }
     if(actionPicking){send('gate-notice','대상 선택 중입니다. 캐릭터를 클릭하거나 사용자 목록을 이용하세요.');return;}
     if(activeSeat!==null||riding||speakerCamera||preview)return;
     if(poleApproaching){poleApproaching=false;poleApproach=null;cancelWalk();send('podium-cancel');}
