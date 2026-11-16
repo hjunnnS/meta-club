@@ -43,7 +43,12 @@ async function cycle(){
   restarting=false;let origin=null;
   tunnel=spawn(cloudflared,['tunnel','--no-autoupdate','--url','http://127.0.0.1:'+port,'--protocol','http2','--metrics','127.0.0.1:18822'],{stdio:['ignore','pipe','pipe']});
   const receive=data=>{
-   const text=data.toString();log(text.trim());const found=text.match(/https:\/\/[a-z0-9-]+\.trycloudflare\.com/);
+   const text=data.toString();log(text.trim());
+   if(text.includes('Unauthorized: Tunnel not found')){
+    log('Temporary tunnel registration expired; recreating the public connection');
+    tunnel.kill('SIGTERM');return;
+   }
+   const found=text.match(/https:\/\/[a-z0-9-]+\.trycloudflare\.com/);
    if(found&&!origin){origin=found[0];guide(origin);startServer(origin);}
   };
   tunnel.stdout.on('data',receive);tunnel.stderr.on('data',receive);tunnel.on('error',error=>log('Tunnel error: '+error.message));
