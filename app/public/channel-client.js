@@ -32,7 +32,7 @@ function beginSharedOpening(m){
     frame('visual-track',m.tracks[0].id);
     el('music').disabled=false;
     const started=await music.start({automatic:true});
-    if(!started&&!music.status().playing){showMusic(null);note('음악 시작을 눌러 소리를 켜세요.','music-start');}
+    if(!started&&!music.status().playing){showMusic(null);note('화면을 한 번 클릭하거나 음악 시작을 눌러 소리를 켜세요.','music-start');}
   },delay);
 }
 function showMusic(id) {
@@ -47,6 +47,15 @@ const music = musicPlayer(
   id => { showMusic(id); guide('music'); },
   reason => { showMusic(null); firstVisitFailure(reason); },
 );
+// Resume audio inside a real user gesture, including menu clicks. Browsers may
+// block the unattended opening attempt after navigation to a new tunnel origin.
+function resumeMusicOnGesture(event){
+  if(event.isTrusted&&ready&&!audibleTrack&&!el('music').disabled){
+    music.start();room?.send('clock',Date.now());
+  }
+}
+document.addEventListener('pointerdown',resumeMusicOnGesture,{capture:true});
+document.addEventListener('keydown',resumeMusicOnGesture,{capture:true});
 let visitOrigin;
 let needsPlace = true,
   room,
@@ -341,7 +350,10 @@ window.addEventListener('message', (event) => {
     if(observe==='speakers')frame('speaker-view');
     if(['bartender','dj'].includes(observe))frame('staff-view',observe);
     const floor = map.contentDocument?.querySelector('canvas');
-    floor?.addEventListener('pointerdown', () => el('music').click(), { once: true });
+    floor?.removeEventListener('pointerdown',resumeMusicOnGesture);
+    floor?.addEventListener('pointerdown',resumeMusicOnGesture);
+    floor?.removeEventListener('keydown',resumeMusicOnGesture);
+    floor?.addEventListener('keydown',resumeMusicOnGesture);
     el('event-controls').hidden = !memberId?.startsWith('local-test:');
     el('particle-tests').hidden = !memberId?.startsWith('local-test:');
     if (memberId?.startsWith('local-test:')&&!sharedTrialSession) shop.channel(room.roomId, memberId);
