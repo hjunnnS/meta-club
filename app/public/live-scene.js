@@ -191,7 +191,7 @@ export function startLiveScene({
   const wandGuest = 'ai-3';
   let responders = [];
   function onSnapshot({ actors, self, zones, stageEvent, nextPerformance, personalTrial=false, socialEvents=[],greetings:greetingEvents=[],shout=null,parade=null }) {
-    greetings.set(greetingEvents);
+    greetings.set(greetingEvents,self);
     activitiesRenderer.set({shout,parade});
     social.set(socialEvents);
     actionTrial=personalTrial;

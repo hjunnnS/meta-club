@@ -61,6 +61,7 @@ client=(ROOT/'app/public/channel-client.js').read_text()
 client=client.replace("import { initShop } from './shop.js';","import {PersonalRoom} from './local-room.js';\nimport {automaticOpening} from './auto-opening.js';\nconst initShop=()=>({channel(){}});")
 a=client.index('async function list()');b=client.index("window.addEventListener('message'",a)
 client=client[:a]+'''async function list(){
+ showClubPeople(1,true);
  const select=el('channels');select.replaceChildren(new Option('개인 체험','personal'));select.value='personal';
 }
 async function enter(){
