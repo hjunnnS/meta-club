@@ -1,0 +1,14 @@
+FROM node:24-bookworm-slim
+WORKDIR /srv/club
+COPY app/package.json app/package-lock.json ./app/
+RUN cd app && npm ci --omit=dev
+# Only the two existing browser engines are needed; do not install benchmark browsers.
+RUN npm install --prefix /srv/club/dance --no-save --package-lock=false --ignore-scripts babylonjs@9.35.0 babylonjs-loaders@9.35.0
+COPY app ./app
+COPY stage/festival ./stage/festival
+RUN mkdir -p /data && chown -R node:node /data
+ENV NODE_ENV=production CLUB_SHARED_TRIAL=1 CLUB_SHARED_TRIAL_AUTO_ENTRY=1 CLUB_LOCAL_TEST=0 CLUB_DB=/data/club.sqlite PORT=3000
+USER node
+WORKDIR /srv/club/app
+EXPOSE 3000
+CMD ["node", "shared-server.mjs"]

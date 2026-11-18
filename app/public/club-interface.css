@@ -114,3 +114,9 @@
 .play-interface .play-menu[open]>summary::after{content:'';position:absolute;bottom:3px;left:calc(50% - 9px);width:18px;height:2px;border-radius:2px;background:#b9f4e7}
 .play-interface .play-menu[open]>summary .dock-icon{color:#b9f4e7}
 @media(prefers-reduced-motion:reduce){.play-interface .play-menu>summary,.play-interface .rhythm-shortcut{transition:none}}
+/* Optional table activity, independent of all stage rendering. */
+.table-match-quick{position:absolute;right:16px;bottom:18px;z-index:12;background:#282031;color:#f4edff;border:1px solid #655579;border-radius:12px;padding:10px 14px;cursor:pointer}
+.table-match-panel{position:absolute;right:16px;top:64px;z-index:18;width:min(370px,calc(100vw - 32px));max-height:calc(100% - 96px);overflow:auto;padding:16px;background:#171320f5;border:1px solid #655579;border-radius:16px;color:#f4edff;font-size:13px}
+.table-match-panel[hidden],.table-match-quick[hidden]{display:none}
+.table-match-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}.table-match-panel p{line-height:1.6;margin:10px 0}
+.table-match-panel button{background:#332a43;border:1px solid #655579;color:#f4edff;border-radius:9px;padding:9px 12px;margin:4px 5px 4px 0;cursor:pointer}.table-match-panel button[aria-pressed=true]{border-color:#b9f4e7;color:#b9f4e7}.table-match-panel button:disabled{opacity:.45;cursor:default}.table-match-panel output{display:block;color:#f5a6ce;line-height:1.5}.table-match-panel svg{display:block;width:100%;height:auto}

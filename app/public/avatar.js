@@ -337,9 +337,12 @@ export function playerView(B, scene, cam, canvas, eyeHeight, controls, { followD
     if (scene.activeCamera !== cam) cam.update();
     if (!model) return;
     if (!fixed) {
+      const travel=Math.hypot(model.root.position.x-cam.position.x,model.root.position.z-cam.position.z);
       model.root.position.copyFrom(cam.position);
       model.root.position.y -= eyeHeight;
-      model.root.rotation.y = cam.rotation.y;
+      const turning=travel>.0001||model.actor.action==='walk';
+      const angle=Math.atan2(Math.sin(cam.rotation.y-model.root.rotation.y),Math.cos(cam.rotation.y-model.root.rotation.y));
+      model.root.rotation.y = turning?model.root.rotation.y+angle*(1-Math.exp(-Math.min(scene.getEngine().getDeltaTime(),100)/100)):cam.rotation.y;
     } else if (!thirdPerson) {
       seatedEye.rotation.copyFrom(cam.rotation);
       seatedEye.position.copyFrom(model.root.position);

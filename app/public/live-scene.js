@@ -138,7 +138,7 @@ export function startLiveScene({
     glow.isEnabled = !low;
     engine.setHardwareScalingLevel(low ? 1.5 : 1);
   }
-  let actionPicking=false,actionTrial=false,chatActive=false;
+  let actionPicking=false,chatActive=false;
   let wandPreview=null,characterPreview=null;
   const wandVisible=a=>Boolean(a.danceProp!=='fan'&&(a.wand||a.id===own&&wandPreview)&&(a.id===own||otherWands));
   let states = ['CLOSED', 'CLOSED'],
@@ -194,7 +194,6 @@ export function startLiveScene({
     greetings.set(greetingEvents,self);
     activitiesRenderer.set({shout,parade});
     social.set(socialEvents);
-    actionTrial=personalTrial;
     if(nextPerformance?.id==='scheduled-0'&&nextPerformance.kind==='laser')firstLaserAt=nextPerformance.start;
     if(movingPreview||activePeripheralPreview())stageEvents.stop();else stageEvents.set(stageEvent);
     if (zones) states = zones;
@@ -462,12 +461,21 @@ export function startLiveScene({
     lookId = null;
   };
   let seatTap = null,hoverAt=0;
+  function destinationAt(clientX,clientY){
+    const rect=canvas.getBoundingClientRect(),scaling=engine.getHardwareScalingLevel();
+    // Match actionTarget: scene.pick divides input coordinates by hardware scaling.
+    return pickDestination((clientX-rect.left)*engine.getRenderWidth()*scaling/rect.width,
+      (clientY-rect.top)*engine.getRenderHeight()*scaling/rect.height);
+  }
   function actionTarget(x,y){
     const candidates=new Map();
-    for(const [id,model] of models)if(id!==own&&(!model.actor.ai||actionTrial))
+    for(const [id,model] of models)if(id!==own)
       for(const mesh of model.root.getChildMeshes())candidates.set(mesh,id);
     const rect=canvas.getBoundingClientRect();
-    const hit=scene.pick(x*engine.getRenderWidth()/rect.width,y*engine.getRenderHeight()/rect.height,mesh=>mesh.isEnabled()&&mesh.isVisible&&
+    // Babylon applies hardware scaling inside scene.pick. Supply input pixels,
+    // compensating once so low-quality rendering still hits the visible actor.
+    const scaling=engine.getHardwareScalingLevel();
+    const hit=scene.pick(x*engine.getRenderWidth()*scaling/rect.width,y*engine.getRenderHeight()*scaling/rect.height,mesh=>mesh.isEnabled()&&mesh.isVisible&&
       (candidates.has(mesh)||mesh.checkCollisions||mesh.name.startsWith('wall/')));
     return hit?.hit?candidates.get(hit.pickedMesh):null;
   }
@@ -490,7 +498,7 @@ export function startLiveScene({
       const id=actionTarget(e.clientX-r.left,e.clientY-r.top);
       canvas.style.cursor=id?'pointer':'crosshair';canvas.title=id?models.get(id).actor.nickname+' · 행동 메뉴 열기':'선택할 캐릭터를 클릭하세요.';return;
     }
-    const hit=pickDestination((e.clientX-r.left)*engine.getRenderWidth()/r.width,(e.clientY-r.top)*engine.getRenderHeight()/r.height);
+    const hit=destinationAt(e.clientX,e.clientY);
     const selection=pickedSeat(hit),index=selection?.index??-1;
     const can=index>=0&&activeSeat===null&&!riding&&!speakerCamera&&connected&&!gameActive;
     const pole=pickedPole(hit),canPole=Boolean(pole)&&activeSeat===null&&!riding&&!speakerCamera&&connected&&!gameActive;
@@ -509,13 +517,13 @@ export function startLiveScene({
     if(!tap||tap.id!==e.pointerId||tap.drag||!connected||gameActive||chatActive)return;
     const targetBounds=canvas.getBoundingClientRect();
     const selectedActor=actionTarget(e.clientX-targetBounds.left,e.clientY-targetBounds.top);
-    if(selectedActor){actionPicking=false;cancelWalk();canvas.style.cursor='grab';send('action-target',{id:selectedActor,x:(e.clientX-targetBounds.left)/targetBounds.width,y:(e.clientY-targetBounds.top)/targetBounds.height});return;}
+    if(selectedActor){
+      actionPicking=false;cancelWalk();canvas.style.cursor='grab';send('action-target',{id:selectedActor,x:(e.clientX-targetBounds.left)/targetBounds.width,y:(e.clientY-targetBounds.top)/targetBounds.height});return;
+    }
     if(actionPicking){send('gate-notice','대상 선택 중입니다. 캐릭터를 클릭하거나 사용자 목록을 이용하세요.');return;}
     if(activeSeat!==null||riding||speakerCamera||preview)return;
     if(poleApproaching){poleApproaching=false;poleApproach=null;cancelWalk();send('podium-cancel');}
-    const bounds=canvas.getBoundingClientRect();
-    const hit=pickDestination((e.clientX-bounds.left)*engine.getRenderWidth()/bounds.width,
-      (e.clientY-bounds.top)*engine.getRenderHeight()/bounds.height);
+    const hit=destinationAt(e.clientX,e.clientY);
     if(!hit?.hit)return;
     const point=hit.pickedPoint,names=[hit.pickedMesh.name,hit.pickedMesh.parent?.name];
     const pole=pickedPole(hit);
@@ -542,6 +550,14 @@ export function startLiveScene({
         const side=upper.x>0?1:-1,descent=edmStairRoute({x:0,y:0,z:0},side).reverse();
         route.push(...edmUpperRoute(upper,descent[0]),...descent,goal);
       }
+      const advance=()=>{const next=route.shift();if(!next){arrived?.();return;}if(!navigate(next,advance,permit))failed();};
+      advance();
+    }else if(selected>=0&&edmSeats[selected].table){
+      // Ground tables share the open aisle inside the return stairs. A single
+      // long search toward the wall can exhaust its budget detouring around
+      // the closed stair footprint. Approach along the known clear aisle first;
+      // navigate still checks every segment's furniture clearance and gates.
+      const route=[{x:14.8,y:0,z:cam.position.z},{x:14.8,y:0,z:goal.z},goal];
       const advance=()=>{const next=route.shift();if(!next){arrived?.();return;}if(!navigate(next,advance,permit))failed();};
       advance();
     }else if(!navigate(goal,arrived,permit))failed();
@@ -776,8 +792,18 @@ export function startLiveScene({
         target = new B.Vector3(a.x, a.y, a.z);
       if (a.id !== own || a.seat != null) {
         m.root.position = B.Vector3.Lerp(m.root.position, target, Math.min(1, dt / 90));
-        m.root.rotation.y = a.yaw;
+        const turn=Math.atan2(Math.sin(a.yaw-m.root.rotation.y),Math.cos(a.yaw-m.root.rotation.y));
+        m.root.rotation.y = a.action==='walk'?m.root.rotation.y+turn*(1-Math.exp(-Math.min(dt,100)/100)):a.yaw;
       }
+      // Drive walking from rendered travel, not the song clock. Keep phase
+      // continuous across network snapshots and ease down when movement stops.
+      const gait=m.walkGait??={x:m.root.position.x,z:m.root.position.z,phase:0,speed:0};
+      const travel=Math.hypot(m.root.position.x-gait.x,m.root.position.z-gait.z);
+      gait.x=m.root.position.x;gait.z=m.root.position.z;
+      const walking=a.action==='walk'&&travel<.6;
+      const speed=walking?Math.min(3.6,travel/Math.max(.001,dt/1000)):0;
+      gait.speed+=(speed-gait.speed)*(1-Math.exp(-Math.min(dt,100)/(walking?85:100)));
+      if(walking)gait.phase+=travel*Math.PI*2/1.65;
       if(!['pole-dance','podium-dance'].includes(a.action))releasePoleGrip(m);
       m.vipProps?.render(a,beats,calmBeats.matches);
       if(animateSeatDeparture(B,m,a,Date.now()+offset,calmBeats.matches)){m.showWand(wandVisible(a),true);detailed++;continue;}
@@ -848,6 +874,25 @@ export function startLiveScene({
           if(a.action==='hands-up')m.far.position.y=.79+.30*Math.max(0,Math.sin(phase));
           if(a.action==='shuffle-step')m.far.position.x=.15*Math.sin(phase);
         }
+        continue;
+      }
+      if(a.action==='walk'||a.action==='idle'&&gait.speed>.025){
+        const strength=Math.min(1,gait.speed/3),swing=Math.sin(gait.phase)*strength;
+        const ease=1-Math.exp(-Math.min(dt,100)/75);
+        const settle=(current,target)=>current+(target-current)*ease;
+        m.near.position.x=settle(m.near.position.x,.018*swing);
+        m.near.position.y=settle(m.near.position.y,.024*Math.abs(swing));
+        m.near.position.z=settle(m.near.position.z,0);
+        m.near.rotation.set(settle(m.near.rotation.x,0),settle(m.near.rotation.y,0),settle(m.near.rotation.z,.025*swing));
+        m.torso.rotation.set(settle(m.torso.rotation.x,.035*strength),settle(m.torso.rotation.y,-.035*swing),settle(m.torso.rotation.z,0));
+        m.limbs.forEach((joint,i)=>{
+          const arm=i%2===0,sign=i<2?-1:1;
+          joint.rotationQuaternion=null;joint.scaling.y=1;
+          joint.rotation.set(settle(joint.rotation.x,(arm?-.34:.51)*sign*swing),
+            settle(joint.rotation.y,0),settle(joint.rotation.z,arm?sign*.09:0));
+        });
+        m.far.position.x=0;m.far.position.y=.79+.024*Math.abs(swing);m.far.rotation.z=.025*swing;
+        if(articulated)detailed++;
         continue;
       }
       m.near.rotation.setAll(0);

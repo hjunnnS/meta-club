@@ -1,4 +1,5 @@
 import {clubInterface} from './club-interface.js';
+import {tableMatchUI} from './table-match-ui.js';
 import {vipPersonalUI} from './vip-personal-ui.js';
 import {characterCustomization} from './character-customization.js';
 import {clubActionsUI} from './club-actions-ui.js';
@@ -13,6 +14,29 @@ const el = (id) => document.getElementById(id),
 let rhythm,interfaceUI;
 let audibleTrack = null;
 let loginRequired = false;
+let sharedTrialSession=false;
+let tableGame;
+let openingKey=null,openingTimer=null;
+function beginSharedOpening(m){
+  if(!sharedTrialSession||!ready||!m.tracks?.length)return;
+  const key=room.roomId+':'+m.epoch;
+  if(openingKey===key)return;
+  openingKey=key;clearTimeout(openingTimer);
+  const delay=Math.max(0,m.epoch-m.now);
+  frame('visual-track',null);
+  if(delay>0){
+    frame('opening-countdown',{endsAt:Date.now()+delay,seconds:3});
+    el('music').disabled=true;el('music').textContent='3·2·1 준비 중';
+  }
+  openingTimer=setTimeout(async()=>{
+    if(!room||openingKey!==key)return;
+    frame('opening-countdown',null);
+    frame('visual-track',m.tracks[0].id);
+    el('music').disabled=false;
+    const started=await music.start({automatic:true});
+    if(!started&&!music.status().playing){showMusic(null);note('화면을 한 번 클릭하거나 음악 시작을 눌러 소리를 켜세요.','music-start');}
+  },delay);
+}
 function showMusic(id) {
   audibleTrack = id;
   el('music').textContent = id ? '음악 재생 중' : '음악 시작';
@@ -25,6 +49,15 @@ const music = musicPlayer(
   id => { showMusic(id); guide('music'); },
   reason => { showMusic(null); firstVisitFailure(reason); },
 );
+// Resume audio inside a real user gesture, including menu clicks. Browsers may
+// block the unattended opening attempt after navigation to a new tunnel origin.
+function resumeMusicOnGesture(event){
+  if(event.isTrusted&&ready&&!audibleTrack&&!el('music').disabled){
+    music.start();room?.send('clock',Date.now());
+  }
+}
+document.addEventListener('pointerdown',resumeMusicOnGesture,{capture:true});
+document.addEventListener('keydown',resumeMusicOnGesture,{capture:true});
 let visitOrigin;
 let needsPlace = true,
   room,
@@ -151,6 +184,8 @@ function disconnected(message, reconnect) {
   el('event-controls').hidden = true;
   el('particle-tests').hidden = true;
   music.reset();
+  tableGame?.update({available:false,game:null});
+  clearTimeout(openingTimer);openingKey=null;
   room = undefined;
   snapshot = null;
   ready = false;
@@ -204,6 +239,7 @@ async function enter(channelId) {
   const old = room;
   try {
     const session = await (await fetch('/api/session')).json();
+    sharedTrialSession=session.sharedTrial===true;
     if (memberId && memberId !== session.user?.id)
       throw Error('로그인 세션이 바뀌었습니다. 로비에서 다시 입장해 주세요.');
     memberId = session.user?.id;
@@ -233,6 +269,8 @@ async function enter(channelId) {
     const next = await new Colyseus.Client('wss://' + location.host).consumeSeatReservation(a.seat);
     shop.channel(null);
     room = next;
+    next.onMessage('table-game-state',data=>{if(room===next)tableGame?.update(data);});
+    next.onMessage('table-game-result',data=>{if(room===next)tableGame?.result(data);});
     el('retry').hidden = true;
     ready = false;
     needsPlace = true;
@@ -256,11 +294,13 @@ async function enter(channelId) {
     next.onMessage('activities-state',m=>{if(room===next)activities.state(m);});
     next.onMessage('activities-result',m=>{if(room===next){activities.result(m);if(m.ok)note('');}});
     next.onMessage('whisper-notification',m=>{if(room===next)activities.notification(m);});
+    next.onMessage('character-style-result',m=>{if(room===next)characterStyles.saved(m);});
     next.onMessage('notice', note);
     next.onMessage('clock', (m) => {
       if (room === next) {
         music.clock(m);
         if (ready) frame('clock', { offset: m.now - (Date.now() + m.sent) / 2, epoch: m.epoch, tracks: m.tracks });
+        beginSharedOpening(m);
       }
     });
     next.onLeave((code) => {
@@ -271,6 +311,7 @@ async function enter(channelId) {
         );
     });
     next.send('occupancy');
+    next.send('table-game-state');
     next.send('snapshot');
     next.send('clock', Date.now());
     if (!sceneLoaded) map.src = '/stage/festival/index.html?live';
@@ -278,7 +319,7 @@ async function enter(channelId) {
       ready = true;frame('connection-state', true);
       el('event-controls').hidden = !memberId?.startsWith('local-test:');
       el('particle-tests').hidden = !memberId?.startsWith('local-test:');
-      if (memberId?.startsWith('local-test:')) shop.channel(room.roomId, memberId);
+      if (memberId?.startsWith('local-test:')&&!sharedTrialSession) shop.channel(room.roomId, memberId);
     }
     map.hidden = false;
     el('guide-guest').hidden = Boolean(memberId);
@@ -316,10 +357,14 @@ window.addEventListener('message', (event) => {
     if(observe==='speakers')frame('speaker-view');
     if(['bartender','dj'].includes(observe))frame('staff-view',observe);
     const floor = map.contentDocument?.querySelector('canvas');
-    floor?.addEventListener('pointerdown', () => el('music').click(), { once: true });
+    floor?.removeEventListener('pointerdown',resumeMusicOnGesture);
+    floor?.addEventListener('pointerdown',resumeMusicOnGesture);
+    floor?.removeEventListener('keydown',resumeMusicOnGesture);
+    floor?.addEventListener('keydown',resumeMusicOnGesture);
     el('event-controls').hidden = !memberId?.startsWith('local-test:');
     el('particle-tests').hidden = !memberId?.startsWith('local-test:');
-    if (memberId?.startsWith('local-test:')) shop.channel(room.roomId, memberId);
+    if (memberId?.startsWith('local-test:')&&!sharedTrialSession) shop.channel(room.roomId, memberId);
+    if(sharedTrialSession)room.send('music-ready');
     room.send('snapshot');
     room.send('clock', Date.now());
     if (snapshot) display(snapshot);
@@ -453,4 +498,5 @@ setInterval(() => { if (ready && !document.hidden) {
   frame('music-output-clock',{playing:status.playing,id:status.track?.id,time:status.time,sentAt:Date.now()});
 } }, 50);
 interfaceUI=clubInterface();
+tableGame=tableMatchUI(data=>room?.send('table-game',data));
 enter(new URLSearchParams(location.search).get('channel') || undefined);

@@ -6,6 +6,7 @@ import {requestPodium,validPodiumArrival,beginPodium,clearPodium} from './podium
 import { DanceTrain, onTrainFloor } from './dance-train.js';
 import { effects } from '../stage/festival/events.js';
 import { localTest } from './local-test.js';
+import { sharedTrial, sharedAutoEntry } from './shared-trial.js';
 import { ManagedChannelZones } from './managed-channel-zones.js';
 import { edmArea, permittedPath, edmSeats as seats, nearbyEdmSeats, nearbyEdmPole } from './edm-layout.js';
 import { blockedMessage } from './message-filter.js';
@@ -14,7 +15,8 @@ import { performanceStatus } from './club-performances.js';
 import { playlistPosition,trackBeat } from './public/music.js';
 import { playlist } from './music.js';
 import { Room } from '@colyseus/core';
-import { profile } from './store.js';
+import { tableMatch } from './table-match.js';
+import { profile,saveAppearance } from './store.js';
 
 const sharedActivityUsage=activityUsage();
 export const capacity = 60;
@@ -50,6 +52,7 @@ export class EdmRoom extends Room {
     this.preparing = [];
     this.eventTier = 0;
     this.epoch = Date.now();
+    this.musicOpeningStarted = !sharedAutoEntry;
     rooms.set(this.roomId, this);
     this.ai = Array.from({ length: 5 }, (_, i) => ({
       id: 'ai-' + i,
@@ -65,16 +68,26 @@ export class EdmRoom extends Room {
     this.refreshVisitors();
     this.dirty = false;
     if (localTest) {
+      this.tableMatch=tableMatch({actors:()=>[...this.members.values()]});
+      this.onMessage('table-game-state',client=>{
+        if(this.member(client))client.send('table-game-state',{...this.tableMatch.view(client.sessionId),serverNow:Date.now()});
+      });
+      this.onMessage('table-game',(client,input)=>{
+        if(!this.member(client)||!client.userData.identity.startsWith('local-test:'))return;
+        client.send('table-game-result',this.tableMatch.command(client.sessionId,input));
+        this.dirty=true;
+      });
       this.eventSequence = 0;
-      this.activities=clubActivities({actors:()=>[...this.members.values()],blockedMessage,usage:sharedActivityUsage,
+      this.activities=clubActivities({actors:()=>[...this.members.values(),...this.ai],blockedMessage,usage:sharedActivityUsage,
         performances:()=>{const scheduled=performanceStatus(this.epoch,Date.now(),playlist());return {...scheduled,active:scheduled.active||(this.stageEvent?{...this.stageEvent,seconds:effects[this.stageEvent.kind]?.seconds}:null)};},
         identity:id=>this.clients.find(c=>c.sessionId===id)?.userData?.identity||id});
       this.activitiesState=()=>{for(const c of this.clients)if(c.userData?.identity?.startsWith('local-test:'))c.send('activities-state',this.activities.view(c.sessionId));};
       this.onMessage('activities-state',client=>{if(this.member(client)&&client.userData.identity.startsWith('local-test:'))client.send('activities-state',this.activities.view(client.sessionId));});
       for(const kind of activityCommands)this.onMessage(kind,(client,input)=>{
         if(!this.member(client)||!client.userData.identity.startsWith('local-test:'))return;
-        if(input?.to&&!this.clients.some(c=>c.sessionId===input.to&&c.userData?.identity?.startsWith('local-test:')))return this.notice(client,'같은 클럽의 시험 회원을 선택해 주세요.');
-        const result=this.activities.command(client.sessionId,kind,{...input,simulated:false});
+        const aiTarget=this.ai.find(a=>a.id===input?.to);
+        if(input?.to&&!aiTarget&&!this.clients.some(c=>c.sessionId===input.to&&c.userData?.identity?.startsWith('local-test:')))return this.notice(client,'같은 클럽의 방문객을 선택해 주세요.');
+        const result=this.activities.command(client.sessionId,kind,{...input,simulated:Boolean(aiTarget)});
         if(result.error)this.notice(client,result.error);
         client.send('activities-result',{kind,...result});
         if(result.notification)this.clients.find(c=>c.sessionId===result.notification.to)?.send('whisper-notification',result.notification);
@@ -88,7 +101,14 @@ export class EdmRoom extends Room {
       this.onMessage('character-style',(client,input)=>{
         const actor=this.member(client);
         if(!actor||!client.userData.identity.startsWith('local-test:')||(input!==null&&!validAppearance(input)))return;
-        actor.appearance=input===null?null:normalizeAppearance(input);this.dirty=true;
+        try{
+          const appearance=saveAppearance(client.userData.identity,input);
+          actor.appearance=appearance;this.dirty=true;
+          client.send('character-style-result',{ok:true});
+        }catch{
+          client.send('character-style-result',{ok:false});
+          this.notice(client,'꾸미기를 저장하지 못했습니다. 잠시 후 다시 적용해 주세요.');
+        }
       });
       this.onMessage('wand-style',(client,input)=>{
         const actor=this.member(client);
@@ -149,6 +169,13 @@ export class EdmRoom extends Room {
     });
     this.onMessage('occupancy', (c) => c.send('occupancy', this.population()));
     this.onMessage('snapshot', (c) => c.send('snapshot', this.snapshot()));
+    this.onMessage('music-ready', (c) => {
+      if(sharedAutoEntry && this.member(c) && !this.musicOpeningStarted){
+        this.musicOpeningStarted=true;
+        this.epoch=Date.now()+3000;
+        this.dirty=true;
+      }
+    });
     this.onMessage('clock', (c, sent) => {
       if (Number.isFinite(sent))
         c.send('clock', { sent, now: Date.now(), epoch: this.epoch, tracks: playlist() });
@@ -221,6 +248,11 @@ export class EdmRoom extends Room {
     this.onMessage('seat', (c, requested)=>seatActivity(c,requested));
     this.onMessage('stand', c=>seatActivity(c,undefined,true));
     this.setSimulationInterval(() => {
+      if(this.tableMatch)for(const client of this.clients){
+        if(!this.member(client))continue;
+        const value=this.tableMatch.view(client.sessionId),key=JSON.stringify(value);
+        if(client.userData.tableGameView!==key){client.userData.tableGameView=key;client.send('table-game-state',{...value,serverNow:Date.now()});}
+      }
       if (this.dirty) {
         this.broadcast('snapshot', this.snapshot());
         this.dirty = false;
@@ -276,7 +308,7 @@ export class EdmRoom extends Room {
     const before = new Set(this.ai.map((a) => a.id));
     const elapsed = (Date.now() - this.epoch) / 1000;
     for (let i = 0; i < 3; i++) {
-      if (!this.train.riders.has(this.ai[i].id)) this.ai[i] = background(i, elapsed);
+      if (!this.train.riders.has(this.ai[i].id)) this.ai[i] = {...background(i, elapsed),id:'ai-background-'+i};
     }
     const extra = Math.min(extraGuestPlaces.length, extraVisitors, capacity - this.members.size);
     this.ai.length = 5 + extra;
@@ -409,9 +441,26 @@ export class EdmRoom extends Room {
       old.client.leave(4001);
     }
     const previous = recent.get(identity);
-    let place = restore && previous?.room === this.roomId ? previous.place : floorEntry;
-    if (!this.positionMember(client.sessionId, null, place)) {
-      place = floorEntry;
+    const entry=floorEntry;
+    let place = restore && previous?.room === this.roomId ? previous.place : entry;
+    if (sharedTrial) {
+      // Choose from currently empty positions, not a hashed identity slot:
+      // different browsers can hash to the same slot. onJoin assigns the chosen
+      // position to members synchronously before the next visitor is admitted.
+      const occupied = [...this.members.values(), ...this.ai];
+      const candidates = [place];
+      for (let row = 0; row < 6; row++) {
+        for (const column of [0,-1,1,-2,2,-3,3,-4,4,-5,5]) {
+          candidates.push({...entry,x:entry.x+column*2.2,z:entry.z+row*2.2});
+        }
+      }
+      place = candidates.find(candidate =>
+        !occupied.some(actor => Math.abs(actor.y-candidate.y)<.8 &&
+          Math.hypot(actor.x-candidate.x,actor.z-candidate.z)<2) &&
+        this.positionMember(client.sessionId,null,candidate));
+      if (!place) throw Error('입구에 빈 자리가 없습니다. 잠시 후 다시 입장해 주세요.');
+    } else if (!this.positionMember(client.sessionId, null, place)) {
+      place = entry;
       this.positionMember(client.sessionId, null, place);
     }
     const m = {

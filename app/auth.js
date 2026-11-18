@@ -1,5 +1,6 @@
 import { createHmac } from 'node:crypto';
 import { localTest } from './local-test.js';
+import { sharedTrial, authorizeSharedTrial } from './shared-trial.js';
 import Credentials from '@auth/express/providers/credentials';
 import Google from '@auth/express/providers/google';
 import { decodeSession } from './session.js';
@@ -21,7 +22,7 @@ if (Buffer.byteLength(secret) < 32) throw new Error('AUTH_SECRET must be at leas
 export const auth = {
   basePath: '/auth',
   secret: localTest
-    ? createHmac('sha256', secret).update('meta-club/localhost-test').digest('hex')
+    ? createHmac('sha256', secret).update(sharedTrial?'meta-club/shared-trial':'meta-club/localhost-test').digest('hex')
     : secret,
   trustHost: true,
   useSecureCookies: true,
@@ -30,9 +31,9 @@ export const auth = {
     ? [
         Credentials({
           id: 'local-test',
-          name: 'G1 시험 회원',
-          credentials: {},
-          authorize: () => ({ id: 'g1-member', name: '시험 회원' }),
+          name: sharedTrial?'EDM 3인 공동 시험':'G1 시험 회원',
+          credentials: sharedTrial?{tester:{label:'시험 회원 번호 (1·2·3)',type:'text'},accessCode:{label:'개별 입장 코드',type:'password'}}:{},
+          authorize: credentials => sharedTrial?authorizeSharedTrial(credentials):({ id: 'g1-member', name: '시험 회원' }),
         }),
       ]
     : [

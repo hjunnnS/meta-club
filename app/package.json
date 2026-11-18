@@ -4,8 +4,13 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "dev:desktop": "node dev-desktop.cjs"
+    "dev:desktop": "node dev-desktop.cjs",
+    "start:shared": "node shared-server.mjs",
+    "mac:trial:start": "node mac-shared-trial-control.mjs start",
+    "mac:trial:status": "node mac-shared-trial-control.mjs status",
+    "mac:trial:stop": "node mac-shared-trial-control.mjs stop"
   },
+  "overrides": { "nanoid": "3.3.18" },
   "dependencies": {
     "@auth/core": "0.41.3",
     "@auth/express": "^0.12.3",
