@@ -3,6 +3,13 @@ import assert from 'node:assert/strict';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import {registerHooks} from 'node:module';
+// Match the shared server's public module resolution without starting a server.
+registerHooks({resolve(specifier,context,next){
+  if(specifier==='/clubs/edm/edm-layout.js')return {url:new URL('../app/edm-layout.js',import.meta.url).href,shortCircuit:true};
+  if(specifier==='nanoid'&&context.parentURL?.includes('/@colyseus/core/'))return {url:new URL('../app/shared-nanoid.mjs',import.meta.url).href,shortCircuit:true};
+  return next(specifier,context);
+}});
 process.env.CLUB_DB=join(mkdtempSync(join(tmpdir(),'edm-seating-')),'club.sqlite');
 const {EdmRoom}=await import('../app/club-room.js');
 const {edmSeats,edmArea,permittedPath}=await import('../app/edm-layout.js');
@@ -22,11 +29,11 @@ test('numbered booths synchronize seating, protect occupied seats and exit to th
     for(const c of clients)room.onJoin(c,{identity:'local-test:seating-'+c.sessionId});
     const [a,b]=clients,seat=handlers.get('seat');
     const booths=edmSeats.map((s,index)=>({...s,index})).filter(s=>s.table);
-    assert.equal(booths.length,24);
-    assert.deepEqual([...new Set(booths.map(s=>s.table))],[1,2,3,4,5,6,7,8]);
-    assert.deepEqual(booths.filter(s=>s.x===20.05).map(s=>s.z),[16.6,12,7.4,2.8,-2,-6.8,-11.6,-16.2]);
+    assert.equal(booths.length,18);
+    assert.deepEqual([...new Set(booths.map(s=>s.table))],[1,2,3,4,5,6]);
+    assert.deepEqual(booths.filter(s=>s.x===20.05).map(s=>s.z),[16.6,12.2,1.0,-3.4,-10.2,-14.6]);
     assert.equal(edmArea({x:14.6,y:0,z:6}).tier,0);
-    assert(permittedPath({x:16.6,y:0,z:-1},{x:16.6,y:0,z:18.25},['CLOSED','CLOSED']));
+    assert(permittedPath({x:14.8,y:0,z:-1},{x:14.8,y:0,z:18.25},['CLOSED','CLOSED']));
     // Reject a forged long-distance target before moving any actor.
     seat(a,booths[0].index);assert.equal(room.member(a).seat,null);
     for(const target of booths){
@@ -59,16 +66,17 @@ test('numbered booths synchronize seating, protect occupied seats and exit to th
 });
 
 
-test('central floor reaches all eight table approaches while expansion areas stay closed',()=>{
+test('central floor reaches the six approved table approaches while expansion areas stay closed',()=>{
   const closed=['CLOSED','CLOSED'];
   // Reproduce the reported direct eastbound crossing through the removed pad.
   assert(permittedPath({x:0,y:.018,z:6},{x:16.6,y:0,z:6},closed));
   for(const seat of edmSeats.filter(s=>s.table)){
     const center={x:0,y:.018,z:0};
-    assert(permittedPath(center,seat.exit,closed),`outbound table ${seat.table}`);
-    assert(permittedPath(seat.exit,center,closed),`return table ${seat.table}`);
+    const aisle={x:14.8,y:0,z:seat.exit.z};
+    assert(permittedPath(center,aisle,closed)&&permittedPath(aisle,seat.exit,closed),`outbound table ${seat.table}`);
+    assert(permittedPath(seat.exit,aisle,closed)&&permittedPath(aisle,center,closed),`return table ${seat.table}`);
   }
   assert(!permittedPath({x:0,y:0,z:6},{x:-14.6,y:.045,z:6},closed));
-  assert(!permittedPath({x:-14.6,y:0,z:1},{x:-14.6,y:4,z:-8},closed));
+  assert(!permittedPath({x:14.8,y:0,z:9.5},{x:16.7,y:4,z:9.5},closed));
   assert(permittedPath({x:0,y:0,z:6},{x:-14.6,y:.045,z:6},['OPEN','CLOSED']));
 });
