@@ -24,9 +24,9 @@ export function characterCustomization(root,send,frame){
  sync();
  const cancel=()=>{preview=false;frame('character-preview',null);};
  root.querySelector('[data-character-preview]').onclick=()=>{if(!enabled)return;preview=true;frame('character-preview',draft);status.textContent='내 캐릭터에 미리보기 중 · 적용 전 모습은 공유되지 않습니다.';};
- root.querySelector('[data-character-apply]').onclick=()=>{if(!enabled)return;send('character-style',{...draft});dirty=false;cancel();status.textContent='선택한 꾸미기를 적용했습니다. 이번 접속에서 유지됩니다.';};
+ root.querySelector('[data-character-apply]').onclick=()=>{if(!enabled)return;send('character-style',{...draft});dirty=false;cancel();status.textContent='선택한 꾸미기를 저장하고 있습니다.';};
  root.querySelector('[data-character-cancel]').onclick=()=>{draft=normalizeAppearance(applied);sync();dirty=false;cancel();status.textContent='미리보기를 취소했습니다.';};
- root.querySelector('[data-character-reset]').onclick=()=>{if(!enabled)return;send('character-style',null);draft={...defaultAppearance};sync();dirty=false;cancel();status.textContent='기존 기본 캐릭터로 돌아왔습니다.';};
+ root.querySelector('[data-character-reset]').onclick=()=>{if(!enabled)return;send('character-style',null);draft={...defaultAppearance};sync();dirty=false;cancel();status.textContent='기본 모습으로 저장하고 있습니다.';};
  root.addEventListener('toggle',()=>{if(!root.open&&preview)cancel();});
- return {update(actor,available){enabled=Boolean(actor&&available);root.hidden=!enabled;if(!enabled){root.open=false;dirty=false;if(preview)cancel();return;}applied=actor.appearance||null;if(!dirty&&!preview){draft=normalizeAppearance(applied);sync();}},resume(){if(preview)frame('character-preview',draft);}};
+ return {saved(result){status.textContent=result?.ok?'저장했습니다. 같은 방문자 신원으로 다시 입장하면 유지됩니다.':'저장하지 못했습니다. 다시 적용해 주세요.';},update(actor,available){enabled=Boolean(actor&&available);root.hidden=!enabled;if(!enabled){root.open=false;dirty=false;if(preview)cancel();return;}applied=actor.appearance||null;if(!dirty&&!preview){draft=normalizeAppearance(applied);sync();}},resume(){if(preview)frame('character-preview',draft);}};
 }

@@ -16,7 +16,7 @@ import { playlistPosition,trackBeat } from './public/music.js';
 import { playlist } from './music.js';
 import { Room } from '@colyseus/core';
 import { tableMatch } from './table-match.js';
-import { profile } from './store.js';
+import { profile,saveAppearance } from './store.js';
 
 const sharedActivityUsage=activityUsage();
 export const capacity = 60;
@@ -101,7 +101,14 @@ export class EdmRoom extends Room {
       this.onMessage('character-style',(client,input)=>{
         const actor=this.member(client);
         if(!actor||!client.userData.identity.startsWith('local-test:')||(input!==null&&!validAppearance(input)))return;
-        actor.appearance=input===null?null:normalizeAppearance(input);this.dirty=true;
+        try{
+          const appearance=saveAppearance(client.userData.identity,input);
+          actor.appearance=appearance;this.dirty=true;
+          client.send('character-style-result',{ok:true});
+        }catch{
+          client.send('character-style-result',{ok:false});
+          this.notice(client,'꾸미기를 저장하지 못했습니다. 잠시 후 다시 적용해 주세요.');
+        }
       });
       this.onMessage('wand-style',(client,input)=>{
         const actor=this.member(client);

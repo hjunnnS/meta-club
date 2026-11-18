@@ -294,6 +294,7 @@ async function enter(channelId) {
     next.onMessage('activities-state',m=>{if(room===next)activities.state(m);});
     next.onMessage('activities-result',m=>{if(room===next){activities.result(m);if(m.ok)note('');}});
     next.onMessage('whisper-notification',m=>{if(room===next)activities.notification(m);});
+    next.onMessage('character-style-result',m=>{if(room===next)characterStyles.saved(m);});
     next.onMessage('notice', note);
     next.onMessage('clock', (m) => {
       if (room === next) {

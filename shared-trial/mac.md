@@ -57,3 +57,11 @@ node app/mac-shared-trial-install.mjs <허용된-별도-실행-폴더>
 - 확인용 접속3개는 퇴장시켰으며 서버/통로는 사용자를 위해 계속 실행한다. 음악 재생·전체 연출·모바일/부하 재검증은 하지 않았다. 실제 세 사람의 참가 평가와 구분한다.
 - 기존 음악/맵/공연/조명/캐릭터 동작 파일은 변경하지 않았다. 개인 Sites v90도 그대로다.
 - 공식 참고: https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/ . 임시 시험용이며 고정 주소나 가용성 보장은 없다.
+
+## 2026-11-18: current URL-only shared entry
+
+Share the existing Sites `/clubs/edm/` URL. Its landing page reads the current public endpoint from the dedicated `trial-endpoint` branch, then enters the Mac server. The supervisor republishes after server readiness and on tunnel replacement, with retry every 60 seconds when publishing failed. The dedicated generated Git checkout is `.local/shared-edm/endpoint-source`; it contains only public URL/availability/expiry/update time. It uses existing Mac Git credentials and never receives trial secrets or DB contents. No Sites source credential is stored by the supervisor.
+
+A deliberate shutdown publishes unavailable status when GitHub is reachable; otherwise the last published origin may remain until the next successful update. This is a free development path, not a fixed-hostname or availability guarantee. The Mac, Docker, internet and existing Git push authentication must remain available. No access codes are required in current auto-entry mode; older code-based instructions above are retained as historical setup.
+
+Appearance now persists to the existing SQLite volume by trial identity. The same session identity restores it on re-entry/server restart. An anonymous visitor on a different browser or a new tunnel hostname receives a different identity; cross-device linking requires future real login. Do not promise anonymous cross-device persistence.

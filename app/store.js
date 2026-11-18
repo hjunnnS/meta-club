@@ -2,6 +2,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { sharedTrial, sharedTrialSlot } from './shared-trial.js';
+import {validAppearance,normalizeAppearance} from './public/character-appearance.js';
 
 const file = resolve(process.env.CLUB_DB || 'data/club.sqlite');
 mkdirSync(dirname(file), { recursive: true });
@@ -9,6 +10,7 @@ const db = new DatabaseSync(file);
 db.exec(`
   PRAGMA journal_mode=WAL;
   CREATE TABLE IF NOT EXISTS profile(account TEXT PRIMARY KEY, nickname TEXT NOT NULL, avatar TEXT NOT NULL);
+  CREATE TABLE IF NOT EXISTS avatar_style(account TEXT PRIMARY KEY, appearance TEXT);
   CREATE TABLE IF NOT EXISTS report(id TEXT PRIMARY KEY, author TEXT NOT NULL, target TEXT NOT NULL,
     channel TEXT NOT NULL, note TEXT NOT NULL, created INTEGER NOT NULL);
   CREATE TABLE IF NOT EXISTS decision(id TEXT PRIMARY KEY, report_id TEXT NOT NULL, target TEXT NOT NULL,
@@ -19,12 +21,24 @@ db.exec(`
 export const avatars = ['indigo', 'teal', 'rose'];
 export function profile(account) {
   const slot=sharedTrial?sharedTrialSlot(account):0;
-  return (
+  const base=(
     db.prepare('SELECT nickname,avatar FROM profile WHERE account=?').get(account) ?? {
       nickname: account.startsWith('local-test:shared-auto-')?'방문객 '+account.slice(-4):slot?'시험 회원 '+slot:account.startsWith('guest:') ? '게스트' : '방문자',
       avatar: slot?avatars[slot-1]:avatars[0],
     }
   );
+  let appearance=null;
+  try{const raw=db.prepare('SELECT appearance FROM avatar_style WHERE account=?').get(account)?.appearance;
+    const value=raw?JSON.parse(raw):null;if(value&&validAppearance(value))appearance=normalizeAppearance(value);
+  }catch{/* Old or invalid cosmetics must not prevent entry. */}
+  return {...base,appearance};
+}
+export function saveAppearance(account,value){
+  if(value!==null&&!validAppearance(value))throw Error('Invalid appearance');
+  const appearance=value===null?null:normalizeAppearance(value);
+  db.prepare('INSERT INTO avatar_style(account,appearance) VALUES(?,?) ON CONFLICT(account) DO UPDATE SET appearance=excluded.appearance')
+    .run(account,appearance===null?null:JSON.stringify(appearance));
+  return appearance;
 }
 export function saveProfile(account, nickname, avatar) {
   db.prepare(
