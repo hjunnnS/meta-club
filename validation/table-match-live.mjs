@@ -44,8 +44,9 @@ try{
  assert(rooms[0].game.game.edges.every(e=>e.mutual));assert.equal(rooms[2].game.game.edges,undefined);
  assert(rooms.every(r=>r.snap.actors.every(a=>a.tableGame===undefined)));
  assert(rooms[2].history.every(s=>s.game?.edges===undefined));
- command(1,'leave');await until(()=>rooms[0].game?.game===null);
- console.log(JSON.stringify({clients:3,consent:true,privateSelection:true,mutualResult:true,spectatorExcluded:true,noPublicSnapshotLeak:true,leaveEndsGame:true,fixture:'isolated server pre-seated actors; not navigation or browser visual QA'}));
+ rooms[1].send('stand');await until(()=>rooms[0].game?.game===null&&rooms[1].snap?.actors.find(a=>a.id===rooms[1].sessionId)?.seat===null);
+ assert.equal(rooms[1].game.available,false);
+ console.log(JSON.stringify({clients:3,consent:true,privateSelection:true,mutualResult:true,spectatorExcluded:true,noPublicSnapshotLeak:true,standingLeavesGame:true,fixture:'isolated server pre-seated actors; not navigation or browser visual QA'}));
 }finally{
  await Promise.allSettled(rooms.map(r=>r.leave()));child.kill('SIGTERM');await Promise.race([new Promise(resolve=>child.once('exit',resolve)),delay(2000)]);if(child.exitCode===null)child.kill('SIGKILL');rmSync(directory,{recursive:true,force:true});
 }
