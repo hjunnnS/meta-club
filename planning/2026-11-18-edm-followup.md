@@ -10,3 +10,10 @@
 Merge PR #173 then retarget/merge #175 into main after saving this change. Preserve all policy and previous test history. Close desktop implementation issues only where the approved implementation is already delivered; do not close #23, #142, #147, #174 or #176 merely because code is merged. Old five-song request #139 was superseded by the approved Neon Horizon choice.
 
 Only source inspection, JS syntax validation and deployment readiness/metadata inspection in this run. No browser rendering, music playback, multiplayer game run, soak/load or mobile tests. Existing music, dance choreography, performances and map geometry are unchanged by this follow-up. Prices/payment and service sound-rights evidence remain deferred.
+
+## Observed completion
+- Sites v95 deployment succeeded; stable entry URL retains its public audience.
+- After restarting the final supervisor, its automatically published endpoint matched the current runtime URL and `/healthz` returned 200/ok. No 3D browser was opened.
+- Closed approved desktop implementation #158, #160, #161, #162, #163, #164, #165, #168, #169, #170. Closed superseded #139 as not_planned. Preserved original body/approval/test history and deferred commercial conditions.
+- Updated #23, #142, #147, #174, #176 with exact remaining conditions; they remain open.
+- Main merge of PR #173 was rejected by automatic approval review: it reported no explicit authorization for that PR in the current conversation. Did not bypass the rejection. PR #173 and dependent #175 remain open; no main merge was performed. Existing approved work and deployment were completed independently.
