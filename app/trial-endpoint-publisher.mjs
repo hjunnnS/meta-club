@@ -1,6 +1,7 @@
 import {spawnSync} from 'node:child_process';
 import {readFileSync,writeFileSync,mkdirSync,existsSync} from 'node:fs';
 import {dirname,join} from 'node:path';
+import {fileURLToPath} from 'node:url';
 const remote='https://github.com/hjunnnS/meta-club.git',branch='trial-endpoint',file='shared-trial-endpoint.json';
 // Dedicated generated checkout: only public connection metadata is committed.
 // Git uses the Mac's existing repository credentials; no token is copied here.
@@ -14,6 +15,12 @@ export function publishTrialEndpoint(status,directory){
   if(!ok(['init','--initial-branch='+branch])||!ok(['remote','add','origin',remote]))return false;
  }
  if(git(['remote','get-url','origin']).stdout?.trim()!==remote)return false;
+ const quote=value=>"'"+value.replaceAll("'","'\\''")+"'";
+ const helper='!'+quote(process.execPath)+' '+quote(fileURLToPath(new URL('./trial-git-credential.mjs',import.meta.url)));
+ // Checkout-local authentication only: other projects keep their active user.
+ if(!ok(['config','--replace-all','credential.helper',''])||
+    !ok(['config','--add','credential.helper',helper])||
+    !ok(['config','credential.useHttpPath','true']))return false;
  if(!ok(['config','user.name','Meta Club Trial'])||!ok(['config','user.email','meta-club-trial@users.noreply.github.com']))return false;
  const refs=git(['ls-remote','--heads','origin','refs/heads/'+branch]);
  if(refs.status!==0)return false;
